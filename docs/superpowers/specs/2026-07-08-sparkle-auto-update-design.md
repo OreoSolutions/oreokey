@@ -24,8 +24,11 @@ thông báo khi có bản mới kèm changelog, tự quyết định cài hay kh
 |--------|----------|
 | Host appcast | Raw file trong repo: `raw.githubusercontent.com/OreoSolutions/oreokey/main/appcast.xml` |
 | Hành vi update | Tự kiểm tra định kỳ (24h), **hỏi trước khi cài** kèm changelog |
-| Quy trình phát hành | Script cục bộ `scripts/release.sh` (không dùng CI — giữ khóa riêng EdDSA trên máy) |
+| Quy trình phát hành | **GitHub Actions** (`workflow_dispatch`, nhập version) — CI tự bump version, cuốn changelog, tag, build, ký EdDSA, tạo Release, commit appcast |
+| Release notes | Cuốn mục `[Chưa phát hành]` trong `CHANGELOG.md` thành `[version]` |
 | Delta update | Không (YAGNI — cập nhật full DMG) |
+
+**Đánh đổi khi dùng CI:** khóa **riêng** EdDSA (và sau này chứng chỉ Developer ID + credential notarize) phải nằm trong **GitHub Secrets** thay vì chỉ trên máy dev. Với repo công khai, Secrets không lộ cho PR từ fork nên chấp nhận được. Phần ký **có điều kiện**: chưa có secret → ký ad-hoc (DMG vẫn ra, có cảnh báo Gatekeeper); có secret → tự ký + notarize.
 
 ## Kiến trúc
 
@@ -100,19 +103,35 @@ URL DMG (trỏ tới asset trên GitHub Releases), độ dài file, chữ ký
 `sparkle:edSignature`, và release notes (từ CHANGELOG). Sinh/cập nhật tự
 động bởi `release.sh`; commit vào `main` để URL raw phục vụ.
 
-### 7. Quy trình phát hành (`scripts/release.sh`, mới)
+### 7. Quy trình phát hành (GitHub Actions)
 
-`./scripts/release.sh 0.2.0`:
+`.github/workflows/release.yml`, kích hoạt bằng **`workflow_dispatch`** (bấm
+"Run workflow" trên tab Actions, nhập `version`, ví dụ `0.2.0`). Chạy trên
+runner `macos-14`. Các bước:
 
-1. Cập nhật version trong `app/Info.plist` (`CFBundleShortVersionString` +
-   tăng `CFBundleVersion`) và `core/Cargo.toml`.
-2. Chuyển mục `[Chưa phát hành]` trong `CHANGELOG.md` thành `[0.2.0] - <ngày>`.
-3. `build.sh --universal` (ký Developer ID nếu có `CODESIGN_ID`) →
+1. Checkout (`fetch-depth: 0`), `rustup target add` arm64 + x86_64,
+   `swift package resolve`.
+2. Bump version: `app/Info.plist` (`CFBundleShortVersionString` + tăng
+   `CFBundleVersion`) và `core/Cargo.toml`.
+3. Cuốn changelog: `scripts/roll-changelog.py` chuyển `[Chưa phát hành]`
+   thành `[version] - <ngày>`.
+4. `build.sh --universal` (ký Developer ID nếu có secret `CODESIGN_ID`) →
    `make-dmg.sh` (notarize nếu có `NOTARY_PROFILE`).
-4. `sign_update dist/OreoKey.dmg` → lấy `sparkle:edSignature` + length.
-5. Chèn `<item>` mới vào `appcast.xml` (release notes lấy từ CHANGELOG),
-   `git commit` + `git push` appcast.
-6. `git tag v0.2.0` → `gh release create v0.2.0 dist/OreoKey.dmg …`.
+5. `sign_update` với khóa riêng từ secret `SPARKLE_ED_PRIVATE_KEY` → lấy
+   `sparkle:edSignature` + length.
+6. `scripts/update-appcast.py` chèn `<item>` mới (release notes từ CHANGELOG).
+7. Commit `Info.plist`/`Cargo.toml`/`CHANGELOG.md`/`appcast.xml` về `main`,
+   tạo tag `vX`, push (dùng `GITHUB_TOKEN`, `permissions: contents: write`).
+8. `gh release create vX dist/OreoKey.dmg` kèm release notes.
+
+Logic bump/cuốn-changelog/appcast tách thành hai script Python
+(`scripts/roll-changelog.py`, `scripts/update-appcast.py`) để workflow gọn và
+có thể chạy/kiểm thử cục bộ.
+
+**Secrets cần đặt** (Settings → Secrets → Actions):
+- `SPARKLE_ED_PRIVATE_KEY` — khóa riêng EdDSA (xuất bằng `generate_keys -x`).
+- (Sau, khi có Apple Developer) `CODESIGN_ID`, chứng chỉ Developer ID, và
+  credential notarytool. Chưa có → workflow ký ad-hoc, vẫn chạy.
 
 ## Kiểm thử
 
@@ -128,6 +147,12 @@ URL DMG (trỏ tới asset trên GitHub Releases), độ dài file, chữ ký
 - **Ký Developer ID (đang chờ)**: bước tự-cài của Sparkle chạy tin cậy nhất
   khi app ký Developer ID + notarize. Mã/UI/tải chạy được với ad-hoc; chỉ
   auto-install liền mạch cần cert. Không có việc phải làm lại.
+- **Bí mật ký trên CI**: khóa riêng EdDSA (và sau này cert Developer ID) nằm
+  trong GitHub Secrets. Không dùng cho PR từ fork; chỉ workflow tin cậy đọc.
+- **Push về `main` từ CI**: workflow commit appcast/version về `main`. Nếu bật
+  branch protection chặn push trực tiếp, cần cho `github-actions` bypass hoặc
+  đổi sang mở PR. Trigger là `workflow_dispatch` (không phải `on: push`) nên
+  không có vòng lặp CI.
 - **Nhúng framework thủ công**: đây là phần dễ sai nhất (rpath, đường dẫn
   slice XCFramework, thứ tự ký nested). Plan phải ghi đường dẫn/lệnh chính xác.
 - **Kích thước app tăng**: Sparkle.framework thêm ~vài MB vào bundle. Chấp
@@ -137,4 +162,4 @@ URL DMG (trỏ tới asset trên GitHub Releases), độ dài file, chữ ký
 
 - Delta/patch update (chỉ full DMG).
 - Kênh beta/stable riêng.
-- Tự động hóa phát hành qua CI (giữ khóa riêng cục bộ).
+- Notarize trên CI ở bản đầu (bật khi có tài khoản Apple Developer).
