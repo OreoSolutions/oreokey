@@ -95,10 +95,13 @@ fn key_inject(proxy: CGEventTapProxy, backspaces: usize, text: &str, profile: &R
     // profile: app được đánh dấu hay autocomplete thì thà gửi thừa.
     if backspaces > 0 {
         let sel = ax::selection_length();
-        let clear_needed = match sel {
-            Some(len) => len > 0,
-            None => profile.browser_fix,
-        };
+        // force_clear: app có ghost text mà AX báo selection = 0
+        // (Spotlight) — kiểm tra selection vô nghĩa, luôn phải hủy.
+        let clear_needed = profile.force_clear
+            || match sel {
+                Some(len) => len > 0,
+                None => profile.browser_fix,
+            };
         super::dlog(&format!("  inject bs={backspaces} sel={sel:?} clear={clear_needed}"));
         if clear_needed {
             post_key(&source, proxy, KEY_SPACE, " ", delay);

@@ -14,6 +14,10 @@ pub struct AppProfile {
     pub mode: Option<FixMode>,
     #[serde(default)]
     pub browser_fix: bool,
+    /// Luôn gửi phím hủy autocomplete trước backspace, bất kể AX nói gì
+    /// — cho app có ghost text mà AXSelectedTextRange báo 0 (Spotlight).
+    #[serde(default)]
+    pub force_clear: bool,
     #[serde(default)]
     pub delay_ms: u64,
 }
@@ -33,6 +37,7 @@ pub struct Profiles {
 pub struct ResolvedProfile {
     pub mode: FixMode,
     pub browser_fix: bool,
+    pub force_clear: bool,
     pub delay_ms: u64,
 }
 
@@ -41,6 +46,7 @@ impl Default for ResolvedProfile {
         ResolvedProfile {
             mode: FixMode::Auto,
             browser_fix: false,
+            force_clear: false,
             delay_ms: 3,
         }
     }
@@ -80,29 +86,28 @@ impl Profiles {
         if let Some(name) = focused_proc {
             let key = format!("proc:{name}");
             if let Some(p) = self.apps.get(&key) {
-                let mut resolved = ResolvedProfile::default();
-                if let Some(m) = p.mode {
-                    resolved.mode = m;
-                }
-                resolved.browser_fix = p.browser_fix;
-                if p.delay_ms > 0 {
-                    resolved.delay_ms = p.delay_ms;
-                }
-                return resolved;
+                return Self::merge(p);
             }
         }
         let mut resolved = ResolvedProfile::default();
         if let Some(p) = self.lookup(bundle) {
-            if let Some(m) = p.mode {
-                resolved.mode = m;
-            }
-            resolved.browser_fix = p.browser_fix;
-            if p.delay_ms > 0 {
-                resolved.delay_ms = p.delay_ms;
-            }
+            resolved = Self::merge(p);
         }
         if let Some(&m) = user_modes.get(bundle) {
             resolved.mode = m;
+        }
+        resolved
+    }
+
+    fn merge(p: &AppProfile) -> ResolvedProfile {
+        let mut resolved = ResolvedProfile::default();
+        if let Some(m) = p.mode {
+            resolved.mode = m;
+        }
+        resolved.browser_fix = p.browser_fix;
+        resolved.force_clear = p.force_clear;
+        if p.delay_ms > 0 {
+            resolved.delay_ms = p.delay_ms;
         }
         resolved
     }
@@ -141,6 +146,7 @@ mod tests {
         let none = HashMap::new();
         let r = p.resolve("com.mitchellh.ghostty", &none, Some("Spotlight"));
         assert!(r.browser_fix);
+        assert!(r.force_clear); // AX của Spotlight báo selection=0 dù có ghost text
         assert_eq!(r.mode, FixMode::InjectFast);
         // Process lạ → rơi về bundle như cũ.
         let r = p.resolve("com.mitchellh.ghostty", &none, Some("ghostty"));
