@@ -28,5 +28,13 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Oreo Solutions</string>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/OreoSolutions/oreokey/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>/HbLHfAq02nj4XXA0+q614wq9uXQHMYtdYZ5n9RulEM=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 </dict>
 </plist>
