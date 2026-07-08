@@ -30,6 +30,30 @@ const NUCLEI: &[&str] = &[
 
 const FINALS: &[&str] = &["", "c", "ch", "m", "n", "ng", "nh", "p", "t"];
 
+/// Nguyên âm có dấu → dạng trơn: â ă → a, ê → e...
+fn base_of(c: char) -> char {
+    match c {
+        'ă' | 'â' => 'a',
+        'ê' => 'e',
+        'ô' | 'ơ' => 'o',
+        'ư' => 'u',
+        other => other,
+    }
+}
+
+/// `cluster` có thể trở thành vần hợp lệ `valid` chỉ bằng cách THÊM dấu
+/// vào các nguyên âm còn trơn không? Ký tự đã mang dấu phải khớp chính
+/// xác ("ie"→"iê" được; "oâ" không thể thành "oă").
+fn can_become(cluster: &str, valid: &str) -> bool {
+    if cluster.chars().count() != valid.chars().count() {
+        return false;
+    }
+    cluster
+        .chars()
+        .zip(valid.chars())
+        .all(|(c, v)| c == v || (c == base_of(c) && base_of(v) == c))
+}
+
 /// Từ có bị engine biến đổi không (có thanh hoặc dấu phụ). Chỉ những từ
 /// bị biến đổi mới cần khôi phục — kết quả của việc hủy dấu (`ass`→`as`)
 /// không được tính.
@@ -69,7 +93,12 @@ pub fn is_acceptable(state: &WordState) -> bool {
         return false;
     }
     let nucleus = render_range(run_start, run_end + 1);
-    if !NUCLEI.contains(&nucleus.as_str()) {
+    // Vần hợp lệ, hoặc là dạng gõ dở của một vần hợp lệ (chưa bấm phím
+    // dấu: "ie" chờ thành "iê"). Nới lỏng này chỉ áp dụng khi từ CHƯA
+    // có thanh — "dies" (thanh sắc từ s) vẫn phải bị khôi phục.
+    let nucleus_ok = NUCLEI.contains(&nucleus.as_str())
+        || (state.tone.is_none() && NUCLEI.iter().any(|n| can_become(&nucleus, n)));
+    if !nucleus_ok {
         return false;
     }
     let final_c = render_range(run_end + 1, letters.len());
@@ -127,6 +156,26 @@ mod tests {
         assert_eq!(t("quaats"), "quất");
         assert_eq!(t("nghieng"), "nghieng");
         assert_eq!(t("nghieengs"), "nghiếng");
+    }
+
+    #[test]
+    fn d_words_with_incomplete_nucleus_not_broken() {
+        // Bug thực địa: "ddieen" bị khôi phục thành raw vì cụm trung
+        // gian "ie" (chưa thành "iê") không có trong bảng vần.
+        assert_eq!(t("ddieen"), "điên");
+        assert_eq!(t("ddieenj"), "điện");
+        assert_eq!(t("dduee"), "đuê");
+        assert_eq!(t("ddieeuf"), "điều");
+        assert_eq!(t("dduowngf"), "đường");
+    }
+
+    #[test]
+    fn tone_on_incomplete_nucleus_still_restores_english() {
+        // Cụm gốc chỉ được nới lỏng khi CHƯA có thanh — "dies" có thanh
+        // sắc từ s nên vẫn phải trả về nguyên văn.
+        assert_eq!(t("dies"), "dies");
+        assert_eq!(t("lies"), "lies");
+        assert_eq!(t("ties"), "ties");
     }
 
     #[test]
