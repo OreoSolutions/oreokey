@@ -130,6 +130,9 @@ pub struct EngineConfig {
     /// Kiểu đặt dấu mới (`hoà`) thay vì kiểu cũ (`hòa`).
     pub modern_tone: bool,
     pub macros_enabled: bool,
+    /// Gõ dấu mũ muộn (Telex): `nanag` → `nâng`, `viete` → `viêt`.
+    /// Chỉ áp khi kết quả là âm tiết hợp lệ để không phá từ tiếng Anh.
+    pub flexible_marks: bool,
 }
 
 impl Default for EngineConfig {
@@ -139,6 +142,7 @@ impl Default for EngineConfig {
             spell_check: true,
             modern_tone: false,
             macros_enabled: true,
+            flexible_marks: true,
         }
     }
 }
@@ -273,7 +277,9 @@ impl Engine {
         let mut state = WordState::default();
         for c in raw.chars() {
             match self.cfg.method {
-                TypingMethod::Telex => telex::apply_key(&mut state, c),
+                TypingMethod::Telex => {
+                    telex::apply_key(&mut state, c, self.cfg.flexible_marks)
+                }
                 TypingMethod::Vni => vni::apply_key(&mut state, c),
             }
         }
@@ -356,6 +362,7 @@ mod tests {
             spell_check: false,
             modern_tone: false,
             macros_enabled: false,
+            flexible_marks: true,
         })
     }
 

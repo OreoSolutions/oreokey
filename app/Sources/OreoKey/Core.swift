@@ -24,6 +24,7 @@ struct CoreSettings: Codable, Equatable {
     var spell_check: Bool
     var modern_tone: Bool
     var macros_enabled: Bool
+    var flexible_marks: Bool
     var hotkey: CoreHotkey
     var macros: [CoreMacro]
     var excluded_apps: [String]

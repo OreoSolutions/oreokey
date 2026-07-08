@@ -2,10 +2,11 @@
 //! w → móc/trăng (đứng một mình → ư); dd → đ. Gõ lặp modifier để hủy —
 //! sau khi hủy, phím đó thành chữ thường cho tới hết từ.
 
+use super::spell;
 use super::syllable::vowel_indices;
 use super::{Letter, Tone, WordState};
 
-pub fn apply_key(state: &mut WordState, c: char) {
+pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
     let lower = c.to_ascii_lowercase();
     if state.is_dead(lower) {
         state.letters.push(Letter::plain(c));
@@ -51,6 +52,33 @@ pub fn apply_key(state: &mut WordState, c: char) {
                     // aa → â, ee → ê, oo → ô.
                     last.circ = true;
                     return;
+                }
+            }
+            // Gõ mũ muộn: phím lặp sau phụ âm cuối vẫn tìm về nguyên âm
+            // cùng loại (nanag → nâng, viete → viêt).
+            if flexible_marks {
+                let vidx = vowel_indices(&state.letters);
+                if let Some(&i) = vidx
+                    .iter()
+                    .rev()
+                    .find(|&&i| state.letters[i].base == lower)
+                {
+                    if state.letters[i].circ {
+                        // Hủy muộn, đối xứng với hủy liền kề.
+                        state.letters[i].circ = false;
+                        state.dead.push(lower);
+                        state.letters.push(Letter::plain(c));
+                        return;
+                    }
+                    if !state.letters[i].has_mark() {
+                        // Chỉ giữ nếu ra âm tiết hợp lệ — tránh biến từ
+                        // tiếng Anh (banana) thành tiếng Việt nửa mùa.
+                        state.letters[i].circ = true;
+                        if spell::is_acceptable(state) {
+                            return;
+                        }
+                        state.letters[i].circ = false;
+                    }
                 }
             }
             state.letters.push(Letter::plain(c));
@@ -156,6 +184,7 @@ mod tests {
             spell_check: false,
             modern_tone: modern,
             macros_enabled: false,
+            flexible_marks: true,
         })
     }
 
@@ -269,6 +298,45 @@ mod tests {
         assert_eq!(t("giwowngf"), "giường");
         // 3 nguyên âm mở → dấu giữa
         assert_eq!(t("khuyru"), "khuỷu");
+    }
+
+    #[test]
+    fn late_circumflex() {
+        // Gõ mũ muộn: phím a/e/o lặp lại sau phụ âm cuối vẫn áp vào
+        // nguyên âm cùng loại trong từ.
+        assert_eq!(t("nanag"), "nâng");
+        assert_eq!(t("nangas"), "nấng");
+        assert_eq!(t("viete"), "viêt");
+        assert_eq!(t("vietej"), "việt");
+        // Rào chắn: chỉ áp khi ra âm tiết hợp lệ — "oâ" không hợp lệ.
+        assert_eq!(t("hoana"), "hoana");
+    }
+
+    #[test]
+    fn late_circumflex_respects_spell_check() {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_check: true,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+        });
+        // bân + n không hợp lệ → về raw mode → chữ tiếng Anh nguyên vẹn.
+        assert_eq!(type_str(&mut e, "banana"), "banana");
+    }
+
+    #[test]
+    fn flexible_marks_off_disables_late_circumflex() {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_check: false,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: false,
+        });
+        assert_eq!(type_str(&mut e, "nanag"), "nanag");
+        // Dạng liền kề cổ điển vẫn hoạt động.
+        assert_eq!(type_str(&mut e, " naang".trim()), "nâng");
     }
 
     #[test]

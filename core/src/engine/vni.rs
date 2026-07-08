@@ -131,6 +131,7 @@ mod tests {
             spell_check: false,
             modern_tone: false,
             macros_enabled: false,
+            flexible_marks: true,
         });
         type_str(&mut e, keys)
     }

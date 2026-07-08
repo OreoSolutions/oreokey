@@ -89,6 +89,8 @@ private struct GeneralTab: View {
                 Toggle("Kiểm tra chính tả (khôi phục từ không phải tiếng Việt)",
                        isOn: binding.spell_check)
                 Toggle("Đặt dấu kiểu mới (hoà thay vì hòa)", isOn: binding.modern_tone)
+                Toggle("Gõ dấu mũ linh hoạt (nanag → nâng, viete → viêt)",
+                       isOn: binding.flexible_marks)
                 Toggle("Bật gõ tắt", isOn: binding.macros_enabled)
             }
             .padding()

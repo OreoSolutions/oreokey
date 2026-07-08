@@ -100,6 +100,7 @@ mod tests {
             spell_check: true,
             modern_tone: false,
             macros_enabled: false,
+            flexible_marks: true,
         });
         type_str(&mut e, keys)
     }
@@ -154,6 +155,7 @@ mod tests {
             spell_check: false,
             modern_tone: false,
             macros_enabled: false,
+            flexible_marks: true,
         });
         assert_eq!(type_str(&mut e, "mask"), "mák");
     }
