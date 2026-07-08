@@ -4,6 +4,7 @@
 //! mỗi phím render lại toàn bộ từ rồi so với lần render trước để tạo
 //! `Action` sửa chữ tối thiểu.
 
+pub mod encoding;
 pub mod macros;
 pub mod spell;
 pub mod syllable;

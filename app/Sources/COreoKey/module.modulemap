@@ -1,0 +1,4 @@
+module COreoKey {
+    header "../../../include/oreokey.h"
+    export *
+}
