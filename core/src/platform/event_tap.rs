@@ -28,6 +28,31 @@ extern "C" {
         buf: *mut u16,
     );
     fn IsSecureEventInputEnabled() -> u8;
+    fn mach_timebase_info(info: *mut MachTimebaseInfo) -> libc::c_int;
+}
+
+#[repr(C)]
+struct MachTimebaseInfo {
+    numer: u32,
+    denom: u32,
+}
+
+/// Cửa sổ nhận diện bóng ma: 10ms quy ra đơn vị của CGEventGetTimestamp.
+/// Giá trị đó là mach absolute time TICK, không phải nanosecond — trên
+/// Apple Silicon 1 tick ≈ 41.67ns. So thẳng với 30_000_000 tưởng là 30ms
+/// nhưng thật ra ~1.25 GIÂY: phím dấu gõ lại trong vòng 1s bị nuốt oan
+/// ("gõ 3 lần s mới hủy dấu"). Bóng ma thật chênh <0.5ms; người gõ lặp
+/// cùng phím nhanh nhất cũng ~50ms — 10ms an toàn cả hai phía.
+fn ghost_window_ticks() -> u64 {
+    use std::sync::OnceLock;
+    static WINDOW: OnceLock<u64> = OnceLock::new();
+    *WINDOW.get_or_init(|| {
+        let mut info = MachTimebaseInfo { numer: 0, denom: 0 };
+        if unsafe { mach_timebase_info(&mut info) } != 0 || info.numer == 0 {
+            return 10_000_000;
+        }
+        10_000_000u64 * u64::from(info.denom) / u64::from(info.numer)
+    })
 }
 
 static TAP_PORT: AtomicUsize = AtomicUsize::new(0);
@@ -161,11 +186,19 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
         // cùng phím trong <30ms phần cứng; autorepeat có cờ riêng.
         // So với TẤT CẢ phím bị nuốt gần đây: bóng ma của `s` thứ nhất
         // trong chuỗi `ss` đến sau khi `s` thứ hai thật đã xử lý.
-        let is_ghost = rt.recent_dropped.iter().any(|&(code, dropped_ts)| {
-            code == keycode && ev_ts.abs_diff(dropped_ts) < 30_000_000
-        });
-        if is_ghost {
-            super::dlog("  dup re-delivery suppressed");
+        let window = ghost_window_ticks();
+        let ghost_of = rt
+            .recent_dropped
+            .iter()
+            .find(|&&(code, dropped_ts)| {
+                code == keycode && ev_ts.abs_diff(dropped_ts) < window
+            })
+            .copied();
+        if let Some((_, dropped_ts)) = ghost_of {
+            super::dlog(&format!(
+                "  dup re-delivery suppressed (diff={} ticks, window={window})",
+                ev_ts.abs_diff(dropped_ts)
+            ));
             return CallbackKeep::Drop;
         }
         // Hotkey bật/tắt tiếng Việt.

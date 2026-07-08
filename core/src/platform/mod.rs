@@ -29,9 +29,10 @@ pub struct Runtime {
     /// Cache khả năng sửa chữ qua AX API theo bundle ID.
     pub ax_ok: HashMap<String, bool>,
     pub status_cb: Option<StatusCallback>,
-    /// Keycode + timestamp PHẦN CỨNG của các phím bị nuốt (Replace) gần
-    /// đây — chặn bản sao hệ thống giao lại (bản sao giữ hw-ts gần bản
-    /// gốc dù đến muộn hàng trăm ms đồng hồ tường). Phải nhớ NHIỀU phím:
+    /// Keycode + timestamp PHẦN CỨNG (mach tick, KHÔNG phải ns) của các
+    /// phím bị nuốt (Replace) gần đây — chặn bản sao hệ thống giao lại
+    /// (bản sao giữ hw-ts gần bản gốc dù đến muộn hàng trăm ms đồng hồ
+    /// tường). Phải nhớ NHIỀU phím:
     /// khi gõ `ss` hủy dấu, bóng ma của `s` thứ nhất đến SAU khi `s` thứ
     /// hai (thật) đã được xử lý — nhớ một phím là bị lẻn qua.
     pub recent_dropped: std::collections::VecDeque<(u16, u64)>,
