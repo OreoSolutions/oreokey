@@ -1,5 +1,6 @@
 import AppKit
 import ServiceManagement
+import Sparkle
 
 // Callback C không capture được context — trỏ về singleton.
 private func statusChanged(_ vnOn: Bool) {
@@ -27,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.instance = self
         setupStatusItem()
+        _ = Updater.shared  // bắt đầu kiểm tra cập nhật nền
         Core.setStatusCallback(statusChanged)
 
         // Báo app frontmost cho core (smart switch / loại trừ app).
@@ -100,6 +102,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             title: "Cài đặt…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
+
+        let updates = NSMenuItem(
+            title: "Kiểm tra bản mới…",
+            action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)),
+            keyEquivalent: "")
+        updates.target = Updater.shared.controller
+        menu.addItem(updates)
 
         loginItem = NSMenuItem(
             title: "Khởi động cùng máy", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
