@@ -46,10 +46,16 @@ System Settings. Bản phát hành ký Developer ID không bị vấn đề này
 
 1. `CODESIGN_ID="Developer ID Application: ..." ./scripts/build.sh --universal`
 2. `CODESIGN_ID=... NOTARY_PROFILE=... ./scripts/make-dmg.sh` (ký + notarize + staple)
-3. Auto-update (Sparkle) chưa tích hợp — cần: thêm dependency
-   `sparkle-project/Sparkle` vào `app/Package.swift`, nhúng framework vào
-   bundle trong `build.sh`, sinh cặp khóa EdDSA, host `appcast.xml` và đặt
-   `SUFeedURL` trong `app/Info.plist`.
+3. Phát hành qua **GitHub Actions**: tab Actions → workflow "Release" →
+   "Run workflow" → nhập version (vd `0.2.0`). CI tự bump version, cuốn mục
+   `[Chưa phát hành]` trong `CHANGELOG.md`, tag `vX`, build universal, đóng DMG
+   (ký + notarize nếu có secret `CODESIGN_ID`/`NOTARY_PROFILE`), ký EdDSA, cập
+   nhật `appcast.xml`, và tạo GitHub Release kèm DMG. Trước khi viết mục changelog
+   cho bản mới, điền vào phần `[Chưa phát hành]`.
+
+   Cài đặt một lần: sinh khóa Sparkle bằng `generate_keys` (kèm trong artifact
+   Sparkle), dán khóa công khai vào `SUPublicEDKey` ở `app/Info.plist`, và đặt
+   khóa riêng vào secret `SPARKLE_ED_PRIVATE_KEY` (`generate_keys -x` để xuất).
 
 ## Kiến trúc
 
