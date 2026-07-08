@@ -62,8 +62,13 @@ cp -R "$SPARKLE_FW" "$APP/Contents/Frameworks/"
 # 4. Ký — nested (Sparkle) trước, app sau; hardened runtime khi có Developer ID
 IDENTITY="${CODESIGN_ID:--}"
 FW="$APP/Contents/Frameworks/Sparkle.framework"
-sign() { codesign --force --options runtime --sign "$IDENTITY" "$1" 2>/dev/null \
-    || codesign --force --sign "$IDENTITY" "$1"; }
+sign() {
+    if [[ "$IDENTITY" == "-" ]]; then
+        codesign --force --sign - "$1"
+    else
+        codesign --force --options runtime --sign "$IDENTITY" "$1"
+    fi
+}
 for nested in \
     "$FW/Versions/Current/XPCServices/Installer.xpc" \
     "$FW/Versions/Current/XPCServices/Downloader.xpc" \
