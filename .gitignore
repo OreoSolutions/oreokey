@@ -1,4 +1,14 @@
+# Rust
 target/
+
+# Swift / SwiftPM
 app/.build/
+.swiftpm/
+*.xcuserstate
+
+# Build output
 dist/
+*.dmg
+
+# macOS
 .DS_Store

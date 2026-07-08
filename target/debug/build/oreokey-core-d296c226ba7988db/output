@@ -1,2 +1,0 @@
-cargo:rustc-link-lib=framework=ApplicationServices
-cargo:rustc-link-lib=framework=Carbon
