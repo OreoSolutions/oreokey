@@ -241,6 +241,10 @@ impl Engine {
     }
 
     fn on_char(&mut self, c: char) -> Action {
+        // Trạng thái TRƯỚC khi thêm c đã "sạch đã chốt" chưa: đang hiển thị
+        // bình thường (không ở raw_mode) và không mang biến đổi nào — dấu
+        // đã bị hủy hết hoặc chưa từng có. Ví dụ "mas" (đã hủy sắc của má).
+        let was_settled = !self.raw_mode && !self.is_transformed(&self.raw);
         self.raw.push(c);
         let new_render = if self.raw_mode {
             self.raw.clone()
@@ -248,8 +252,25 @@ impl Engine {
             let (text, restored) = self.render_word(&self.raw);
             if restored {
                 self.raw_mode = true;
+                // Từ đang sạch mà thêm một phím dấu làm nó không hợp lệ:
+                // chỉ nên rơi phím đó xuống thành ký tự thường, KHÔNG bung
+                // lại raw (raw còn giữ cả phím dấu ĐÃ HỦY — bung ra sẽ làm
+                // chữ đã hủy hiện lại: "mas" + f phải là "masf", không phải
+                // "massf"). Khác hẳn khôi phục từ tiếng Anh ("asdf") vốn
+                // hoàn tác một dấu ĐANG hoạt động — lúc đó was_settled=false.
+                if was_settled {
+                    let mut kept = self.last_render.clone();
+                    kept.push(c);
+                    // Đồng bộ raw với đúng phần đang hiển thị để backspace
+                    // không lệch (bỏ lịch sử phím dấu đã hủy).
+                    self.raw = kept.clone();
+                    kept
+                } else {
+                    text
+                }
+            } else {
+                text
             }
-            text
         };
         let action = diff_action(&self.last_render, &new_render, c);
         self.last_render = new_render;
@@ -291,12 +312,8 @@ impl Engine {
         Action::PassThrough
     }
 
-    /// Render chuỗi phím gốc thành văn bản hiển thị. Cờ thứ hai báo
-    /// spell check đã phải khôi phục phím gốc (từ không phải tiếng Việt).
-    fn render_word(&self, raw: &str) -> (String, bool) {
-        if raw.is_empty() {
-            return (String::new(), false);
-        }
+    /// Dựng lại `WordState` từ chuỗi phím gốc theo bộ gõ đang chọn.
+    fn build_state(&self, raw: &str) -> WordState {
         let mut state = WordState::default();
         for c in raw.chars() {
             match self.cfg.method {
@@ -306,6 +323,21 @@ impl Engine {
                 TypingMethod::Vni => vni::apply_key(&mut state, c),
             }
         }
+        state
+    }
+
+    /// Chuỗi phím gốc có mang biến đổi nào không (dấu thanh / dấu phụ).
+    fn is_transformed(&self, raw: &str) -> bool {
+        spell::is_transformed(&self.build_state(raw))
+    }
+
+    /// Render chuỗi phím gốc thành văn bản hiển thị. Cờ thứ hai báo
+    /// spell check đã phải khôi phục phím gốc (từ không phải tiếng Việt).
+    fn render_word(&self, raw: &str) -> (String, bool) {
+        if raw.is_empty() {
+            return (String::new(), false);
+        }
+        let state = self.build_state(raw);
         // Từ bị biến đổi nhưng không phải âm tiết tiếng Việt → trả phím gốc.
         if self.cfg.spell_check
             && spell::is_transformed(&state)

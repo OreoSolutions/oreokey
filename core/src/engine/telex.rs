@@ -342,6 +342,37 @@ mod tests {
         assert_eq!(type_str(&mut e, " naang".trim()), "nâng");
     }
 
+    fn t_spell(keys: &str) -> String {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_check: true,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        type_str(&mut e, keys)
+    }
+
+    #[test]
+    fn cancel_then_tone_key_no_phantom() {
+        // Bug thực địa: gõ "má" (mas) → hủy sắc bằng s (mas) → thêm f. Phím
+        // f làm "màs" không hợp lệ; KHÔNG được bung raw để hiện lại chữ s
+        // đã hủy ("massf"). Chỉ rơi f xuống ký tự thường → "masf".
+        assert_eq!(t_spell("massf"), "masf");
+        assert_eq!(t_spell("assf"), "asf");
+        // Backspace sau đó phải khớp đúng phần hiển thị (raw đã đồng bộ).
+        assert_eq!(t_spell("massf\u{8}"), "mas");
+    }
+
+    #[test]
+    fn english_restore_still_reverts_active_marks() {
+        // Rào chắn ngược: khôi phục từ tiếng Anh phải hoàn tác dấu ĐANG hoạt
+        // động (không dính nhầm nhánh "sạch đã chốt").
+        assert_eq!(t_spell("asdf"), "asdf");
+        assert_eq!(t_spell("dds"), "dds"); // đ + s vô lệ → bung raw như cũ
+    }
+
     #[test]
     fn case_preserved() {
         assert_eq!(t("VIEETJ"), "VIỆT");
