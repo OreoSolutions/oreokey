@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.2.0] - 2026-07-08
+
 ### Đã thêm
 - **Tự động cập nhật** qua Sparkle: kiểm tra bản mới định kỳ (24h), hỏi trước
   khi cài kèm changelog, và mục menu **"Kiểm tra bản mới…"**. Bản phát hành

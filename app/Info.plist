@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>vi</string>
+	<key>CFBundleDisplayName</key>
+	<string>OreoKey</string>
 	<key>CFBundleExecutable</key>
 	<string>OreoKey</string>
 	<key>CFBundleIconFile</key>
@@ -14,26 +16,24 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>OreoKey</string>
-	<key>CFBundleDisplayName</key>
-	<string>OreoKey</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.2.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>2</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>13.0</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Oreo Solutions</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<key>SUFeedURL</key>
 	<string>https://raw.githubusercontent.com/OreoSolutions/oreokey/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>/HbLHfAq02nj4XXA0+q614wq9uXQHMYtdYZ5n9RulEM=</string>
-	<key>SUEnableAutomaticChecks</key>
-	<true/>
 	<key>SUScheduledCheckInterval</key>
 	<integer>86400</integer>
 </dict>

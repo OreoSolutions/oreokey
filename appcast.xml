@@ -6,6 +6,25 @@
     <link>https://raw.githubusercontent.com/OreoSolutions/oreokey/main/appcast.xml</link>
     <description>Cập nhật OreoKey</description>
     <language>vi</language>
+    <item>
+      <title>0.2.0</title>
+      <pubDate>Wed, 08 Jul 2026 16:31:50 +0000</pubDate>
+      <sparkle:version>2</sparkle:version>
+      <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<pre>### Đã thêm
+- **Tự động cập nhật** qua Sparkle: kiểm tra bản mới định kỳ (24h), hỏi trước
+  khi cài kèm changelog, và mục menu **&quot;Kiểm tra bản mới…&quot;**. Bản phát hành
+  được ký EdDSA và phân phối qua GitHub Releases.
+
+### Đã đổi
+- Mở nguồn theo giấy phép MIT.</pre>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.2.0/OreoKey.dmg"
+                 sparkle:version="2"
+                 sparkle:shortVersionString="0.2.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="A5vnU+Z944OIoSmEoTqsDXOx0iCH+Of4kJLp0+g/ANLBgvkGCGKMLGF6BWcnQ+eOUJsVx/+GZ/G5kgaNJNumBw==" length="5362275" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
