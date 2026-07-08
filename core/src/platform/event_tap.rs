@@ -154,22 +154,19 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
     let flags = event.get_flags();
 
     with_runtime(|rt| {
-        // Phím vừa bị nuốt (Replace) mà quay lại cùng keycode với
-        // timestamp PHẦN CỨNG chỉ chênh vài ms: bản sao được hệ thống
-        // giao lại (đã quan sát bản sao đến muộn 150-400ms đồng hồ tường
-        // nhưng hw-ts chỉ lệch 3-10ms — so đồng hồ tường là vô vọng).
-        // Không ai bấm lại cùng một phím trong <30ms phần cứng;
-        // autorepeat có cờ riêng.
-        if let Some((code, dropped_ts)) = rt.last_dropped {
-            let hw_delta_ns = ev_ts.wrapping_sub(dropped_ts);
-            if code == keycode {
-                super::dlog(&format!("  dup-guard: same code, hw_delta={hw_delta_ns}ns"));
-            }
-            if code == keycode && hw_delta_ns < 30_000_000 {
-                super::dlog("  dup re-delivery suppressed");
-                rt.last_dropped = None;
-                return CallbackKeep::Drop;
-            }
+        // Bản sao do hệ thống giao lại (srcpid=0): cùng keycode với một
+        // phím ĐÃ BỊ NUỐT gần đây và timestamp PHẦN CỨNG chỉ chênh vài
+        // ms (bản sao đến muộn 150-400ms đồng hồ tường nhưng hw-ts giữ
+        // nguyên gốc — chỉ hw-ts là bất biến tin được). Không ai bấm lại
+        // cùng phím trong <30ms phần cứng; autorepeat có cờ riêng.
+        // So với TẤT CẢ phím bị nuốt gần đây: bóng ma của `s` thứ nhất
+        // trong chuỗi `ss` đến sau khi `s` thứ hai thật đã xử lý.
+        let is_ghost = rt.recent_dropped.iter().any(|&(code, dropped_ts)| {
+            code == keycode && ev_ts.abs_diff(dropped_ts) < 30_000_000
+        });
+        if is_ghost {
+            super::dlog("  dup re-delivery suppressed");
+            return CallbackKeep::Drop;
         }
         // Hotkey bật/tắt tiếng Việt.
         if matches_hotkey(&rt.settings.hotkey, keycode, flags) {
@@ -241,7 +238,10 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     &mut rt.ax_ok,
                     finfo.selection_len,
                 );
-                rt.last_dropped = Some((keycode, ev_ts));
+                rt.recent_dropped.push_back((keycode, ev_ts));
+                if rt.recent_dropped.len() > 16 {
+                    rt.recent_dropped.pop_front();
+                }
                 CallbackKeep::Drop
             }
         }

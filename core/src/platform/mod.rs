@@ -29,10 +29,12 @@ pub struct Runtime {
     /// Cache khả năng sửa chữ qua AX API theo bundle ID.
     pub ax_ok: HashMap<String, bool>,
     pub status_cb: Option<StatusCallback>,
-    /// Keycode + timestamp PHẦN CỨNG của phím vừa bị nuốt (Replace) —
-    /// chặn bản sao hệ thống giao lại (bản sao giữ hw-ts gần bản gốc dù
-    /// đến muộn hàng trăm ms đồng hồ tường).
-    pub last_dropped: Option<(u16, u64)>,
+    /// Keycode + timestamp PHẦN CỨNG của các phím bị nuốt (Replace) gần
+    /// đây — chặn bản sao hệ thống giao lại (bản sao giữ hw-ts gần bản
+    /// gốc dù đến muộn hàng trăm ms đồng hồ tường). Phải nhớ NHIỀU phím:
+    /// khi gõ `ss` hủy dấu, bóng ma của `s` thứ nhất đến SAU khi `s` thứ
+    /// hai (thật) đã được xử lý — nhớ một phím là bị lẻn qua.
+    pub recent_dropped: std::collections::VecDeque<(u16, u64)>,
 }
 
 pub static RUNTIME: Mutex<Option<Runtime>> = Mutex::new(None);
@@ -50,7 +52,7 @@ impl Runtime {
             profiles: profiles::Profiles::load_default(),
             ax_ok: HashMap::new(),
             status_cb: None,
-            last_dropped: None,
+            recent_dropped: std::collections::VecDeque::new(),
         };
         rt.engine.set_macros(rt.settings.macro_table());
         rt
