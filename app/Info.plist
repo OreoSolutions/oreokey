@@ -6,6 +6,8 @@
 	<string>vi</string>
 	<key>CFBundleExecutable</key>
 	<string>OreoKey</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.oreosolutions.oreokey</string>
 	<key>CFBundleInfoDictionaryVersion</key>

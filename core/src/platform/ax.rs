@@ -105,6 +105,10 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         {
             return Err(AxFail::Unsupported);
         }
+        super::dlog(&format!(
+            "  ax caret loc={} len={} old_len={old_len}",
+            caret.location, caret.length
+        ));
         if caret.length != 0 || caret.location < old_len {
             return Err(AxFail::Mismatch);
         }
@@ -119,10 +123,16 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         // này sẽ khác → fallback bơm phím (được xếp hàng đúng thứ tự).
         match read_string_for_range(element, &target) {
             Some(actual) if actual == old => {}
-            Some(_) => return Err(AxFail::Mismatch),
+            Some(actual) => {
+                super::dlog(&format!("  ax verify FAIL actual={actual:?} vs old={old:?}"));
+                return Err(AxFail::Mismatch);
+            }
             // App không hỗ trợ đọc theo range → không xác minh được →
             // không đủ an toàn để ghi đè.
-            None => return Err(AxFail::Unsupported),
+            None => {
+                super::dlog("  ax StringForRange unsupported");
+                return Err(AxFail::Unsupported);
+            }
         }
         // Chọn đúng đoạn cần thay...
         let target_value =
@@ -165,6 +175,10 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
             || applied.location != target.location
             || applied.length != target.length
         {
+            super::dlog(&format!(
+                "  ax range set ignored: applied=({},{}) target=({},{})",
+                applied.location, applied.length, target.location, target.length
+            ));
             return Err(AxFail::Unsupported);
         }
 

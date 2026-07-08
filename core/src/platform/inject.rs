@@ -34,23 +34,33 @@ pub fn apply(
     // dễ dính race với ký tự passthrough đang trên đường đến app → bơm.
     let ax_worth_it = !old.is_empty();
 
+    super::dlog(&format!(
+        "apply bundle={bundle} mode={:?} old={old:?} text={text:?} browser_fix={}",
+        profile.mode, profile.browser_fix
+    ));
     match profile.mode {
         FixMode::Auto => {
             // AX trước nếu app này chưa từng fail hẳn.
             if ax_worth_it && *ax_ok.get(bundle).unwrap_or(&true) {
                 match ax::replace_tail(old, text) {
                     Ok(()) => {
+                        super::dlog("  -> AX ok");
                         ax_ok.insert(bundle.to_string(), true);
                         return;
                     }
                     // Mismatch = văn bản trước caret chưa ổn định (ký tự
                     // passthrough chưa vào app) — KHÔNG phải app không hỗ
                     // trợ AX, đừng cache là fail, chỉ fallback lần này.
-                    Err(ax::AxFail::Mismatch) => {}
+                    Err(ax::AxFail::Mismatch) => {
+                        super::dlog("  -> AX mismatch, fallback inject");
+                    }
                     Err(ax::AxFail::Unsupported) => {
+                        super::dlog("  -> AX unsupported, cache fail + inject");
                         ax_ok.insert(bundle.to_string(), false);
                     }
                 }
+            } else {
+                super::dlog("  -> inject (AX cached fail / insert-only)");
             }
             key_inject(proxy, backspaces, text, profile);
         }

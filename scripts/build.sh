@@ -45,6 +45,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/OreoKey"
 cp "$ROOT/app/Info.plist" "$APP/Contents/Info.plist"
+[[ -f "$ROOT/assets/AppIcon.icns" ]] && cp "$ROOT/assets/AppIcon.icns" "$APP/Contents/Resources/"
 
 # 4. Ký
 IDENTITY="${CODESIGN_ID:--}"

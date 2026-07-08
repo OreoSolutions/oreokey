@@ -17,6 +17,7 @@
     "com.googlecode.iterm2": { "mode": "inject_fast" },
     "com.apple.Terminal": { "mode": "inject_fast" },
     "dev.warp.Warp-Stable": { "mode": "inject_fast" },
+    "com.mitchellh.ghostty": { "mode": "inject_fast" },
 
     "com.hnc.Discord": { "mode": "inject_fast" },
     "com.facebook.archon": { "mode": "inject_fast" },

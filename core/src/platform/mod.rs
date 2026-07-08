@@ -119,3 +119,20 @@ pub fn with_runtime<R>(f: impl FnOnce(&mut Runtime) -> R) -> R {
     let rt = guard.get_or_insert_with(Runtime::new);
     f(rt)
 }
+
+/// Log chẩn đoán, bật bằng OREOKEY_DEBUG=1, ghi vào /tmp/oreokey-debug.log.
+pub fn dlog(msg: &str) {
+    use std::io::Write;
+    use std::sync::OnceLock;
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    if !*ENABLED.get_or_init(|| std::env::var("OREOKEY_DEBUG").is_ok()) {
+        return;
+    }
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("/tmp/oreokey-debug.log")
+    {
+        let _ = writeln!(f, "{msg}");
+    }
+}
