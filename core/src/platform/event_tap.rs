@@ -128,8 +128,6 @@ fn callback(proxy: CGEventTapProxy, etype: CGEventType, event: &CGEvent) -> Call
 use core_graphics::event::CallbackResult as CallbackKeep;
 
 fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
-    use foreign_types::ForeignType;
-
     // Bỏ qua event do chính mình bơm ra.
     if event.get_integer_value_field(EventField::EVENT_SOURCE_USER_DATA) == inject::MAGIC {
         return CallbackKeep::Keep;
