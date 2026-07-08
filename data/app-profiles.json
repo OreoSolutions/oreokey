@@ -1,0 +1,27 @@
+{
+  "apps": {
+    "com.apple.Safari": { "mode": "auto", "browser_fix": true },
+    "com.google.Chrome": { "mode": "auto", "browser_fix": true },
+    "com.microsoft.edgemac": { "mode": "auto", "browser_fix": true },
+    "com.brave.Browser": { "mode": "auto", "browser_fix": true },
+    "company.thebrowser.Browser": { "mode": "auto", "browser_fix": true },
+    "org.mozilla.firefox": { "mode": "inject_fast", "browser_fix": true },
+
+    "com.microsoft.Excel": { "mode": "inject_slow", "delay_ms": 8 },
+    "com.microsoft.Word": { "mode": "inject_slow", "delay_ms": 5 },
+    "com.microsoft.Powerpoint": { "mode": "inject_slow", "delay_ms": 5 },
+
+    "com.jetbrains.*": { "mode": "inject_fast" },
+    "com.microsoft.VSCode": { "mode": "inject_fast" },
+    "com.todesktop.230313mzl4w4u92": { "mode": "inject_fast" },
+    "com.googlecode.iterm2": { "mode": "inject_fast" },
+    "com.apple.Terminal": { "mode": "inject_fast" },
+    "dev.warp.Warp-Stable": { "mode": "inject_fast" },
+
+    "com.hnc.Discord": { "mode": "inject_fast" },
+    "com.facebook.archon": { "mode": "inject_fast" },
+    "notion.id": { "mode": "inject_fast" },
+    "com.tinyspeck.slackmacgap": { "mode": "inject_fast" },
+    "ru.keepcoder.Telegram": { "mode": "inject_fast" }
+  }
+}
