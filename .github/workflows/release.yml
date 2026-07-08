@@ -1,0 +1,85 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (vd 0.2.0)'
+        required: true
+
+permissions:
+  contents: write   # commit appcast + tạo tag/release
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Thêm Rust targets
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Resolve Swift packages
+        run: cd app && swift package resolve
+
+      - name: Bump version
+        id: bump
+        run: |
+          V="${{ inputs.version }}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" app/Info.plist
+          OLD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' app/Info.plist)
+          NEW=$((OLD + 1))
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW" app/Info.plist
+          sed -i '' -E "s/^version = \".*\"/version = \"$V\"/" core/Cargo.toml
+          echo "build=$NEW" >> "$GITHUB_OUTPUT"
+
+      - name: Cuốn changelog
+        run: python3 scripts/roll-changelog.py "${{ inputs.version }}" > /tmp/notes.txt
+
+      - name: Build + DMG
+        env:
+          CODESIGN_ID: ${{ secrets.CODESIGN_ID }}
+          NOTARY_PROFILE: ${{ secrets.NOTARY_PROFILE }}
+        run: |
+          ./scripts/build.sh --universal
+          ./scripts/make-dmg.sh
+
+      - name: Ký EdDSA (Sparkle)
+        id: sign
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          SIGN_UPDATE="$(find app/.build/artifacts -name sign_update | head -1)"
+          [ -n "$SIGN_UPDATE" ] || { echo "Không tìm thấy sign_update"; exit 1; }
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > /tmp/sparkle_ed_priv
+          # sign_update in ra: sparkle:edSignature="..." length="..."
+          ATTRS="$("$SIGN_UPDATE" -f /tmp/sparkle_ed_priv dist/OreoKey.dmg)"
+          rm -f /tmp/sparkle_ed_priv
+          echo "attrs=$ATTRS" >> "$GITHUB_OUTPUT"
+
+      - name: Cập nhật appcast
+        run: |
+          python3 scripts/update-appcast.py \
+            "${{ inputs.version }}" "${{ steps.bump.outputs.build }}" \
+            "https://github.com/OreoSolutions/oreokey/releases/download/v${{ inputs.version }}/OreoKey.dmg" \
+            '${{ steps.sign.outputs.attrs }}' \
+            --notes-file /tmp/notes.txt
+
+      - name: Commit, tag, push
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add app/Info.plist core/Cargo.toml CHANGELOG.md appcast.xml
+          git commit -m "release: ${{ inputs.version }}"
+          git tag "v${{ inputs.version }}"
+          git push origin HEAD:main
+          git push origin "v${{ inputs.version }}"
+
+      - name: Tạo GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ inputs.version }}" dist/OreoKey.dmg \
+            --title "OreoKey ${{ inputs.version }}" \
+            --notes-file /tmp/notes.txt
