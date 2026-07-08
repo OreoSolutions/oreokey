@@ -79,49 +79,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         let menu = NSMenu()
 
+        // Mọi item cùng một kiểu: chỉ dùng cột tick hệ thống, không icon,
+        // không thụt lề — tick thẳng hàng tuyệt đối.
         toggleItem = NSMenuItem(
             title: "Tiếng Việt", action: #selector(toggleVietnamese), keyEquivalent: "")
         toggleItem.target = self
-        toggleItem.image = symbol("globe.asia.australia")
         menu.addItem(toggleItem)
         menu.addItem(.separator())
 
         menu.addItem(sectionHeader("KIỂU GÕ"))
         telexItem = NSMenuItem(title: "Telex", action: #selector(useTelex), keyEquivalent: "")
         telexItem.target = self
-        telexItem.indentationLevel = 1
         menu.addItem(telexItem)
         vniItem = NSMenuItem(title: "VNI", action: #selector(useVni), keyEquivalent: "")
         vniItem.target = self
-        vniItem.indentationLevel = 1
         menu.addItem(vniItem)
         menu.addItem(.separator())
 
-        let settings = NSMenuItem(title: "Cài đặt…", action: #selector(openSettings), keyEquivalent: ",")
+        let settings = NSMenuItem(
+            title: "Cài đặt…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
-        settings.image = symbol("gearshape")
         menu.addItem(settings)
 
         loginItem = NSMenuItem(
             title: "Khởi động cùng máy", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
         loginItem.target = self
-        loginItem.image = symbol("power")
         menu.addItem(loginItem)
         menu.addItem(.separator())
 
         let quit = NSMenuItem(
             title: "Thoát OreoKey", action: #selector(NSApplication.terminate(_:)),
             keyEquivalent: "q")
-        quit.image = symbol("xmark.circle")
         menu.addItem(quit)
 
         menu.delegate = self
         statusItem.menu = menu
         updateIcon(vnOn: Core.vnEnabled())
-    }
-
-    private func symbol(_ name: String) -> NSImage? {
-        NSImage(systemSymbolName: name, accessibilityDescription: nil)
     }
 
     private func sectionHeader(_ title: String) -> NSMenuItem {
@@ -223,9 +216,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 extension AppDelegate: NSMenuDelegate {
-    // Cập nhật checkmark theo trạng thái thật mỗi lần mở menu.
+    // Cập nhật checkmark theo trạng thái thật mỗi lần mở menu — đồng
+    // thời đồng bộ lại icon từ cùng một lần đọc, để tick và icon không
+    // bao giờ nói hai điều khác nhau.
     func menuNeedsUpdate(_ menu: NSMenu) {
-        toggleItem.state = Core.vnEnabled() ? .on : .off
+        let vnOn = Core.vnEnabled()
+        toggleItem.state = vnOn ? .on : .off
+        updateIcon(vnOn: vnOn)
         let settings = Core.loadSettings()
         let method = settings?.method ?? "telex"
         telexItem.state = method == "telex" ? .on : .off
