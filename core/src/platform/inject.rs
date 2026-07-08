@@ -29,6 +29,7 @@ pub fn apply(
     profile: &ResolvedProfile,
     bundle: &str,
     ax_ok: &mut HashMap<String, bool>,
+    selection_len: Option<isize>,
 ) {
     let backspaces = old.chars().count();
     // Chèn thuần (không xóa gì): bơm phím không thể nháy, và AX lúc này
@@ -36,10 +37,8 @@ pub fn apply(
     let ax_worth_it = !old.is_empty();
 
     super::dlog(&format!(
-        "apply bundle={bundle} focused={:?} mode={:?} old={old:?} text={text:?} browser_fix={}",
-        ax::focused_proc_name(),
-        profile.mode,
-        profile.browser_fix
+        "apply bundle={bundle} mode={:?} old={old:?} text={text:?} browser_fix={}",
+        profile.mode, profile.browser_fix
     ));
     match profile.mode {
         FixMode::Auto => {
@@ -65,18 +64,24 @@ pub fn apply(
             } else {
                 super::dlog("  -> inject (AX cached fail / insert-only)");
             }
-            key_inject(proxy, backspaces, text, profile);
+            key_inject(proxy, backspaces, text, profile, selection_len);
         }
         FixMode::AxOnly => {
             let _ = ax::replace_tail(old, text);
         }
         FixMode::InjectFast | FixMode::InjectSlow => {
-            key_inject(proxy, backspaces, text, profile);
+            key_inject(proxy, backspaces, text, profile, selection_len);
         }
     }
 }
 
-fn key_inject(proxy: CGEventTapProxy, backspaces: usize, text: &str, profile: &ResolvedProfile) {
+fn key_inject(
+    proxy: CGEventTapProxy,
+    backspaces: usize,
+    text: &str,
+    profile: &ResolvedProfile,
+    selection_len: Option<isize>,
+) {
     let Ok(source) = CGEventSource::new(CGEventSourceStateID::HIDSystemState) else {
         return;
     };
@@ -118,15 +123,16 @@ fn key_inject(proxy: CGEventTapProxy, backspaces: usize, text: &str, profile: &R
     // Không đọc được selection (AX câm) → dựa vào cờ browser_fix của
     // profile: app được đánh dấu hay autocomplete thì thà gửi thừa.
     if backspaces > 0 {
-        let sel = ax::selection_length();
         // force_clear: app có ghost text mà AX báo selection = 0
         // (Spotlight) — kiểm tra selection vô nghĩa, luôn phải hủy.
         let clear_needed = profile.force_clear
-            || match sel {
+            || match selection_len {
                 Some(len) => len > 0,
                 None => profile.browser_fix,
             };
-        super::dlog(&format!("  inject bs={backspaces} sel={sel:?} clear={clear_needed}"));
+        super::dlog(&format!(
+            "  inject bs={backspaces} sel={selection_len:?} clear={clear_needed}"
+        ));
         if clear_needed {
             post_key(&source, proxy, KEY_SPACE, " ", delay);
             post_key(&source, proxy, KEY_BACKSPACE, "", delay);

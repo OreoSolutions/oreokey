@@ -18,6 +18,7 @@ use crate::engine::{Action, KeyInput};
 use super::{inject, with_runtime};
 
 extern "C" {
+    fn CGEventGetTimestamp(event: *const c_void) -> u64;
     fn CGEventTapEnable(tap: *mut c_void, enable: bool);
     fn CFRunLoopStop(rl: *mut c_void);
     fn CGEventKeyboardGetUnicodeString(
@@ -105,7 +106,10 @@ pub fn is_running() -> bool {
 fn callback(proxy: CGEventTapProxy, etype: CGEventType, event: &CGEvent) -> CallbackKeep {
     match etype {
         CGEventType::TapDisabledByTimeout | CGEventType::TapDisabledByUserInput => {
-            // macOS tắt tap khi callback chậm → bật lại ngay.
+            // macOS tắt tap khi callback chậm → bật lại ngay. Event đang
+            // xử lý dở bị hệ thống giao lại — lưới last_dropped bên dưới
+            // chặn bản sao đó.
+            super::dlog(&format!("TAP DISABLED ({etype:?}) — re-enabling"));
             let port = TAP_PORT.load(Ordering::SeqCst);
             if port != 0 {
                 unsafe { CGEventTapEnable(port as *mut c_void, true) };
@@ -128,17 +132,37 @@ fn callback(proxy: CGEventTapProxy, etype: CGEventType, event: &CGEvent) -> Call
 use core_graphics::event::CallbackResult as CallbackKeep;
 
 fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
+    let user_data = event.get_integer_value_field(EventField::EVENT_SOURCE_USER_DATA);
+    let keycode = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u16;
+    let autorepeat =
+        event.get_integer_value_field(EventField::KEYBOARD_EVENT_AUTOREPEAT) != 0;
+    let ev_ts = {
+        use foreign_types::ForeignType;
+        unsafe { CGEventGetTimestamp(event.as_ptr() as *const c_void) }
+    };
+    super::dlog(&format!(
+        "keydown code={keycode} rep={autorepeat} magic={} ts={ev_ts} char={:?}",
+        user_data == inject::MAGIC,
+        event_char(event)
+    ));
     // Bỏ qua event do chính mình bơm ra.
-    if event.get_integer_value_field(EventField::EVENT_SOURCE_USER_DATA) == inject::MAGIC {
+    if user_data == inject::MAGIC {
         return CallbackKeep::Keep;
     }
 
-    let keycode = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u16;
     let flags = event.get_flags();
-    let autorepeat =
-        event.get_integer_value_field(EventField::KEYBOARD_EVENT_AUTOREPEAT) != 0;
 
     with_runtime(|rt| {
+        // Phím vừa bị nuốt (Replace) mà quay lại tức thì cùng keycode:
+        // bản sao do WindowServer giao lại khi callback chậm — không
+        // người nào bấm lại cùng một phím trong <15ms. Nuốt nốt.
+        if let Some((code, at)) = rt.last_dropped {
+            if code == keycode && at.elapsed() < std::time::Duration::from_millis(15) {
+                super::dlog("  dup re-delivery suppressed");
+                rt.last_dropped = None;
+                return CallbackKeep::Drop;
+            }
+        }
         // Hotkey bật/tắt tiếng Việt.
         if matches_hotkey(&rt.settings.hotkey, keycode, flags) {
             rt.toggle();
@@ -189,16 +213,27 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
         match rt.engine.on_key(input) {
             Action::PassThrough => CallbackKeep::Keep,
             Action::Replace { old, text } => {
-                // Chủ sở hữu thật của ô focus có thể không phải app
-                // frontmost (Spotlight và các panel nổi).
-                let focused = super::ax::focused_proc_name();
+                // Một lượt tra cứu AX duy nhất: chủ sở hữu thật của ô
+                // focus (Spotlight và panel nổi không đổi app frontmost)
+                // + vùng chọn. Callback phải nhanh — chậm là WindowServer
+                // giao lại event, phím nhân đôi.
+                let finfo = super::ax::focused_info();
                 let profile = rt.profiles.resolve(
                     &rt.current_bundle,
                     &rt.settings.per_app_mode,
-                    focused.as_deref(),
+                    finfo.proc_name.as_deref(),
                 );
                 let bundle = rt.current_bundle.clone();
-                inject::apply(proxy, &old, &text, &profile, &bundle, &mut rt.ax_ok);
+                inject::apply(
+                    proxy,
+                    &old,
+                    &text,
+                    &profile,
+                    &bundle,
+                    &mut rt.ax_ok,
+                    finfo.selection_len,
+                );
+                rt.last_dropped = Some((keycode, std::time::Instant::now()));
                 CallbackKeep::Drop
             }
         }

@@ -29,6 +29,9 @@ pub struct Runtime {
     /// Cache khả năng sửa chữ qua AX API theo bundle ID.
     pub ax_ok: HashMap<String, bool>,
     pub status_cb: Option<StatusCallback>,
+    /// Keycode + thời điểm của phím vừa bị nuốt (Replace) — chặn bản
+    /// sao WindowServer giao lại khi callback chậm.
+    pub last_dropped: Option<(u16, std::time::Instant)>,
 }
 
 pub static RUNTIME: Mutex<Option<Runtime>> = Mutex::new(None);
@@ -46,6 +49,7 @@ impl Runtime {
             profiles: profiles::Profiles::load_default(),
             ax_ok: HashMap::new(),
             status_cb: None,
+            last_dropped: None,
         };
         rt.engine.set_macros(rt.settings.macro_table());
         rt

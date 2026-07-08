@@ -255,53 +255,27 @@ pub fn is_trusted() -> bool {
     unsafe { AXIsProcessTrusted() != 0 }
 }
 
-/// Tên process sở hữu ô văn bản đang focus. Khác với app frontmost:
-/// panel nổi như Spotlight nhận phím nhưng KHÔNG phát sự kiện đổi app
-/// của NSWorkspace — tin frontmost sẽ áp nhầm profile (bug thực địa:
-/// gõ ở Spotlight bị xử theo profile terminal đang mở phía sau).
-pub fn focused_proc_name() -> Option<String> {
-    unsafe {
-        let system_wide = AXUIElementCreateSystemWide();
-        if system_wide.is_null() {
-            return None;
-        }
-        let _guard = CFType::wrap_under_create_rule(system_wide as CFTypeRef);
-        let mut focused: CFTypeRef = std::ptr::null();
-        if AXUIElementCopyAttributeValue(
-            system_wide,
-            attr("AXFocusedUIElement").as_concrete_TypeRef(),
-            &mut focused,
-        ) != AX_SUCCESS
-            || focused.is_null()
-        {
-            return None;
-        }
-        let focused_guard = CFType::wrap_under_create_rule(focused);
-        let mut pid: i32 = 0;
-        if AXUIElementGetPid(
-            focused_guard.as_CFTypeRef() as AXUIElementRef,
-            &mut pid,
-        ) != AX_SUCCESS
-            || pid <= 0
-        {
-            return None;
-        }
-        let mut buf = [0u8; 128];
-        let n = proc_name(pid, buf.as_mut_ptr() as *mut c_void, buf.len() as u32);
-        if n <= 0 {
-            return None;
-        }
-        std::str::from_utf8(&buf[..n as usize]).ok().map(String::from)
-    }
+/// Thông tin ô focus, lấy trong MỘT lượt tra cứu AX — callback tap phải
+/// nhanh (WindowServer giao lại event nếu tap phản hồi chậm → phím bị
+/// nhân đôi, bug thực địa "master → masster").
+pub struct FocusedInfo {
+    /// Tên process sở hữu ô focus. Khác app frontmost: panel nổi như
+    /// Spotlight nhận phím nhưng không phát sự kiện đổi app.
+    pub proc_name: Option<String>,
+    /// Độ dài vùng chọn (None = không đọc được) — quyết định có cần
+    /// phím hủy gợi ý autocomplete không.
+    pub selection_len: Option<isize>,
 }
 
-/// Độ dài vùng chọn của ô văn bản đang focus (None = không đọc được).
-/// Dùng để quyết định có cần phím hủy gợi ý autocomplete hay không.
-pub fn selection_length() -> Option<isize> {
+pub fn focused_info() -> FocusedInfo {
+    let mut info = FocusedInfo {
+        proc_name: None,
+        selection_len: None,
+    };
     unsafe {
         let system_wide = AXUIElementCreateSystemWide();
         if system_wide.is_null() {
-            return None;
+            return info;
         }
         let _guard = CFType::wrap_under_create_rule(system_wide as CFTypeRef);
         let mut focused: CFTypeRef = std::ptr::null();
@@ -312,32 +286,43 @@ pub fn selection_length() -> Option<isize> {
         ) != AX_SUCCESS
             || focused.is_null()
         {
-            return None;
+            return info;
         }
         let focused_guard = CFType::wrap_under_create_rule(focused);
+        let element = focused_guard.as_CFTypeRef() as AXUIElementRef;
+
+        let mut pid: i32 = 0;
+        if AXUIElementGetPid(element, &mut pid) == AX_SUCCESS && pid > 0 {
+            let mut buf = [0u8; 128];
+            let n = proc_name(pid, buf.as_mut_ptr() as *mut c_void, buf.len() as u32);
+            if n > 0 {
+                info.proc_name =
+                    std::str::from_utf8(&buf[..n as usize]).ok().map(String::from);
+            }
+        }
+
         let mut range_value: CFTypeRef = std::ptr::null();
         if AXUIElementCopyAttributeValue(
-            focused_guard.as_CFTypeRef() as AXUIElementRef,
+            element,
             attr("AXSelectedTextRange").as_concrete_TypeRef(),
             &mut range_value,
-        ) != AX_SUCCESS
-            || range_value.is_null()
+        ) == AX_SUCCESS
+            && !range_value.is_null()
         {
-            return None;
+            let range_guard = CFType::wrap_under_create_rule(range_value);
+            let mut range = CFRange {
+                location: 0,
+                length: 0,
+            };
+            if AXValueGetValue(
+                range_guard.as_CFTypeRef(),
+                K_AX_VALUE_TYPE_CFRANGE,
+                &mut range as *mut CFRange as *mut c_void,
+            ) != 0
+            {
+                info.selection_len = Some(range.length);
+            }
         }
-        let range_guard = CFType::wrap_under_create_rule(range_value);
-        let mut range = CFRange {
-            location: 0,
-            length: 0,
-        };
-        if AXValueGetValue(
-            range_guard.as_CFTypeRef(),
-            K_AX_VALUE_TYPE_CFRANGE,
-            &mut range as *mut CFRange as *mut c_void,
-        ) == 0
-        {
-            return None;
-        }
-        Some(range.length)
     }
+    info
 }
