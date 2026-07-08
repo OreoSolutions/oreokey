@@ -30,6 +30,7 @@ jobs:
       - name: Bump version
         id: bump
         run: |
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "❌ version không hợp lệ: '$VERSION' (cần dạng X.Y.Z)"; exit 1; }
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" app/Info.plist
           OLD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' app/Info.plist)
           NEW=$((OLD + 1))
@@ -53,7 +54,7 @@ jobs:
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
-          SIGN_UPDATE="$(find app/.build/artifacts -name sign_update | head -1)"
+          SIGN_UPDATE="$(find app/.build/artifacts -name sign_update | head -1 || true)"
           [ -n "$SIGN_UPDATE" ] || { echo "Không tìm thấy sign_update"; exit 1; }
           # Đưa khóa riêng qua stdin (không ghi ra đĩa). sign_update in ra:
           # sparkle:edSignature="..." length="..."
@@ -71,20 +72,22 @@ jobs:
             "$SIG_ATTRS" \
             --notes-file /tmp/notes.txt
 
-      - name: Commit, tag, push
+      - name: Commit + tag (local, push tag)
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add app/Info.plist core/Cargo.toml CHANGELOG.md appcast.xml
           git commit -m "release: $VERSION"
           git tag "v$VERSION"
-          git push origin HEAD:main
           git push origin "v$VERSION"
 
-      - name: Tạo GitHub Release
+      - name: Tạo GitHub Release (tải DMG lên trước khi appcast phát hành)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "v$VERSION" dist/OreoKey.dmg \
             --title "OreoKey $VERSION" \
             --notes-file /tmp/notes.txt
+
+      - name: Đẩy appcast + version lên main (sau khi DMG đã có)
+        run: git push origin HEAD:main
