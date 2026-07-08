@@ -18,8 +18,20 @@ use syllable::render_letters;
 pub enum Action {
     /// Cho phím gốc đi qua, không can thiệp.
     PassThrough,
-    /// Nuốt phím gốc, xóa `backspaces` ký tự rồi chèn `text`.
-    Replace { backspaces: usize, text: String },
+    /// Nuốt phím gốc, thay `old` (đoạn cuối từ đang hiển thị) bằng `text`.
+    /// `old` cho phép tầng platform XÁC MINH văn bản trước caret trước
+    /// khi sửa qua AX — chống race khi ký tự passthrough chưa kịp vào app.
+    Replace { old: String, text: String },
+}
+
+impl Action {
+    /// Số ký tự cần xóa khi sửa bằng backspace.
+    pub fn backspaces(&self) -> usize {
+        match self {
+            Action::PassThrough => 0,
+            Action::Replace { old, .. } => old.chars().count(),
+        }
+    }
 }
 
 /// Phím đầu vào đã được tầng platform chuẩn hóa.
@@ -196,7 +208,7 @@ impl Engine {
                                 let mut text = expansion.to_string();
                                 text.push(break_ch);
                                 Action::Replace {
-                                    backspaces: self.last_render.chars().count(),
+                                    old: self.last_render.clone(),
                                     text,
                                 }
                             }
@@ -285,12 +297,12 @@ fn diff_action(last: &str, new: &str, typed: char) -> Action {
     while p < last_chars.len() && p < new_chars.len() && last_chars[p] == new_chars[p] {
         p += 1;
     }
-    let backspaces = last_chars.len() - p;
+    let old: String = last_chars[p..].iter().collect();
     let text: String = new_chars[p..].iter().collect();
-    if backspaces == 0 && text.chars().count() == 1 && text.chars().next() == Some(typed) {
+    if old.is_empty() && text.chars().count() == 1 && text.chars().next() == Some(typed) {
         return Action::PassThrough;
     }
-    Action::Replace { backspaces, text }
+    Action::Replace { old, text }
 }
 
 #[cfg(test)]
@@ -315,8 +327,14 @@ pub(crate) mod testutil {
                         screen.push(c);
                     }
                 }
-                Action::Replace { backspaces, text } => {
-                    for _ in 0..backspaces {
+                Action::Replace { old, text } => {
+                    // Bất biến: phần bị thay phải đúng là đuôi màn hình —
+                    // đây chính là điều AX verify dựa vào ngoài đời thật.
+                    assert!(
+                        screen.ends_with(&old),
+                        "Replace old={old:?} không khớp đuôi màn hình {screen:?}"
+                    );
+                    for _ in 0..old.chars().count() {
                         screen.pop();
                     }
                     screen.push_str(&text);

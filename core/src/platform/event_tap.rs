@@ -188,12 +188,12 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
 
         match rt.engine.on_key(input) {
             Action::PassThrough => CallbackKeep::Keep,
-            Action::Replace { backspaces, text } => {
+            Action::Replace { old, text } => {
                 let profile = rt
                     .profiles
                     .resolve(&rt.current_bundle, &rt.settings.per_app_mode);
                 let bundle = rt.current_bundle.clone();
-                inject::apply(proxy, backspaces, &text, &profile, &bundle, &mut rt.ax_ok);
+                inject::apply(proxy, &old, &text, &profile, &bundle, &mut rt.ax_ok);
                 CallbackKeep::Drop
             }
         }

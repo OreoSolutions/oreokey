@@ -51,7 +51,7 @@ mod tests {
         assert_eq!(
             action,
             Action::Replace {
-                backspaces: 2,
+                old: "vn".to_string(),
                 text: "Việt Nam ".to_string()
             }
         );

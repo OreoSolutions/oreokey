@@ -21,6 +21,12 @@ extern "C" {
         attribute: CFStringRef,
         value: *mut CFTypeRef,
     ) -> AXError;
+    fn AXUIElementCopyParameterizedAttributeValue(
+        element: AXUIElementRef,
+        attribute: CFStringRef,
+        parameter: CFTypeRef,
+        value: *mut CFTypeRef,
+    ) -> AXError;
     fn AXUIElementSetAttributeValue(
         element: AXUIElementRef,
         attribute: CFStringRef,
@@ -35,12 +41,28 @@ fn attr(name: &'static str) -> CFString {
     CFString::from_static_string(name)
 }
 
-/// Thay `backspaces` ký tự ngay trước con trỏ bằng `text`.
-pub fn replace_tail(backspaces: usize, text: &str) -> Result<(), ()> {
+/// Lý do AX không dùng được cho lần sửa này.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AxFail {
+    /// Văn bản trước caret khác kỳ vọng — thường do ký tự passthrough
+    /// chưa kịp vào app (gõ nhanh). Tạm thời; đừng cache app là hỏng.
+    Mismatch,
+    /// App không expose text field qua AX / lỗi API. Cache được.
+    Unsupported,
+}
+
+/// Thay đoạn `old` ngay trước con trỏ bằng `text` — CHỈ khi xác minh
+/// được app thực sự đang hiển thị `old` tại đó. Không xác minh mù:
+/// ký tự passthrough đến app bất đồng bộ, ghi đè mù sẽ nuốt nhầm chữ
+/// (bug thực địa: gõ nhanh "đó" thành "óo").
+pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
+    // AX làm việc theo đơn vị UTF-16.
+    let old_len = old.encode_utf16().count() as isize;
+
     unsafe {
         let system_wide = AXUIElementCreateSystemWide();
         if system_wide.is_null() {
-            return Err(());
+            return Err(AxFail::Unsupported);
         }
         // Giữ ownership để CFRelease khi ra khỏi scope.
         let _system_wide_guard = CFType::wrap_under_create_rule(system_wide as CFTypeRef);
@@ -53,7 +75,7 @@ pub fn replace_tail(backspaces: usize, text: &str) -> Result<(), ()> {
         ) != AX_SUCCESS
             || focused.is_null()
         {
-            return Err(());
+            return Err(AxFail::Unsupported);
         }
         let focused_guard = CFType::wrap_under_create_rule(focused);
         let element = focused_guard.as_CFTypeRef() as AXUIElementRef;
@@ -68,7 +90,7 @@ pub fn replace_tail(backspaces: usize, text: &str) -> Result<(), ()> {
         ) != AX_SUCCESS
             || range_value.is_null()
         {
-            return Err(());
+            return Err(AxFail::Unsupported);
         }
         let range_guard = CFType::wrap_under_create_rule(range_value);
         let mut caret = CFRange {
@@ -80,21 +102,33 @@ pub fn replace_tail(backspaces: usize, text: &str) -> Result<(), ()> {
             K_AX_VALUE_TYPE_CFRANGE,
             &mut caret as *mut CFRange as *mut c_void,
         ) == 0
-            || caret.length != 0
-            || (caret.location as usize) < backspaces
         {
-            return Err(());
+            return Err(AxFail::Unsupported);
+        }
+        if caret.length != 0 || caret.location < old_len {
+            return Err(AxFail::Mismatch);
         }
 
-        // Chọn đúng N ký tự cần thay...
         let target = CFRange {
-            location: caret.location - backspaces as isize,
-            length: backspaces as isize,
+            location: caret.location - old_len,
+            length: old_len,
         };
+
+        // XÁC MINH: app phải đang thực sự hiển thị `old` ngay trước caret.
+        // Nếu ký tự passthrough trước đó chưa vào app (gõ nhanh), đoạn
+        // này sẽ khác → fallback bơm phím (được xếp hàng đúng thứ tự).
+        match read_string_for_range(element, &target) {
+            Some(actual) if actual == old => {}
+            Some(_) => return Err(AxFail::Mismatch),
+            // App không hỗ trợ đọc theo range → không xác minh được →
+            // không đủ an toàn để ghi đè.
+            None => return Err(AxFail::Unsupported),
+        }
+        // Chọn đúng đoạn cần thay...
         let target_value =
             AXValueCreate(K_AX_VALUE_TYPE_CFRANGE, &target as *const CFRange as *const c_void);
         if target_value.is_null() {
-            return Err(());
+            return Err(AxFail::Unsupported);
         }
         let target_guard = CFType::wrap_under_create_rule(target_value);
         if AXUIElementSetAttributeValue(
@@ -103,7 +137,7 @@ pub fn replace_tail(backspaces: usize, text: &str) -> Result<(), ()> {
             target_guard.as_CFTypeRef(),
         ) != AX_SUCCESS
         {
-            return Err(());
+            return Err(AxFail::Unsupported);
         }
 
         // ...và ghi đè bằng chuỗi mới trong một thao tác nguyên tử.
@@ -132,10 +166,34 @@ pub fn replace_tail(backspaces: usize, text: &str) -> Result<(), ()> {
                     restore_guard.as_CFTypeRef(),
                 );
             }
-            return Err(());
+            return Err(AxFail::Unsupported);
         }
         Ok(())
     }
+}
+
+/// Đọc chuỗi app đang hiển thị tại `range` (AXStringForRange).
+unsafe fn read_string_for_range(element: AXUIElementRef, range: &CFRange) -> Option<String> {
+    let range_value =
+        AXValueCreate(K_AX_VALUE_TYPE_CFRANGE, range as *const CFRange as *const c_void);
+    if range_value.is_null() {
+        return None;
+    }
+    let range_guard = CFType::wrap_under_create_rule(range_value);
+    let mut out: CFTypeRef = std::ptr::null();
+    if AXUIElementCopyParameterizedAttributeValue(
+        element,
+        attr("AXStringForRange").as_concrete_TypeRef(),
+        range_guard.as_CFTypeRef(),
+        &mut out,
+    ) != AX_SUCCESS
+        || out.is_null()
+    {
+        return None;
+    }
+    let out_guard = CFType::wrap_under_create_rule(out);
+    let s = out_guard.downcast::<CFString>()?;
+    Some(s.to_string())
 }
 
 /// Đã được cấp quyền Accessibility chưa (Swift dùng cho onboarding).

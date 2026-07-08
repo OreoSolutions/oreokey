@@ -22,26 +22,39 @@ const CHUNK_UTF16: usize = 8;
 
 pub fn apply(
     proxy: CGEventTapProxy,
-    backspaces: usize,
+    old: &str,
     text: &str,
     profile: &ResolvedProfile,
     bundle: &str,
     ax_ok: &mut HashMap<String, bool>,
 ) {
+    let backspaces = old.chars().count();
+    // Chèn thuần (không xóa gì): bơm phím không thể nháy, và AX lúc này
+    // dễ dính race với ký tự passthrough đang trên đường đến app → bơm.
+    let ax_worth_it = !old.is_empty();
+
     match profile.mode {
         FixMode::Auto => {
-            // AX trước nếu app này chưa từng fail.
-            if *ax_ok.get(bundle).unwrap_or(&true) {
-                if ax::replace_tail(backspaces, text).is_ok() {
-                    ax_ok.insert(bundle.to_string(), true);
-                    return;
+            // AX trước nếu app này chưa từng fail hẳn.
+            if ax_worth_it && *ax_ok.get(bundle).unwrap_or(&true) {
+                match ax::replace_tail(old, text) {
+                    Ok(()) => {
+                        ax_ok.insert(bundle.to_string(), true);
+                        return;
+                    }
+                    // Mismatch = văn bản trước caret chưa ổn định (ký tự
+                    // passthrough chưa vào app) — KHÔNG phải app không hỗ
+                    // trợ AX, đừng cache là fail, chỉ fallback lần này.
+                    Err(ax::AxFail::Mismatch) => {}
+                    Err(ax::AxFail::Unsupported) => {
+                        ax_ok.insert(bundle.to_string(), false);
+                    }
                 }
-                ax_ok.insert(bundle.to_string(), false);
             }
             key_inject(proxy, backspaces, text, profile);
         }
         FixMode::AxOnly => {
-            let _ = ax::replace_tail(backspaces, text);
+            let _ = ax::replace_tail(old, text);
         }
         FixMode::InjectFast | FixMode::InjectSlow => {
             key_inject(proxy, backspaces, text, profile);

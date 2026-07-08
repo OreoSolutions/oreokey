@@ -227,6 +227,25 @@ mod tests {
     }
 
     #[test]
+    fn word_do_actions_carry_old_text() {
+        // Bug thực địa "đó → óo": engine phải khai báo đúng đoạn bị thay
+        // (old) để tầng AX xác minh trước khi ghi đè.
+        use crate::engine::{Action, KeyInput};
+        let mut e = engine(false);
+        e.on_key(KeyInput::Char('d'));
+        assert_eq!(
+            e.on_key(KeyInput::Char('d')),
+            Action::Replace { old: "d".into(), text: "đ".into() }
+        );
+        e.on_key(KeyInput::Char('o'));
+        assert_eq!(
+            e.on_key(KeyInput::Char('s')),
+            Action::Replace { old: "o".into(), text: "ó".into() }
+        );
+        assert_eq!(e.current_word(), "đó");
+    }
+
+    #[test]
     fn d_stroke() {
         assert_eq!(t("dd"), "đ");
         assert_eq!(t("ddd"), "dd");
