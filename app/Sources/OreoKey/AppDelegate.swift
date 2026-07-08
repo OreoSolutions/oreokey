@@ -4,7 +4,7 @@ import ServiceManagement
 // Callback C không capture được context — trỏ về singleton.
 private func statusChanged(_ vnOn: Bool) {
     DispatchQueue.main.async {
-        AppDelegate.instance?.updateIcon(vnOn: vnOn)
+        AppDelegate.instance?.syncUI(vnOn: vnOn)
         // Bật tiếng Việt → input source hệ thống phải là bàn phím Latin,
         // tránh hai bộ gõ xử lý chồng nhau.
         if vnOn {
@@ -132,6 +132,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return item
     }
 
+    /// Cập nhật MỌI nơi hiển thị trạng thái (icon + tick) — kể cả khi
+    /// menu đang mở, để hotkey bấm lúc popup hiện vẫn thấy tick đổi.
+    func syncUI(vnOn: Bool) {
+        updateIcon(vnOn: vnOn)
+        toggleItem?.state = vnOn ? .on : .off
+    }
+
     func updateIcon(vnOn: Bool) {
         guard let button = statusItem.button else { return }
         button.title = ""
@@ -220,9 +227,7 @@ extension AppDelegate: NSMenuDelegate {
     // thời đồng bộ lại icon từ cùng một lần đọc, để tick và icon không
     // bao giờ nói hai điều khác nhau.
     func menuNeedsUpdate(_ menu: NSMenu) {
-        let vnOn = Core.vnEnabled()
-        toggleItem.state = vnOn ? .on : .off
-        updateIcon(vnOn: vnOn)
+        syncUI(vnOn: Core.vnEnabled())
         let settings = Core.loadSettings()
         let method = settings?.method ?? "telex"
         telexItem.state = method == "telex" ? .on : .off
