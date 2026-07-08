@@ -5,6 +5,11 @@ import ServiceManagement
 private func statusChanged(_ vnOn: Bool) {
     DispatchQueue.main.async {
         AppDelegate.instance?.updateIcon(vnOn: vnOn)
+        // Bật tiếng Việt → input source hệ thống phải là bàn phím Latin,
+        // tránh hai bộ gõ xử lý chồng nhau.
+        if vnOn {
+            InputSource.ensureLatin()
+        }
     }
 }
 
@@ -48,7 +53,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func startOrOnboard() {
         if Core.axTrusted(), Core.start() {
-            updateIcon(vnOn: Core.vnEnabled())
+            let vnOn = Core.vnEnabled()
+            updateIcon(vnOn: vnOn)
+            if vnOn {
+                InputSource.ensureLatin()
+            }
         } else {
             showOnboarding()
         }
