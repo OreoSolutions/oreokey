@@ -188,6 +188,18 @@ mod tests {
     }
 
     #[test]
+    fn backspacing_out_of_raw_mode_reenables_typing() {
+        // Bug thực địa: gõ sai → từ bị khóa raw; xóa đi gõ lại ngay
+        // vẫn không ăn dấu, phải bấm space mới gõ được. Xóa về trạng
+        // thái sạch phải tự gỡ khóa.
+        assert_eq!(t("mart\u{8}\u{8}\u{8}\u{8}vieetj"), "việt");
+        // Xóa một phần cũng đủ nếu phần còn lại render khớp màn hình.
+        assert_eq!(t("mask\u{8}\u{8}s"), "má");
+        // Chưa xóa về trạng thái sạch thì vẫn giữ nguyên văn.
+        assert_eq!(t("mask\u{8}k"), "mask");
+    }
+
+    #[test]
     fn cancelled_keys_not_restored() {
         // Hủy dấu là chủ ý của người dùng, không phải từ sai.
         assert_eq!(t("ass"), "as");

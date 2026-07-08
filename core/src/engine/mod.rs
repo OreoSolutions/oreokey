@@ -260,6 +260,16 @@ impl Engine {
             };
             if rendered == target {
                 self.last_render = target;
+                // Từ đang bị khóa raw (spell check phán không phải tiếng
+                // Việt): nếu phần còn lại render sạch và khớp đúng màn
+                // hình thì gỡ khóa — người dùng xóa để gõ lại không phải
+                // bấm space mới có dấu.
+                if self.raw_mode {
+                    let (text, restored) = self.render_word(&self.raw);
+                    if !restored && text == self.last_render {
+                        self.raw_mode = false;
+                    }
+                }
                 return Action::PassThrough;
             }
         }
