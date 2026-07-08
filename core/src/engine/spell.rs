@@ -1,0 +1,160 @@
+//! Kiểm tra âm tiết tiếng Việt hợp lệ (phonotactics) để tự khôi phục
+//! phím gốc khi người dùng gõ từ nước ngoài mà quên tắt tiếng Việt.
+//!
+//! Cho phép cả các trạng thái trung gian khi đang gõ dở (vd `duòng`
+//! trước khi bấm `w` thành `dường`) — thà bỏ sót còn hơn phá từ đúng.
+
+use super::syllable::{marked_lower, vowel_indices};
+use super::WordState;
+use super::Tone;
+
+const INITIALS: &[&str] = &[
+    "", "b", "c", "ch", "d", "đ", "g", "gh", "gi", "h", "k", "kh", "l", "m",
+    "n", "ng", "ngh", "nh", "p", "ph", "qu", "r", "s", "t", "th", "tr", "v",
+    "x",
+];
+
+const NUCLEI: &[&str] = &[
+    // 1 nguyên âm
+    "a", "ă", "â", "e", "ê", "i", "o", "ô", "ơ", "u", "ư", "y",
+    // 2 nguyên âm
+    "ai", "ao", "au", "ay", "âu", "ây", "eo", "êu", "ia", "iê", "iu", "oa",
+    "oă", "oe", "oi", "ôi", "ơi", "oo", "ua", "uâ", "uê", "ui", "uô", "uơ",
+    "uy", "ưa", "ưi", "ươ", "ưu", "yê",
+    // 3 nguyên âm
+    "iêu", "yêu", "oai", "oao", "oay", "oeo", "uây", "uôi", "ươi", "ươu",
+    "uya", "uyê", "uyu",
+    // Trạng thái trung gian phổ biến khi gõ dở (chờ w/7)
+    "uo", "ưo",
+];
+
+const FINALS: &[&str] = &["", "c", "ch", "m", "n", "ng", "nh", "p", "t"];
+
+/// Từ có bị engine biến đổi không (có thanh hoặc dấu phụ). Chỉ những từ
+/// bị biến đổi mới cần khôi phục — kết quả của việc hủy dấu (`ass`→`as`)
+/// không được tính.
+pub fn is_transformed(state: &WordState) -> bool {
+    state.tone.is_some() || state.letters.iter().any(|l| l.has_mark() || l.stroke)
+}
+
+/// Âm tiết chấp nhận được (hợp lệ hoặc là tiền tố hợp lý của từ đang gõ).
+pub fn is_acceptable(state: &WordState) -> bool {
+    let letters = &state.letters;
+    if letters.iter().any(|l| !l.base.is_ascii_alphabetic()) {
+        return false;
+    }
+    // đ chỉ đứng đầu từ.
+    if letters.iter().skip(1).any(|l| l.stroke) {
+        return false;
+    }
+    let vidx = vowel_indices(letters);
+    let Some(&run_start) = vidx.first() else {
+        // Không có nguyên âm: chỉ chấp nhận "đ" trơ (đang gõ dở "đi"...).
+        return letters.len() == 1 && letters[0].stroke;
+    };
+    // Cụm nguyên âm phải liên tục; nguyên âm sau phụ âm cuối → không hợp lệ.
+    let mut run_end = run_start;
+    for &i in &vidx[1..] {
+        if i == run_end + 1 {
+            run_end = i;
+        } else {
+            return false;
+        }
+    }
+    let render_range =
+        |a: usize, b: usize| letters[a..b].iter().map(marked_lower).collect::<String>();
+
+    let initial = render_range(0, run_start);
+    if !INITIALS.contains(&initial.as_str()) {
+        return false;
+    }
+    let nucleus = render_range(run_start, run_end + 1);
+    if !NUCLEI.contains(&nucleus.as_str()) {
+        return false;
+    }
+    let final_c = render_range(run_end + 1, letters.len());
+    if !FINALS.contains(&final_c.as_str()) {
+        return false;
+    }
+    // Âm tiết đóng bằng phụ âm tắc (p t c ch) chỉ mang thanh sắc/nặng.
+    let stop_final = matches!(final_c.as_str(), "c" | "ch" | "p" | "t");
+    if stop_final
+        && matches!(
+            state.tone,
+            Some(Tone::Grave) | Some(Tone::Hook) | Some(Tone::Tilde)
+        )
+    {
+        return false;
+    }
+    true
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::engine::testutil::type_str;
+    use crate::engine::{Engine, EngineConfig, TypingMethod};
+
+    fn t(keys: &str) -> String {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_check: true,
+            modern_tone: false,
+            macros_enabled: false,
+        });
+        type_str(&mut e, keys)
+    }
+
+    #[test]
+    fn english_words_restored() {
+        assert_eq!(t("mask"), "mask"); // má + k → phụ âm cuối k không hợp lệ
+        assert_eq!(t("for"), "for"); // fỏ → phụ âm đầu f không hợp lệ
+        assert_eq!(t("case"), "case"); // cáe → cụm nguyên âm ae không hợp lệ
+        assert_eq!(t("mart"), "mart"); // mảt → hỏi + phụ âm tắc không hợp lệ
+        assert_eq!(t("expression"), "expression");
+        assert_eq!(t("windows"), "windows");
+    }
+
+    #[test]
+    fn vietnamese_words_kept() {
+        assert_eq!(t("vieetj"), "việt");
+        assert_eq!(t("nguyeenx"), "nguyễn");
+        assert_eq!(t("toans"), "toán");
+        assert_eq!(t("muaf"), "mùa");
+        assert_eq!(t("dduongwf"), "đường");
+        assert_eq!(t("giwowngf"), "giường");
+        assert_eq!(t("khuyru"), "khuỷu");
+        assert_eq!(t("quaats"), "quất");
+        assert_eq!(t("nghieng"), "nghieng");
+        assert_eq!(t("nghieengs"), "nghiếng");
+    }
+
+    #[test]
+    fn intermediate_states_not_broken() {
+        // duongf → duòng (chờ w), thêm w thành dường — không được khôi phục giữa chừng
+        assert_eq!(t("duongf"), "duòng");
+        assert_eq!(t("duongfw"), "dường");
+        assert_eq!(t("dd"), "đ");
+        assert_eq!(t("ddi"), "đi");
+    }
+
+    #[test]
+    fn cancelled_keys_not_restored() {
+        // Hủy dấu là chủ ý của người dùng, không phải từ sai.
+        assert_eq!(t("ass"), "as");
+        assert_eq!(t("xooong"), "xoong");
+        // "cl" không phải phụ âm đầu tiếng Việt → vào raw mode ngay,
+        // mọi phím sau hiện nguyên văn.
+        assert_eq!(t("class"), "class");
+    }
+
+    #[test]
+    fn spell_off_transforms_anyway() {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_check: false,
+            modern_tone: false,
+            macros_enabled: false,
+        });
+        assert_eq!(type_str(&mut e, "mask"), "mák");
+    }
+}

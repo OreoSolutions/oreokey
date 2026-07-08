@@ -4,6 +4,7 @@
 //! mỗi phím render lại toàn bộ từ rồi so với lần render trước để tạo
 //! `Action` sửa chữ tối thiểu.
 
+pub mod spell;
 pub mod syllable;
 pub mod telex;
 pub mod vni;
@@ -134,6 +135,10 @@ pub struct Engine {
     raw: String,
     /// Văn bản từ hiện tại như app đích đang hiển thị.
     last_render: String,
+    /// Từ hiện tại đã bị phát hiện không phải tiếng Việt — hiển thị
+    /// nguyên phím gốc cho tới khi ngắt từ (tránh nuốt phím dấu khi
+    /// người dùng gõ tiếng nước ngoài).
+    raw_mode: bool,
 }
 
 impl Engine {
@@ -142,6 +147,7 @@ impl Engine {
             cfg,
             raw: String::new(),
             last_render: String::new(),
+            raw_mode: false,
         }
     }
 
@@ -158,6 +164,7 @@ impl Engine {
     pub fn reset(&mut self) {
         self.raw.clear();
         self.last_render.clear();
+        self.raw_mode = false;
     }
 
     /// Từ đang gõ như đang hiển thị (phục vụ test/debug).
@@ -178,7 +185,15 @@ impl Engine {
 
     fn on_char(&mut self, c: char) -> Action {
         self.raw.push(c);
-        let new_render = self.render_word(&self.raw);
+        let new_render = if self.raw_mode {
+            self.raw.clone()
+        } else {
+            let (text, restored) = self.render_word(&self.raw);
+            if restored {
+                self.raw_mode = true;
+            }
+            text
+        };
         let action = diff_action(&self.last_render, &new_render, c);
         self.last_render = new_render;
         action
@@ -194,7 +209,12 @@ impl Engine {
         let target: String = target.into_iter().collect();
         while !self.raw.is_empty() {
             self.raw.pop();
-            if self.render_word(&self.raw) == target {
+            let rendered = if self.raw_mode {
+                self.raw.clone()
+            } else {
+                self.render_word(&self.raw).0
+            };
+            if rendered == target {
                 self.last_render = target;
                 return Action::PassThrough;
             }
@@ -204,10 +224,11 @@ impl Engine {
         Action::PassThrough
     }
 
-    /// Render chuỗi phím gốc thành văn bản hiển thị.
-    fn render_word(&self, raw: &str) -> String {
+    /// Render chuỗi phím gốc thành văn bản hiển thị. Cờ thứ hai báo
+    /// spell check đã phải khôi phục phím gốc (từ không phải tiếng Việt).
+    fn render_word(&self, raw: &str) -> (String, bool) {
         if raw.is_empty() {
-            return String::new();
+            return (String::new(), false);
         }
         let mut state = WordState::default();
         for c in raw.chars() {
@@ -216,7 +237,14 @@ impl Engine {
                 TypingMethod::Vni => vni::apply_key(&mut state, c),
             }
         }
-        render_letters(&state, self.cfg.modern_tone)
+        // Từ bị biến đổi nhưng không phải âm tiết tiếng Việt → trả phím gốc.
+        if self.cfg.spell_check
+            && spell::is_transformed(&state)
+            && !spell::is_acceptable(&state)
+        {
+            return (raw.to_string(), true);
+        }
+        (render_letters(&state, self.cfg.modern_tone), false)
     }
 }
 

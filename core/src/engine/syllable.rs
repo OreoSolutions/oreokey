@@ -76,7 +76,7 @@ fn tone_index(letters: &[Letter], modern: bool) -> Option<usize> {
 }
 
 /// Chữ cái + dấu phụ → ký tự thường chưa có thanh.
-fn marked_lower(l: &Letter) -> char {
+pub(crate) fn marked_lower(l: &Letter) -> char {
     match l.base {
         'a' if l.circ => 'â',
         'a' if l.breve => 'ă',
