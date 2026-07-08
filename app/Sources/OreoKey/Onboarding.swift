@@ -57,6 +57,10 @@ final class OnboardingController {
         1. Bấm nút bên dưới để mở System Settings
         2. Tìm OreoKey trong danh sách và bật công tắc
         3. Cửa sổ này sẽ tự đóng khi hoàn tất
+
+        Nếu công tắc ĐÃ bật mà cửa sổ này vẫn hiện (thường sau khi cập nhật \
+        app): tắt công tắc rồi bật lại, hoặc chọn OreoKey và bấm nút − để \
+        xóa rồi thêm lại.
         """)
         body.preferredMaxLayoutWidth = 420
 
