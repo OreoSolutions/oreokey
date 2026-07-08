@@ -64,7 +64,22 @@ data/   — app-profiles.json: quirk mặc định theo bundle ID
 
 Thiết kế chi tiết: `docs/superpowers/specs/2026-07-08-oreokey-design.md`.
 
+## Báo lỗi & đóng góp
+
+- Báo lỗi: https://github.com/oreosolutions/oreokey/issues
+- Đóng góp: xem [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Giấy phép
 
-Closed source, miễn phí. Toàn bộ dependency là MIT/Apache-2.0
-(serde, core-graphics, core-foundation, foreign-types, libc).
+Mã nguồn theo **[MIT License](LICENSE)** — miễn phí, dùng lại tự do. Giấy
+phép các thư viện bên thứ ba (đều permissive, không GPL):
+[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
+
+Engine được viết lại từ đầu, **không sao chép mã GPL** của các bộ gõ khác.
+
+### Nhãn hiệu
+
+Giấy phép MIT chỉ áp dụng cho **mã nguồn**. Tên **"OreoKey"** và **logo** là
+nhãn hiệu của Oreo Solutions, **không** thuộc phạm vi MIT. Nếu bạn fork hoặc
+phát hành bản chỉnh sửa, vui lòng **đổi tên và logo** và không ngụ ý có liên
+kết/chứng thực từ Oreo Solutions.
