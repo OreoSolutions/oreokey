@@ -37,7 +37,7 @@ final class SettingsModel: ObservableObject {
 }
 
 private enum Pane: String, CaseIterable, Identifiable {
-    case general, macros, apps, tools, about
+    case general, macros, apps, about
     var id: String { rawValue }
 
     var title: String {
@@ -45,7 +45,6 @@ private enum Pane: String, CaseIterable, Identifiable {
         case .general: return "Chung"
         case .macros: return "Gõ tắt"
         case .apps: return "Ứng dụng"
-        case .tools: return "Chuyển mã"
         case .about: return "Giới thiệu"
         }
     }
@@ -55,7 +54,6 @@ private enum Pane: String, CaseIterable, Identifiable {
         case .general: return "keyboard.fill"
         case .macros: return "bolt.fill"
         case .apps: return "square.grid.2x2.fill"
-        case .tools: return "arrow.left.arrow.right"
         case .about: return "info"
         }
     }
@@ -65,7 +63,6 @@ private enum Pane: String, CaseIterable, Identifiable {
         case .general: return .blue
         case .macros: return .orange
         case .apps: return .purple
-        case .tools: return .teal
         case .about: return .gray
         }
     }
@@ -98,7 +95,6 @@ struct SettingsView: View {
                 case .general: GeneralPane(model: model)
                 case .macros: MacrosPane(model: model)
                 case .apps: AppsPane(model: model)
-                case .tools: ToolsPane()
                 case .about: AboutPane()
                 }
             } else {
@@ -402,81 +398,14 @@ private struct RunningAppPicker: View {
 
 // MARK: - Chuyển mã
 
-private struct ToolsPane: View {
-    @State private var input = ""
-    @State private var output = ""
-    @State private var fromEnc: Int32 = 1
-    @State private var toEnc: Int32 = 0
-
-    private let encodings: [(Int32, String)] = [
-        (0, "Unicode"), (1, "VNI-Windows"), (2, "TCVN3 (ABC)"),
-    ]
-
-    var body: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Picker("Từ", selection: $fromEnc) {
-                    ForEach(encodings, id: \.0) { v, name in Text(name).tag(v) }
-                }
-                .fixedSize()
-                Button {
-                    swap(&fromEnc, &toEnc)
-                    if !output.isEmpty { swap(&input, &output) }
-                } label: {
-                    Image(systemName: "arrow.left.arrow.right")
-                }
-                .help("Đảo chiều")
-                Picker("Sang", selection: $toEnc) {
-                    ForEach(encodings, id: \.0) { v, name in Text(name).tag(v) }
-                }
-                .fixedSize()
-                Spacer()
-                Button("Chuyển mã") {
-                    output = Core.convert(input, from: fromEnc, to: toEnc)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(fromEnc == toEnc || input.isEmpty)
-            }
-
-            TextEditor(text: $input)
-                .font(.body)
-                .scrollContentBackground(.hidden)
-                .padding(6)
-                .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.5)))
-                .overlay(alignment: .topLeading) {
-                    if input.isEmpty {
-                        Text("Dán văn bản nguồn vào đây…")
-                            .foregroundStyle(.tertiary)
-                            .padding(10)
-                            .allowsHitTesting(false)
-                    }
-                }
-
-            TextEditor(text: $output)
-                .font(.body)
-                .scrollContentBackground(.hidden)
-                .padding(6)
-                .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.5)))
-
-            HStack {
-                Spacer()
-                Button {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(output, forType: .string)
-                } label: {
-                    Label("Chép kết quả", systemImage: "doc.on.doc")
-                }
-                .disabled(output.isEmpty)
-            }
-        }
-        .padding()
-        .navigationTitle("Chuyển mã")
-    }
-}
-
 // MARK: - Giới thiệu
 
 private struct AboutPane: View {
+    /// Trang Issues để người dùng báo lỗi.
+    private static let bugReportURL = URL(string: "https://github.com/oreosolutions/oreokey/issues")!
+    /// TODO: cập nhật khi có kênh ủng hộ (GitHub Sponsors / Ko-fi…).
+    private static let sponsorsURL = URL(string: "https://github.com/sponsors/oreosolutions")!
+
     private var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
     }
@@ -495,6 +424,20 @@ private struct AboutPane: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .padding(.top, 2)
+
+            HStack(spacing: 10) {
+                Link(destination: Self.bugReportURL) {
+                    Label("Báo lỗi", systemImage: "ladybug.fill")
+                }
+                .buttonStyle(.bordered)
+                Link(destination: Self.sponsorsURL) {
+                    Label("Ủng hộ", systemImage: "heart.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.pink)
+            }
+            .padding(.top, 6)
+
             Spacer()
             Text("© 2026 Oreo Solutions")
                 .font(.caption2)

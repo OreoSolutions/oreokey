@@ -58,15 +58,6 @@ enum Core {
         bundleId.withCString { ok_notify_frontmost_app($0) }
     }
 
-    /// 0 = Unicode, 1 = VNI-Windows, 2 = TCVN3.
-    static func convert(_ text: String, from: Int32, to: Int32) -> String {
-        text.withCString { c in
-            guard let raw = ok_convert(c, from, to) else { return text }
-            defer { ok_str_free(raw) }
-            return String(cString: raw)
-        }
-    }
-
     static func setStatusCallback(_ cb: @escaping @convention(c) (Bool) -> Void) {
         ok_set_status_callback(cb)
     }
