@@ -168,6 +168,10 @@ private struct GeneralPane: View {
                         title: "Gõ tắt",
                         detail: "Mở rộng cụm tắt định nghĩa trong mục Gõ tắt",
                         isOn: binding.macros_enabled)
+                    ToggleRow(
+                        title: "Che từ tục tĩu",
+                        detail: "Từ nhạy cảm tự thay bằng dấu * khi chốt từ",
+                        isOn: binding.censor_enabled)
                 }
             }
             .formStyle(.grouped)

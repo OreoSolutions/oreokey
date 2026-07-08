@@ -185,6 +185,7 @@ mod tests {
             modern_tone: modern,
             macros_enabled: false,
             flexible_marks: true,
+            censor_enabled: false,
         })
     }
 
@@ -320,6 +321,7 @@ mod tests {
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
+            censor_enabled: false,
         });
         // bân + n không hợp lệ → về raw mode → chữ tiếng Anh nguyên vẹn.
         assert_eq!(type_str(&mut e, "banana"), "banana");
@@ -333,6 +335,7 @@ mod tests {
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: false,
+            censor_enabled: false,
         });
         assert_eq!(type_str(&mut e, "nanag"), "nanag");
         // Dạng liền kề cổ điển vẫn hoạt động.

@@ -63,6 +63,8 @@ pub struct Settings {
     pub macros_enabled: bool,
     /// Gõ dấu mũ muộn: `nanag` → `nâng`.
     pub flexible_marks: bool,
+    /// Che từ tục tĩu bằng dấu *.
+    pub censor_enabled: bool,
     pub hotkey: Hotkey,
     pub macros: Vec<MacroEntry>,
     /// Bundle ID các app tự tắt tiếng Việt.
@@ -82,6 +84,7 @@ impl Default for Settings {
             modern_tone: false,
             macros_enabled: true,
             flexible_marks: true,
+            censor_enabled: false,
             hotkey: Hotkey::default(),
             macros: Vec::new(),
             excluded_apps: Vec::new(),
@@ -103,6 +106,7 @@ impl Settings {
             modern_tone: self.modern_tone,
             macros_enabled: self.macros_enabled,
             flexible_marks: self.flexible_marks,
+            censor_enabled: self.censor_enabled,
         }
     }
 

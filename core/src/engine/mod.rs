@@ -4,6 +4,7 @@
 //! mỗi phím render lại toàn bộ từ rồi so với lần render trước để tạo
 //! `Action` sửa chữ tối thiểu.
 
+pub mod censor;
 pub mod encoding;
 pub mod macros;
 pub mod spell;
@@ -133,6 +134,8 @@ pub struct EngineConfig {
     /// Gõ dấu mũ muộn (Telex): `nanag` → `nâng`, `viete` → `viêt`.
     /// Chỉ áp khi kết quả là âm tiết hợp lệ để không phá từ tiếng Anh.
     pub flexible_marks: bool,
+    /// Che từ tục tĩu bằng dấu * khi chốt từ.
+    pub censor_enabled: bool,
 }
 
 impl Default for EngineConfig {
@@ -143,6 +146,7 @@ impl Default for EngineConfig {
             modern_tone: false,
             macros_enabled: true,
             flexible_marks: true,
+            censor_enabled: false,
         }
     }
 }
@@ -202,14 +206,23 @@ impl Engine {
             KeyInput::Backspace => self.on_backspace(),
             KeyInput::WordBreak(ch) => {
                 let action = match ch {
-                    // Chỉ mở rộng gõ tắt khi chốt từ bằng một ký tự thật
-                    // (space, dấu câu, Enter) — không phải di chuyển con trỏ.
-                    Some(break_ch)
-                        if self.cfg.macros_enabled && !self.last_render.is_empty() =>
-                    {
-                        match self.macros.expand(&self.last_render) {
-                            Some(expansion) => {
-                                let mut text = expansion.to_string();
+                    // Chỉ biến đổi khi chốt từ bằng một ký tự thật (space,
+                    // dấu câu, Enter) — không phải di chuyển con trỏ.
+                    Some(break_ch) if !self.last_render.is_empty() => {
+                        // Gõ tắt trước, che từ tục sau.
+                        let replacement = self
+                            .cfg
+                            .macros_enabled
+                            .then(|| self.macros.expand(&self.last_render))
+                            .flatten()
+                            .map(str::to_string)
+                            .or_else(|| {
+                                (self.cfg.censor_enabled
+                                    && censor::is_profane(&self.last_render))
+                                .then(|| censor::mask(&self.last_render))
+                            });
+                        match replacement {
+                            Some(mut text) => {
                                 text.push(break_ch);
                                 Action::Replace {
                                     old: self.last_render.clone(),
@@ -373,6 +386,7 @@ mod tests {
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
+            censor_enabled: false,
         })
     }
 

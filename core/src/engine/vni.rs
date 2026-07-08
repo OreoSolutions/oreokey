@@ -132,6 +132,7 @@ mod tests {
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
+            censor_enabled: false,
         });
         type_str(&mut e, keys)
     }

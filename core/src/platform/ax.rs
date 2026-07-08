@@ -83,6 +83,15 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         let focused_guard = CFType::wrap_under_create_rule(focused);
         let element = focused_guard.as_CFTypeRef() as AXUIElementRef;
 
+        // Ô focus thuộc CHÍNH OreoKey (cửa sổ Cài đặt): lệnh AX sẽ quay
+        // ngược vào process mình trên thread tap → TSM assert main queue
+        // → crash (bug thực địa: sập khi gõ tiếng Việt vào ô Gõ tắt).
+        // Bơm phím vào chính mình thì an toàn.
+        let mut pid: i32 = 0;
+        if AXUIElementGetPid(element, &mut pid) == AX_SUCCESS && pid == libc::getpid() {
+            return Err(AxFail::Unsupported);
+        }
+
         // Vị trí con trỏ hiện tại; đòi hỏi không có vùng chọn (selection
         // nghĩa là trạng thái đã lệch so với buffer của engine).
         let mut range_value: CFTypeRef = std::ptr::null();
