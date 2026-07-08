@@ -87,10 +87,17 @@ fn key_inject(proxy: CGEventTapProxy, backspaces: usize, text: &str, profile: &R
     // đầu sẽ nuốt phần bôi đen thay vì ký tự thật (bug thực địa: "bận"
     // thành "baận" trên Chrome). Gõ một dấu cách rồi xóa ngay: có gợi ý
     // thì dấu cách thay thế phần bôi đen (hủy gợi ý), không có thì cặp
-    // gõ-xóa tự triệt tiêu. Idempotent trong cả hai trường hợp.
+    // gõ-xóa tự triệt tiêu.
+    //
+    // Chỉ làm khi THỰC SỰ có vùng bôi đen (đọc qua AX) — gõ chay cặp
+    // space+backspace mỗi lần bỏ dấu gây nháy con trỏ thấy rõ. Không
+    // đọc được selection thì thà an toàn: vẫn gửi.
     if profile.browser_fix && backspaces > 0 {
-        post_key(&source, proxy, KEY_SPACE, " ", delay);
-        post_key(&source, proxy, KEY_BACKSPACE, "", delay);
+        let has_selection = ax::selection_length().map(|len| len > 0).unwrap_or(true);
+        if has_selection {
+            post_key(&source, proxy, KEY_SPACE, " ", delay);
+            post_key(&source, proxy, KEY_BACKSPACE, "", delay);
+        }
     }
 
     for _ in 0..backspaces {

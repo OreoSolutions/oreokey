@@ -242,3 +242,50 @@ unsafe fn read_string_for_range(element: AXUIElementRef, range: &CFRange) -> Opt
 pub fn is_trusted() -> bool {
     unsafe { AXIsProcessTrusted() != 0 }
 }
+
+/// Độ dài vùng chọn của ô văn bản đang focus (None = không đọc được).
+/// Dùng để quyết định có cần phím hủy gợi ý autocomplete hay không.
+pub fn selection_length() -> Option<isize> {
+    unsafe {
+        let system_wide = AXUIElementCreateSystemWide();
+        if system_wide.is_null() {
+            return None;
+        }
+        let _guard = CFType::wrap_under_create_rule(system_wide as CFTypeRef);
+        let mut focused: CFTypeRef = std::ptr::null();
+        if AXUIElementCopyAttributeValue(
+            system_wide,
+            attr("AXFocusedUIElement").as_concrete_TypeRef(),
+            &mut focused,
+        ) != AX_SUCCESS
+            || focused.is_null()
+        {
+            return None;
+        }
+        let focused_guard = CFType::wrap_under_create_rule(focused);
+        let mut range_value: CFTypeRef = std::ptr::null();
+        if AXUIElementCopyAttributeValue(
+            focused_guard.as_CFTypeRef() as AXUIElementRef,
+            attr("AXSelectedTextRange").as_concrete_TypeRef(),
+            &mut range_value,
+        ) != AX_SUCCESS
+            || range_value.is_null()
+        {
+            return None;
+        }
+        let range_guard = CFType::wrap_under_create_rule(range_value);
+        let mut range = CFRange {
+            location: 0,
+            length: 0,
+        };
+        if AXValueGetValue(
+            range_guard.as_CFTypeRef(),
+            K_AX_VALUE_TYPE_CFRANGE,
+            &mut range as *mut CFRange as *mut c_void,
+        ) == 0
+        {
+            return None;
+        }
+        Some(range.length)
+    }
+}
