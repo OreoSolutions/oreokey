@@ -4,6 +4,7 @@
 //! mỗi phím render lại toàn bộ từ rồi so với lần render trước để tạo
 //! `Action` sửa chữ tối thiểu.
 
+pub mod macros;
 pub mod spell;
 pub mod syllable;
 pub mod telex;
@@ -131,6 +132,7 @@ impl Default for EngineConfig {
 
 pub struct Engine {
     cfg: EngineConfig,
+    macros: macros::MacroTable,
     /// Chuỗi phím gốc của từ hiện tại.
     raw: String,
     /// Văn bản từ hiện tại như app đích đang hiển thị.
@@ -145,6 +147,7 @@ impl Engine {
     pub fn new(cfg: EngineConfig) -> Engine {
         Engine {
             cfg,
+            macros: macros::MacroTable::default(),
             raw: String::new(),
             last_render: String::new(),
             raw_mode: false,
@@ -158,6 +161,10 @@ impl Engine {
 
     pub fn config(&self) -> &EngineConfig {
         &self.cfg
+    }
+
+    pub fn set_macros(&mut self, table: macros::MacroTable) {
+        self.macros = table;
     }
 
     /// Chốt/hủy từ hiện tại (đổi app, click chuột, di chuyển con trỏ...).
@@ -176,9 +183,29 @@ impl Engine {
         match k {
             KeyInput::Char(c) => self.on_char(c),
             KeyInput::Backspace => self.on_backspace(),
-            KeyInput::WordBreak(_ch) => {
+            KeyInput::WordBreak(ch) => {
+                let action = match ch {
+                    // Chỉ mở rộng gõ tắt khi chốt từ bằng một ký tự thật
+                    // (space, dấu câu, Enter) — không phải di chuyển con trỏ.
+                    Some(break_ch)
+                        if self.cfg.macros_enabled && !self.last_render.is_empty() =>
+                    {
+                        match self.macros.expand(&self.last_render) {
+                            Some(expansion) => {
+                                let mut text = expansion.to_string();
+                                text.push(break_ch);
+                                Action::Replace {
+                                    backspaces: self.last_render.chars().count(),
+                                    text,
+                                }
+                            }
+                            None => Action::PassThrough,
+                        }
+                    }
+                    _ => Action::PassThrough,
+                };
                 self.reset();
-                Action::PassThrough
+                action
             }
         }
     }
