@@ -242,7 +242,7 @@ extension AppDelegate: NSMenuDelegate {
         telexItem.state = method == "telex" ? .on : .off
         vniItem.state = method == "vni" ? .on : .off
         loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        if #available(macOS 14.4, *), let hotkey = settings?.hotkey {
+        if #available(macOS 15.0, *), let hotkey = settings?.hotkey {
             toggleItem.subtitle = Self.hotkeyDisplay(hotkey)
         }
     }

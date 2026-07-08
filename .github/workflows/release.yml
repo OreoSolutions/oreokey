@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-15
     # Không nội suy ${{ inputs.version }} thẳng vào shell (tránh chèn lệnh);
     # đưa qua env rồi tham chiếu "$VERSION".
     env:
