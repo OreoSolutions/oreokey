@@ -68,12 +68,29 @@ impl Profiles {
         })
     }
 
-    /// Override của người dùng thắng hồ sơ mặc định.
+    /// Override của người dùng thắng hồ sơ mặc định. `focused_proc` là
+    /// tên process sở hữu ô focus — panel nổi (Spotlight...) không đổi
+    /// app frontmost nên tra theo key `proc:<tên>` với ưu tiên cao nhất.
     pub fn resolve(
         &self,
         bundle: &str,
         user_modes: &HashMap<String, FixMode>,
+        focused_proc: Option<&str>,
     ) -> ResolvedProfile {
+        if let Some(name) = focused_proc {
+            let key = format!("proc:{name}");
+            if let Some(p) = self.apps.get(&key) {
+                let mut resolved = ResolvedProfile::default();
+                if let Some(m) = p.mode {
+                    resolved.mode = m;
+                }
+                resolved.browser_fix = p.browser_fix;
+                if p.delay_ms > 0 {
+                    resolved.delay_ms = p.delay_ms;
+                }
+                return resolved;
+            }
+        }
         let mut resolved = ResolvedProfile::default();
         if let Some(p) = self.lookup(bundle) {
             if let Some(m) = p.mode {
@@ -100,20 +117,34 @@ mod tests {
         let p = Profiles::load_default();
         let none = HashMap::new();
 
-        let chrome = p.resolve("com.google.Chrome", &none);
+        let chrome = p.resolve("com.google.Chrome", &none, None);
         assert!(chrome.browser_fix);
 
-        let excel = p.resolve("com.microsoft.Excel", &none);
+        let excel = p.resolve("com.microsoft.Excel", &none, None);
         assert_eq!(excel.mode, FixMode::InjectSlow);
         assert!(excel.delay_ms > 0);
 
         // Wildcard JetBrains
-        let idea = p.resolve("com.jetbrains.intellij", &none);
+        let idea = p.resolve("com.jetbrains.intellij", &none, None);
         assert_eq!(idea.mode, FixMode::InjectFast);
 
         // App lạ → Auto
-        let unknown = p.resolve("com.example.unknown", &none);
+        let unknown = p.resolve("com.example.unknown", &none, None);
         assert_eq!(unknown.mode, FixMode::Auto);
+    }
+
+    #[test]
+    fn focused_proc_overrides_frontmost_bundle() {
+        // Spotlight nhận phím nhưng frontmost vẫn là app phía sau —
+        // profile phải theo chủ ô focus.
+        let p = Profiles::load_default();
+        let none = HashMap::new();
+        let r = p.resolve("com.mitchellh.ghostty", &none, Some("Spotlight"));
+        assert!(r.browser_fix);
+        assert_eq!(r.mode, FixMode::InjectFast);
+        // Process lạ → rơi về bundle như cũ.
+        let r = p.resolve("com.mitchellh.ghostty", &none, Some("ghostty"));
+        assert!(!r.browser_fix);
     }
 
     #[test]
@@ -122,7 +153,7 @@ mod tests {
         let mut user = HashMap::new();
         user.insert("com.google.Chrome".to_string(), FixMode::InjectSlow);
         assert_eq!(
-            p.resolve("com.google.Chrome", &user).mode,
+            p.resolve("com.google.Chrome", &user, None).mode,
             FixMode::InjectSlow
         );
     }

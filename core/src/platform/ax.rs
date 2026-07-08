@@ -34,7 +34,10 @@ extern "C" {
     ) -> AXError;
     fn AXValueCreate(value_type: u32, value_ptr: *const c_void) -> CFTypeRef;
     fn AXValueGetValue(value: CFTypeRef, value_type: u32, out: *mut c_void) -> u8;
+    fn AXUIElementGetPid(element: AXUIElementRef, pid: *mut i32) -> AXError;
     pub fn AXIsProcessTrusted() -> u8;
+    // libproc (libSystem)
+    fn proc_name(pid: i32, buffer: *mut c_void, buffersize: u32) -> i32;
 }
 
 fn attr(name: &'static str) -> CFString {
@@ -241,6 +244,46 @@ unsafe fn read_string_for_range(element: AXUIElementRef, range: &CFRange) -> Opt
 /// Đã được cấp quyền Accessibility chưa (Swift dùng cho onboarding).
 pub fn is_trusted() -> bool {
     unsafe { AXIsProcessTrusted() != 0 }
+}
+
+/// Tên process sở hữu ô văn bản đang focus. Khác với app frontmost:
+/// panel nổi như Spotlight nhận phím nhưng KHÔNG phát sự kiện đổi app
+/// của NSWorkspace — tin frontmost sẽ áp nhầm profile (bug thực địa:
+/// gõ ở Spotlight bị xử theo profile terminal đang mở phía sau).
+pub fn focused_proc_name() -> Option<String> {
+    unsafe {
+        let system_wide = AXUIElementCreateSystemWide();
+        if system_wide.is_null() {
+            return None;
+        }
+        let _guard = CFType::wrap_under_create_rule(system_wide as CFTypeRef);
+        let mut focused: CFTypeRef = std::ptr::null();
+        if AXUIElementCopyAttributeValue(
+            system_wide,
+            attr("AXFocusedUIElement").as_concrete_TypeRef(),
+            &mut focused,
+        ) != AX_SUCCESS
+            || focused.is_null()
+        {
+            return None;
+        }
+        let focused_guard = CFType::wrap_under_create_rule(focused);
+        let mut pid: i32 = 0;
+        if AXUIElementGetPid(
+            focused_guard.as_CFTypeRef() as AXUIElementRef,
+            &mut pid,
+        ) != AX_SUCCESS
+            || pid <= 0
+        {
+            return None;
+        }
+        let mut buf = [0u8; 128];
+        let n = proc_name(pid, buf.as_mut_ptr() as *mut c_void, buf.len() as u32);
+        if n <= 0 {
+            return None;
+        }
+        std::str::from_utf8(&buf[..n as usize]).ok().map(String::from)
+    }
 }
 
 /// Độ dài vùng chọn của ô văn bản đang focus (None = không đọc được).

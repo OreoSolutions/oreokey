@@ -189,9 +189,14 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
         match rt.engine.on_key(input) {
             Action::PassThrough => CallbackKeep::Keep,
             Action::Replace { old, text } => {
-                let profile = rt
-                    .profiles
-                    .resolve(&rt.current_bundle, &rt.settings.per_app_mode);
+                // Chủ sở hữu thật của ô focus có thể không phải app
+                // frontmost (Spotlight và các panel nổi).
+                let focused = super::ax::focused_proc_name();
+                let profile = rt.profiles.resolve(
+                    &rt.current_bundle,
+                    &rt.settings.per_app_mode,
+                    focused.as_deref(),
+                );
                 let bundle = rt.current_bundle.clone();
                 inject::apply(proxy, &old, &text, &profile, &bundle, &mut rt.ax_ok);
                 CallbackKeep::Drop

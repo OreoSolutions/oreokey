@@ -35,8 +35,10 @@ pub fn apply(
     let ax_worth_it = !old.is_empty();
 
     super::dlog(&format!(
-        "apply bundle={bundle} mode={:?} old={old:?} text={text:?} browser_fix={}",
-        profile.mode, profile.browser_fix
+        "apply bundle={bundle} focused={:?} mode={:?} old={old:?} text={text:?} browser_fix={}",
+        ax::focused_proc_name(),
+        profile.mode,
+        profile.browser_fix
     ));
     match profile.mode {
         FixMode::Auto => {
@@ -92,10 +94,12 @@ fn key_inject(proxy: CGEventTapProxy, backspaces: usize, text: &str, profile: &R
     // Không đọc được selection (AX câm) → dựa vào cờ browser_fix của
     // profile: app được đánh dấu hay autocomplete thì thà gửi thừa.
     if backspaces > 0 {
-        let clear_needed = match ax::selection_length() {
+        let sel = ax::selection_length();
+        let clear_needed = match sel {
             Some(len) => len > 0,
             None => profile.browser_fix,
         };
+        super::dlog(&format!("  inject bs={backspaces} sel={sel:?} clear={clear_needed}"));
         if clear_needed {
             post_key(&source, proxy, KEY_SPACE, " ", delay);
             post_key(&source, proxy, KEY_BACKSPACE, "", delay);
