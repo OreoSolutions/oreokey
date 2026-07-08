@@ -37,10 +37,12 @@ cd "$ROOT/app"
 # để ép relink, tránh chạy nhầm bản cũ dù code Rust đã đổi.
 find .build -type f -name OreoKey -delete 2>/dev/null || true
 # shellcheck disable=SC2086
-swift build -c release $ARCH_FLAGS -Xlinker -L"$LIBDIR"
+swift build -c release $ARCH_FLAGS -Xlinker -L"$LIBDIR" \
+    -Xlinker -rpath -Xlinker @executable_path/../Frameworks
 
 # shellcheck disable=SC2086
-BIN="$(swift build -c release $ARCH_FLAGS -Xlinker -L"$LIBDIR" --show-bin-path)/OreoKey"
+BIN="$(swift build -c release $ARCH_FLAGS -Xlinker -L"$LIBDIR" \
+    -Xlinker -rpath -Xlinker @executable_path/../Frameworks --show-bin-path)/OreoKey"
 
 # 3. Dựng bundle .app
 APP="$ROOT/dist/OreoKey.app"
@@ -50,9 +52,26 @@ cp "$BIN" "$APP/Contents/MacOS/OreoKey"
 cp "$ROOT/app/Info.plist" "$APP/Contents/Info.plist"
 [[ -f "$ROOT/assets/AppIcon.icns" ]] && cp "$ROOT/assets/AppIcon.icns" "$APP/Contents/Resources/"
 
-# 4. Ký
+# 3b. Nhúng Sparkle.framework vào bundle
+SPARKLE_FW="$(find "$ROOT/app/.build" -type d -name 'Sparkle.framework' -path '*macos*' | head -1)"
+[[ -n "$SPARKLE_FW" ]] || { echo "❌ Không tìm thấy Sparkle.framework (chạy 'swift package resolve' trong app/?)"; exit 1; }
+mkdir -p "$APP/Contents/Frameworks"
+rm -rf "$APP/Contents/Frameworks/Sparkle.framework"
+cp -R "$SPARKLE_FW" "$APP/Contents/Frameworks/"
+
+# 4. Ký — nested (Sparkle) trước, app sau; hardened runtime khi có Developer ID
 IDENTITY="${CODESIGN_ID:--}"
-codesign --force --options runtime --sign "$IDENTITY" "$APP" 2>/dev/null \
-    || codesign --force --sign - "$APP"
+FW="$APP/Contents/Frameworks/Sparkle.framework"
+sign() { codesign --force --options runtime --sign "$IDENTITY" "$1" 2>/dev/null \
+    || codesign --force --sign "$IDENTITY" "$1"; }
+for nested in \
+    "$FW/Versions/Current/XPCServices/Installer.xpc" \
+    "$FW/Versions/Current/XPCServices/Downloader.xpc" \
+    "$FW/Versions/Current/Autoupdate" \
+    "$FW/Versions/Current/Updater.app"; do
+    [[ -e "$nested" ]] && sign "$nested"
+done
+sign "$FW"
+sign "$APP"
 
 echo "✅ Đã build: $APP"
