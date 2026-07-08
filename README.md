@@ -66,7 +66,7 @@ Thiết kế chi tiết: `docs/superpowers/specs/2026-07-08-oreokey-design.md`.
 
 ## Báo lỗi & đóng góp
 
-- Báo lỗi: https://github.com/oreosolutions/oreokey/issues
+- Báo lỗi: https://github.com/OreoSolutions/oreokey/issues
 - Đóng góp: xem [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Giấy phép

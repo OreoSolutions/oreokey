@@ -4,7 +4,7 @@ Cảm ơn bạn quan tâm! Vài hướng dẫn ngắn để đóng góp trơn tr
 
 ## Quy trình
 
-1. Mở [issue](https://github.com/oreosolutions/oreokey/issues) mô tả lỗi/ý
+1. Mở [issue](https://github.com/OreoSolutions/oreokey/issues) mô tả lỗi/ý
    tưởng trước khi làm thay đổi lớn, để tránh trùng công sức.
 2. Fork, tạo nhánh riêng, gửi Pull Request.
 3. Giữ PR nhỏ, một mục đích. Kèm test khi sửa/ thêm hành vi engine.

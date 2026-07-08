@@ -3,7 +3,7 @@ name = "oreokey-core"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/oreosolutions/oreokey"
+repository = "https://github.com/OreoSolutions/oreokey"
 description = "Bộ gõ tiếng Việt cho macOS — engine (Telex/VNI)"
 publish = false
 

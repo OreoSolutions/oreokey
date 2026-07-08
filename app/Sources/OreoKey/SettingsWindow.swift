@@ -402,9 +402,9 @@ private struct RunningAppPicker: View {
 
 private struct AboutPane: View {
     /// Trang Issues để người dùng báo lỗi.
-    private static let bugReportURL = URL(string: "https://github.com/oreosolutions/oreokey/issues")!
+    private static let bugReportURL = URL(string: "https://github.com/OreoSolutions/oreokey/issues")!
     /// TODO: cập nhật khi có kênh ủng hộ (GitHub Sponsors / Ko-fi…).
-    private static let sponsorsURL = URL(string: "https://github.com/sponsors/oreosolutions")!
+    private static let sponsorsURL = URL(string: "https://github.com/sponsors/OreoSolutions")!
 
     private var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
