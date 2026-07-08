@@ -140,6 +140,34 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
             return Err(AxFail::Unsupported);
         }
 
+        // Một số app (Chrome...) trả thành công nhưng lờ lệnh chọn vùng —
+        // nếu ghi text lúc đó sẽ CHÈN thay vì THAY. Đọc lại để chắc chắn.
+        let mut check: CFTypeRef = std::ptr::null();
+        if AXUIElementCopyAttributeValue(
+            element,
+            attr("AXSelectedTextRange").as_concrete_TypeRef(),
+            &mut check,
+        ) != AX_SUCCESS
+            || check.is_null()
+        {
+            return Err(AxFail::Unsupported);
+        }
+        let check_guard = CFType::wrap_under_create_rule(check);
+        let mut applied = CFRange {
+            location: 0,
+            length: 0,
+        };
+        if AXValueGetValue(
+            check_guard.as_CFTypeRef(),
+            K_AX_VALUE_TYPE_CFRANGE,
+            &mut applied as *mut CFRange as *mut c_void,
+        ) == 0
+            || applied.location != target.location
+            || applied.length != target.length
+        {
+            return Err(AxFail::Unsupported);
+        }
+
         // ...và ghi đè bằng chuỗi mới trong một thao tác nguyên tử.
         let replacement = CFString::new(text);
         if AXUIElementSetAttributeValue(

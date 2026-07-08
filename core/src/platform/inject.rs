@@ -16,6 +16,7 @@ use crate::config::FixMode;
 pub const MAGIC: i64 = 0x4F52_454F;
 
 const KEY_BACKSPACE: u16 = 51;
+const KEY_SPACE: u16 = 49;
 /// Số đơn vị UTF-16 tối đa mỗi event chữ — một số app bỏ ký tự khi
 /// nhận chuỗi quá dài trong một event.
 const CHUNK_UTF16: usize = 8;
@@ -72,10 +73,14 @@ fn key_inject(proxy: CGEventTapProxy, backspaces: usize, text: &str, profile: &R
         None
     };
 
-    // Trình duyệt đang bôi đen phần gợi ý autocomplete: gửi một phím
-    // "rỗng" vô hại để hủy bôi đen trước khi backspace, tránh xóa nhầm.
+    // Trình duyệt có thể đang bôi đen phần gợi ý autocomplete — backspace
+    // đầu sẽ nuốt phần bôi đen thay vì ký tự thật (bug thực địa: "bận"
+    // thành "baận" trên Chrome). Gõ một dấu cách rồi xóa ngay: có gợi ý
+    // thì dấu cách thay thế phần bôi đen (hủy gợi ý), không có thì cặp
+    // gõ-xóa tự triệt tiêu. Idempotent trong cả hai trường hợp.
     if profile.browser_fix && backspaces > 0 {
-        post_key(&source, proxy, 255, "", delay);
+        post_key(&source, proxy, KEY_SPACE, " ", delay);
+        post_key(&source, proxy, KEY_BACKSPACE, "", delay);
     }
 
     for _ in 0..backspaces {
