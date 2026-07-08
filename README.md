@@ -36,6 +36,12 @@ Yêu cầu: Rust (cargo), Xcode Command Line Tools. Test engine: `cargo test`.
 Lần chạy đầu app sẽ hướng dẫn cấp quyền Accessibility (bắt buộc để chặn
 phím toàn hệ thống). Kiểm thử tay theo `docs/testing-checklist.md`.
 
+**Lưu ý khi dev**: bản build ký ad-hoc → mỗi lần rebuild, macOS coi là
+app khác và quyền Accessibility cũ thành vô hiệu (công tắc vẫn hiện ON
+nhưng không có tác dụng). Xử lý: `tccutil reset Accessibility
+com.oreosolutions.oreokey` rồi cấp lại, hoặc tắt/bật công tắc trong
+System Settings. Bản phát hành ký Developer ID không bị vấn đề này.
+
 ## Phát hành thật (cần tài khoản Apple Developer)
 
 1. `CODESIGN_ID="Developer ID Application: ..." ./scripts/build.sh --universal`
