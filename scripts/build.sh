@@ -33,6 +33,9 @@ fi
 
 # 2. Swift app (ARCH_FLAGS cố ý không quote — có thể rỗng hoặc nhiều flag)
 cd "$ROOT/app"
+# SPM không theo dõi thay đổi của thư viện tĩnh Rust → xóa binary cũ
+# để ép relink, tránh chạy nhầm bản cũ dù code Rust đã đổi.
+find .build -type f -name OreoKey -delete 2>/dev/null || true
 # shellcheck disable=SC2086
 swift build -c release $ARCH_FLAGS -Xlinker -L"$LIBDIR"
 
