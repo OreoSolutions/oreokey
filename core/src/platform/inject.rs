@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use core_graphics::event::{CGEvent, CGEventTapProxy, EventField};
+use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapProxy, EventField};
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 
 use super::ax;
@@ -17,6 +17,7 @@ pub const MAGIC: i64 = 0x4F52_454F;
 
 const KEY_BACKSPACE: u16 = 51;
 const KEY_SPACE: u16 = 49;
+const KEY_LEFT_ARROW: u16 = 123;
 /// Số đơn vị UTF-16 tối đa mỗi event chữ — một số app bỏ ký tự khi
 /// nhận chuỗi quá dài trong một event.
 const CHUNK_UTF16: usize = 8;
@@ -85,6 +86,29 @@ fn key_inject(proxy: CGEventTapProxy, backspaces: usize, text: &str, profile: &R
         None
     };
 
+    // App điền lại ghost text sau MỌI event (Spotlight): backspace luôn
+    // thua cuộc đua với autocomplete. Chọn ngược bằng Shift+← (tự hủy
+    // ghost) rồi gõ đè lên vùng chọn — không có backspace nào để bị nuốt.
+    if profile.select_replace && backspaces > 0 {
+        super::dlog(&format!("  select_replace bs={backspaces}"));
+        for _ in 0..backspaces {
+            post_key_flags(
+                &source,
+                proxy,
+                KEY_LEFT_ARROW,
+                "",
+                CGEventFlags::CGEventFlagShift,
+                delay,
+            );
+        }
+        let chars: Vec<char> = text.chars().collect();
+        for chunk in chars.chunks(CHUNK_UTF16) {
+            let s: String = chunk.iter().collect();
+            post_key(&source, proxy, 0, &s, delay);
+        }
+        return;
+    }
+
     // Ô nhập có autocomplete (thanh địa chỉ trình duyệt, Spotlight...)
     // bôi đen phần gợi ý — backspace đầu sẽ nuốt phần bôi đen thay vì ký
     // tự thật ("bận" thành "baận"). Khi engine đang giữa từ mà có vùng
@@ -129,10 +153,24 @@ fn post_key(
     text: &str,
     delay: Option<Duration>,
 ) {
+    post_key_flags(source, proxy, keycode, text, CGEventFlags::CGEventFlagNull, delay);
+}
+
+fn post_key_flags(
+    source: &CGEventSource,
+    proxy: CGEventTapProxy,
+    keycode: u16,
+    text: &str,
+    flags: CGEventFlags,
+    delay: Option<Duration>,
+) {
     for down in [true, false] {
         let Ok(ev) = CGEvent::new_keyboard_event(source.clone(), keycode, down) else {
             continue;
         };
+        if flags != CGEventFlags::CGEventFlagNull {
+            ev.set_flags(flags);
+        }
         if !text.is_empty() && down {
             ev.set_string(text);
         }

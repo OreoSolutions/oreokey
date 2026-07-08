@@ -18,6 +18,11 @@ pub struct AppProfile {
     /// — cho app có ghost text mà AXSelectedTextRange báo 0 (Spotlight).
     #[serde(default)]
     pub force_clear: bool,
+    /// Sửa chữ bằng Shift+← chọn ngược rồi gõ đè, thay vì backspace —
+    /// cho app điền lại ghost text sau MỌI event khiến backspace luôn
+    /// bị nuốt (Spotlight). Shift+← tự hủy ghost text.
+    #[serde(default)]
+    pub select_replace: bool,
     #[serde(default)]
     pub delay_ms: u64,
 }
@@ -38,6 +43,7 @@ pub struct ResolvedProfile {
     pub mode: FixMode,
     pub browser_fix: bool,
     pub force_clear: bool,
+    pub select_replace: bool,
     pub delay_ms: u64,
 }
 
@@ -47,6 +53,7 @@ impl Default for ResolvedProfile {
             mode: FixMode::Auto,
             browser_fix: false,
             force_clear: false,
+            select_replace: false,
             delay_ms: 3,
         }
     }
@@ -106,6 +113,7 @@ impl Profiles {
         }
         resolved.browser_fix = p.browser_fix;
         resolved.force_clear = p.force_clear;
+        resolved.select_replace = p.select_replace;
         if p.delay_ms > 0 {
             resolved.delay_ms = p.delay_ms;
         }
@@ -145,8 +153,7 @@ mod tests {
         let p = Profiles::load_default();
         let none = HashMap::new();
         let r = p.resolve("com.mitchellh.ghostty", &none, Some("Spotlight"));
-        assert!(r.browser_fix);
-        assert!(r.force_clear); // AX của Spotlight báo selection=0 dù có ghost text
+        assert!(r.select_replace); // ghost text nuốt backspace → phải gõ đè
         assert_eq!(r.mode, FixMode::InjectFast);
         // Process lạ → rơi về bundle như cũ.
         let r = p.resolve("com.mitchellh.ghostty", &none, Some("ghostty"));

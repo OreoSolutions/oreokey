@@ -7,7 +7,7 @@
     "company.thebrowser.Browser": { "mode": "auto", "browser_fix": true },
     "org.mozilla.firefox": { "mode": "inject_fast", "browser_fix": true },
     "com.apple.Spotlight": { "mode": "inject_fast", "browser_fix": true },
-    "proc:Spotlight": { "mode": "inject_fast", "browser_fix": true, "force_clear": true },
+    "proc:Spotlight": { "mode": "inject_fast", "select_replace": true },
 
     "com.microsoft.Excel": { "mode": "inject_slow", "delay_ms": 8 },
     "com.microsoft.Word": { "mode": "inject_slow", "delay_ms": 5 },
