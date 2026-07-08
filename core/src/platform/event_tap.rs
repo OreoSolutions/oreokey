@@ -140,8 +140,9 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
         use foreign_types::ForeignType;
         unsafe { CGEventGetTimestamp(event.as_ptr() as *const c_void) }
     };
+    let src_pid = event.get_integer_value_field(EventField::EVENT_SOURCE_UNIX_PROCESS_ID);
     super::dlog(&format!(
-        "keydown code={keycode} rep={autorepeat} magic={} ts={ev_ts} char={:?}",
+        "keydown code={keycode} rep={autorepeat} magic={} ts={ev_ts} srcpid={src_pid} char={:?}",
         user_data == inject::MAGIC,
         event_char(event)
     ));
@@ -153,11 +154,18 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
     let flags = event.get_flags();
 
     with_runtime(|rt| {
-        // Phím vừa bị nuốt (Replace) mà quay lại tức thì cùng keycode:
-        // bản sao do WindowServer giao lại khi callback chậm — không
-        // người nào bấm lại cùng một phím trong <15ms. Nuốt nốt.
-        if let Some((code, at)) = rt.last_dropped {
-            if code == keycode && at.elapsed() < std::time::Duration::from_millis(15) {
+        // Phím vừa bị nuốt (Replace) mà quay lại cùng keycode với
+        // timestamp PHẦN CỨNG chỉ chênh vài ms: bản sao được hệ thống
+        // giao lại (đã quan sát bản sao đến muộn 150-400ms đồng hồ tường
+        // nhưng hw-ts chỉ lệch 3-10ms — so đồng hồ tường là vô vọng).
+        // Không ai bấm lại cùng một phím trong <30ms phần cứng;
+        // autorepeat có cờ riêng.
+        if let Some((code, dropped_ts)) = rt.last_dropped {
+            let hw_delta_ns = ev_ts.wrapping_sub(dropped_ts);
+            if code == keycode {
+                super::dlog(&format!("  dup-guard: same code, hw_delta={hw_delta_ns}ns"));
+            }
+            if code == keycode && hw_delta_ns < 30_000_000 {
                 super::dlog("  dup re-delivery suppressed");
                 rt.last_dropped = None;
                 return CallbackKeep::Drop;
@@ -233,7 +241,7 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     &mut rt.ax_ok,
                     finfo.selection_len,
                 );
-                rt.last_dropped = Some((keycode, std::time::Instant::now()));
+                rt.last_dropped = Some((keycode, ev_ts));
                 CallbackKeep::Drop
             }
         }

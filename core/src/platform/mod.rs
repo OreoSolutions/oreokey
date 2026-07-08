@@ -29,9 +29,10 @@ pub struct Runtime {
     /// Cache khả năng sửa chữ qua AX API theo bundle ID.
     pub ax_ok: HashMap<String, bool>,
     pub status_cb: Option<StatusCallback>,
-    /// Keycode + thời điểm của phím vừa bị nuốt (Replace) — chặn bản
-    /// sao WindowServer giao lại khi callback chậm.
-    pub last_dropped: Option<(u16, std::time::Instant)>,
+    /// Keycode + timestamp PHẦN CỨNG của phím vừa bị nuốt (Replace) —
+    /// chặn bản sao hệ thống giao lại (bản sao giữ hw-ts gần bản gốc dù
+    /// đến muộn hàng trăm ms đồng hồ tường).
+    pub last_dropped: Option<(u16, u64)>,
 }
 
 pub static RUNTIME: Mutex<Option<Runtime>> = Mutex::new(None);
