@@ -122,19 +122,10 @@ fn rpos(state: &WordState, pred: impl Fn(&Letter) -> bool) -> Option<usize> {
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::testutil::type_str;
-    use crate::engine::{Engine, EngineConfig, TypingMethod};
+    use crate::engine::TypingMethod;
 
     fn v(keys: &str) -> String {
-        let mut e = Engine::new(EngineConfig {
-            method: TypingMethod::Vni,
-            spell_check: false,
-            modern_tone: false,
-            macros_enabled: false,
-            flexible_marks: true,
-            censor_enabled: false,
-        });
-        type_str(&mut e, keys)
+        crate::engine::testutil::raw_render(TypingMethod::Vni, keys, false, true)
     }
 
     #[test]

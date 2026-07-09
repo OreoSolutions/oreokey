@@ -149,8 +149,8 @@ private struct GeneralPane: View {
 
                 Section("Hành vi gõ") {
                     ToggleRow(
-                        title: "Kiểm tra chính tả",
-                        detail: "Từ không phải tiếng Việt tự trả về phím gốc (mask, class...)",
+                        title: "Kiểm tra chính tả (chặt)",
+                        detail: "Tắt = gõ thoải mái: cho gõ tắt (đc, nèk) mà vẫn nhận diện tiếng Anh có cụm bất khả (clear, sound). Bật: bảo vệ tối đa từ tiếng Anh (mask, class).",
                         isOn: binding.spell_check)
                     ToggleRow(
                         title: "Gõ dấu mũ linh hoạt",

@@ -338,10 +338,9 @@ impl Engine {
             return (String::new(), false);
         }
         let state = self.build_state(raw);
-        // Từ bị biến đổi nhưng không phải âm tiết tiếng Việt → trả phím gốc.
-        if self.cfg.spell_check
-            && spell::is_transformed(&state)
-            && !spell::is_acceptable(&state)
+        // Từ bị biến đổi nhưng không phải âm tiết chấp nhận được → trả phím gốc.
+        if spell::is_transformed(&state)
+            && !spell::is_acceptable(&state, !self.cfg.spell_check)
         {
             return (raw.to_string(), true);
         }
@@ -403,6 +402,24 @@ pub(crate) mod testutil {
             }
         }
         screen
+    }
+
+    /// Dựng `WordState` từ chuỗi phím rồi render, KHÔNG qua tầng spell.
+    /// Dùng cho test cơ chế biến đổi telex/vni (chỉ chuỗi phím tiến).
+    pub(crate) fn raw_render(
+        method: TypingMethod,
+        keys: &str,
+        modern_tone: bool,
+        flexible_marks: bool,
+    ) -> String {
+        let mut state = WordState::default();
+        for c in keys.chars() {
+            match method {
+                TypingMethod::Telex => telex::apply_key(&mut state, c, flexible_marks),
+                TypingMethod::Vni => vni::apply_key(&mut state, c),
+            }
+        }
+        render_letters(&state, modern_tone)
     }
 }
 

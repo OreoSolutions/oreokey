@@ -62,7 +62,11 @@ pub fn is_transformed(state: &WordState) -> bool {
 }
 
 /// Âm tiết chấp nhận được (hợp lệ hoặc là tiền tố hợp lý của từ đang gõ).
-pub fn is_acceptable(state: &WordState) -> bool {
+/// `loose == true`: chế độ "gõ thoải mái" — thả kiểm tra phụ âm cuối và
+/// luật thanh-trên-phụ-âm-tắc, nới trường hợp không nguyên âm cho từ có
+/// `đ`. Vẫn giữ mọi phép chặn cụm bất khả (phụ âm đầu, cụm nguyên âm,
+/// nguyên âm liên tục).
+pub fn is_acceptable(state: &WordState, loose: bool) -> bool {
     let letters = &state.letters;
     if letters.iter().any(|l| !l.base.is_ascii_alphabetic()) {
         return false;
@@ -73,7 +77,12 @@ pub fn is_acceptable(state: &WordState) -> bool {
     }
     let vidx = vowel_indices(letters);
     let Some(&run_start) = vidx.first() else {
-        // Không có nguyên âm: chỉ chấp nhận "đ" trơ (đang gõ dở "đi"...).
+        // Không có nguyên âm.
+        if loose {
+            // Từ viết tắt kiểu đc/đk/đt: chấp nhận nếu chữ đầu mang gạch.
+            return letters.first().is_some_and(|l| l.stroke);
+        }
+        // Strict: chỉ chấp nhận mỗi "đ" trơ (đang gõ dở "đi"...).
         return letters.len() == 1 && letters[0].stroke;
     };
     // Cụm nguyên âm phải liên tục; nguyên âm sau phụ âm cuối → không hợp lệ.
@@ -93,13 +102,14 @@ pub fn is_acceptable(state: &WordState) -> bool {
         return false;
     }
     let nucleus = render_range(run_start, run_end + 1);
-    // Vần hợp lệ, hoặc là dạng gõ dở của một vần hợp lệ (chưa bấm phím
-    // dấu: "ie" chờ thành "iê"). Nới lỏng này chỉ áp dụng khi từ CHƯA
-    // có thanh — "dies" (thanh sắc từ s) vẫn phải bị khôi phục.
     let nucleus_ok = NUCLEI.contains(&nucleus.as_str())
         || (state.tone.is_none() && NUCLEI.iter().any(|n| can_become(&nucleus, n)));
     if !nucleus_ok {
         return false;
+    }
+    // Loose: thả tự do phụ âm cuối và bỏ luật thanh trên phụ âm tắc.
+    if loose {
+        return true;
     }
     let final_c = render_range(run_end + 1, letters.len());
     if !FINALS.contains(&final_c.as_str()) {
@@ -210,16 +220,66 @@ mod tests {
         assert_eq!(t("class"), "class");
     }
 
-    #[test]
-    fn spell_off_transforms_anyway() {
+    fn loose(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false,
+            spell_check: false, // false = chế độ gõ thoải mái (loose)
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
         });
-        assert_eq!(type_str(&mut e, "mask"), "mák");
+        type_str(&mut e, keys)
+    }
+
+    #[test]
+    fn loose_allows_abbreviations() {
+        // Từ viết tắt có dấu, phụ âm cuối/không nguyên âm → được giữ.
+        assert_eq!(loose("ddc"), "đc"); // đ + c, không nguyên âm
+        assert_eq!(loose("nefk"), "nèk"); // đuôi k không hợp lệ vẫn cho
+    }
+
+    #[test]
+    fn loose_still_restores_english() {
+        // Cụm bất khả (phụ âm đầu / nguyên âm / nguyên âm không liền) vẫn bắt.
+        assert_eq!(loose("clear"), "clear"); // cl đầu bất khả
+        assert_eq!(loose("sound"), "sound"); // ou bất khả
+        assert_eq!(loose("for"), "for"); // f đầu bất khả
+        assert_eq!(loose("class"), "class");
+        assert_eq!(loose("dies"), "dies"); // ie + thanh → bất khả
+        assert_eq!(loose("status"), "status"); // a…u không liên tục
+    }
+
+    #[test]
+    fn loose_keeps_valid_vietnamese() {
+        assert_eq!(loose("vieetj"), "việt");
+        assert_eq!(loose("dduongwf"), "đường");
+        assert_eq!(loose("toans"), "toán");
+    }
+
+    #[test]
+    fn loose_transforms_ambiguous_english_by_design() {
+        // Đánh đổi đã chấp nhận: cùng cấu trúc với nèk nên bị đặt dấu.
+        assert_eq!(loose("mask"), "mák");
+        assert_eq!(loose("task"), "ták");
+    }
+
+    fn loose_vni(keys: &str) -> String {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_check: false, // false = loose
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        type_str(&mut e, keys)
+    }
+
+    #[test]
+    fn loose_applies_to_vni() {
+        // Bộ lọc loose chạy trên WordState nên áp cho cả VNI (đ tạo bằng d9).
+        assert_eq!(loose_vni("d9c"), "đc"); // đ + c, không nguyên âm
+        assert_eq!(loose_vni("vie65t"), "việt"); // âm tiết hợp lệ vẫn giữ
     }
 }
