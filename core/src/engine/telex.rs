@@ -87,15 +87,18 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
         }
         'w' => {
             let n = state.letters.len();
-            // Hủy cặp ươ → uo (uoww hoặc sau khi w áp lên cả cặp).
-            if n >= 2
-                && state.letters[n - 2].base == 'u'
-                && state.letters[n - 2].horn
-                && state.letters[n - 1].base == 'o'
-                && state.letters[n - 1].horn
-            {
-                state.letters[n - 2].horn = false;
-                state.letters[n - 1].horn = false;
+            // Hủy cặp ươ → uo: quét cặp chữ u(móc)+o(móc) liền kề bất kỳ, kể
+            // cả khi còn nguyên âm cuối theo sau (đối xứng chiều áp dụng
+            // ươi/ươu). Trước đây chỉ xét hai chữ cuối nên bấm w để hủy ươ
+            // giữa cụm ("cười") sinh ra ký tự ư thừa.
+            if let Some(k) = (0..n.saturating_sub(1)).find(|&k| {
+                state.letters[k].base == 'u'
+                    && state.letters[k].horn
+                    && state.letters[k + 1].base == 'o'
+                    && state.letters[k + 1].horn
+            }) {
+                state.letters[k].horn = false;
+                state.letters[k + 1].horn = false;
                 state.dead.push('w');
                 state.letters.push(Letter::plain(c));
                 return;
@@ -116,10 +119,12 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                 state.letters.push(Letter::plain(c));
                 return;
             }
-            // Áp dụng: cặp uo cuối cùng → ươ.
+            // Áp dụng: cặp uo liền kề bất kỳ trong cụm nguyên âm → ươ. Quét
+            // cả cụm (không chỉ hai nguyên âm cuối) để ươi/ươu — "người",
+            // "cười", "rượu" — móc được cả cặp dù còn nguyên âm cuối theo sau.
             let vidx = vowel_indices(&state.letters);
-            if vidx.len() >= 2 {
-                let (i, j) = (vidx[vidx.len() - 2], vidx[vidx.len() - 1]);
+            for k in 0..vidx.len().saturating_sub(1) {
+                let (i, j) = (vidx[k], vidx[k + 1]);
                 if j == i + 1
                     && state.letters[i].base == 'u'
                     && state.letters[j].base == 'o'
@@ -256,6 +261,29 @@ mod tests {
         assert_eq!(t("uwowng"), "ương");
         assert_eq!(t("khoawn"), "khoăn");
         assert_eq!(t("quow"), "quơ"); // u sau q không nhận móc
+    }
+
+    #[test]
+    fn uo_horn_with_final_vowel() {
+        // Cặp uo + nguyên âm cuối (ươi/ươu): một chữ w móc cả cặp, kể cả khi
+        // uo không nằm ở hai nguyên âm cuối của từ.
+        assert_eq!(t("nguoiwf"), "người");
+        assert_eq!(t("cuoiwf"), "cười");
+        assert_eq!(t("tuoiw"), "tươi");
+        assert_eq!(t("ruouwj"), "rượu");
+        // Không hồi quy: cặp uo ở cuối vẫn chạy.
+        assert_eq!(t("duongw"), "dương");
+        assert_eq!(t("uwowng"), "ương");
+        // Bất biến: u sau q không thuộc cụm; uô (đã mang mũ) không phải cặp uo.
+        assert_eq!(t("quow"), "quơ");
+        assert_eq!(t("buonw"), "bươn");
+    }
+
+    #[test]
+    fn uo_horn_cancel_with_final_vowel() {
+        // Đối xứng chiều hủy: bấm w sau ươ giữa cụm gỡ móc cả hai, không rác.
+        assert_eq!(t("cuoiww"), "cuoiw");
+        assert_eq!(t("nguoiww"), "nguoiw");
     }
 
     #[test]
