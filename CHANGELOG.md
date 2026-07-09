@@ -6,6 +6,17 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã thêm
+- **Gõ `đ` linh hoạt (Telex)**: gõ `đ` bằng cả `dd` liền kề *hoặc* đặt `d` muộn
+  ở cuối âm tiết — `did` → `đi`, `dangd` → `đang`. Song song với "gõ mũ muộn"
+  (`nanag` → `nâng`) và chung công tắc **"Gõ dấu mũ linh hoạt"**; chỉ áp khi ra
+  âm tiết tiếng Việt hợp lệ nên từ tiếng Anh (`dryad`) giữ nguyên.
+
+### Đã sửa
+- **Cặp `ươ` (Telex) khi còn nguyên âm cuối**: một chữ `w` giờ móc đúng cả cặp
+  trong `ươi`/`ươu` — `nguoiwf` → `người`, `cuoiwf` → `cười`, `ruouwj` → `rượu`.
+  Trước đây chỉ móc mỗi chữ `o`, buộc phải gõ tay từng dấu (`cuwowif`).
+
 ## [0.3.0] - 2026-07-09
 
 ### Đã đổi
