@@ -67,7 +67,7 @@ echo "  EdDSA: $SIG_ATTRS"
 python3 scripts/update-appcast.py "$VERSION" "$BUILD" "$DOWNLOAD_URL" "$SIG_ATTRS" --notes-file "$NOTES"
 
 # --- 6. Commit + tag + push tag -------------------------------------------
-git add app/Info.plist core/Cargo.toml CHANGELOG.md appcast.xml
+git add app/Info.plist core/Cargo.toml Cargo.lock CHANGELOG.md appcast.xml
 git commit -m "release: $VERSION"
 git tag "v$VERSION"
 git push origin "v$VERSION"
