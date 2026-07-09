@@ -25,6 +25,23 @@
                  type="application/octet-stream"
                  sparkle:edSignature="A5vnU+Z944OIoSmEoTqsDXOx0iCH+Of4kJLp0+g/ANLBgvkGCGKMLGF6BWcnQ+eOUJsVx/+GZ/G5kgaNJNumBw==" length="5362275" />
     </item>
+    <item>
+      <title>0.3.0</title>
+      <pubDate>Thu, 09 Jul 2026 06:41:21 +0000</pubDate>
+      <sparkle:version>3</sparkle:version>
+      <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<pre>### Đã đổi
+- **Chế độ &quot;gõ thoải mái&quot;**: khi tắt &quot;Kiểm tra chính tả (chặt)&quot;, engine giờ cho
+  gõ tắt tiếng Việt (`đc`, `nèk`, `ko`…) mà vẫn tự nhận diện và giữ nguyên từ
+  tiếng Anh có cụm bất khả (`clear`, `sound`, `status`…), thay vì đặt dấu bừa
+  như trước. Bật lại để ưu tiên bảo vệ tối đa từ tiếng Anh.</pre>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.3.0/OreoKey.dmg"
+                 sparkle:version="3"
+                 sparkle:shortVersionString="0.3.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="87siygTqkzoqUzissEdwVRd7EFnkutB1bCY3ApyDJr5z9g1Vr9uLJEfUabpp4TMnxPi5pU9ppsUY39ffbjFxBw==" length="5506678" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>

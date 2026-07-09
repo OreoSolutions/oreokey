@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.3.0] - 2026-07-09
+
 ### Đã đổi
 - **Chế độ "gõ thoải mái"**: khi tắt "Kiểm tra chính tả (chặt)", engine giờ cho
   gõ tắt tiếng Việt (`đc`, `nèk`, `ko`…) mà vẫn tự nhận diện và giữ nguyên từ
