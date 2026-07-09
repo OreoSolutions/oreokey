@@ -44,18 +44,25 @@ System Settings. Bản phát hành ký Developer ID không bị vấn đề này
 
 ## Phát hành thật (cần tài khoản Apple Developer)
 
-1. `CODESIGN_ID="Developer ID Application: ..." ./scripts/build.sh --universal`
-2. `CODESIGN_ID=... NOTARY_PROFILE=... ./scripts/make-dmg.sh` (ký + notarize + staple)
-3. Phát hành qua **GitHub Actions**: tab Actions → workflow "Release" →
-   "Run workflow" → nhập version (vd `0.2.0`). CI tự bump version, cuốn mục
-   `[Chưa phát hành]` trong `CHANGELOG.md`, tag `vX`, build universal, đóng DMG
-   (ký + notarize nếu có secret `CODESIGN_ID`/`NOTARY_PROFILE`), ký EdDSA, cập
-   nhật `appcast.xml`, và tạo GitHub Release kèm DMG. Trước khi viết mục changelog
-   cho bản mới, điền vào phần `[Chưa phát hành]`.
+Phát hành chạy **tại máy** bằng một lệnh — khóa ký Developer ID không rời máy bạn:
 
-   Cài đặt một lần: sinh khóa Sparkle bằng `generate_keys` (kèm trong artifact
-   Sparkle), dán khóa công khai vào `SUPublicEDKey` ở `app/Info.plist`, và đặt
-   khóa riêng vào secret `SPARKLE_ED_PRIVATE_KEY` (`generate_keys -x` để xuất).
+```
+CODESIGN_ID="Developer ID Application: Tên (TEAMID)" ./scripts/release.sh 0.3.0
+```
+
+`release.sh` tự làm trọn gói: bump version, cuốn mục `[Chưa phát hành]` trong
+`CHANGELOG.md` thành `[0.3.0]`, build universal, **ký Developer ID + notarize +
+staple**, ký EdDSA cho Sparkle, cập nhật `appcast.xml`, tạo GitHub Release kèm
+DMG, rồi push tag + appcast lên `main`. Trước khi phát hành, điền nội dung vào
+mục `[Chưa phát hành]` của `CHANGELOG.md`.
+
+Yêu cầu: đang ở nhánh `main` và cây làm việc sạch; `gh` đã đăng nhập;
+`NOTARY_PROFILE` (mặc định `oreokey-notary`) đã tạo bằng
+`xcrun notarytool store-credentials`.
+
+Cài đặt một lần: sinh khóa Sparkle bằng `generate_keys` (kèm trong artifact
+Sparkle), dán khóa công khai vào `SUPublicEDKey` ở `app/Info.plist`; khóa riêng
+nằm sẵn trong login keychain nên `release.sh` tự ký EdDSA được.
 
 ## Kiến trúc
 
