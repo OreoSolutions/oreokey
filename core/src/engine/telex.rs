@@ -190,11 +190,11 @@ mod tests {
     }
 
     fn t(keys: &str) -> String {
-        type_str(&mut engine(false), keys)
+        crate::engine::testutil::raw_render(TypingMethod::Telex, keys, false, true)
     }
 
     fn t_modern(keys: &str) -> String {
-        type_str(&mut engine(true), keys)
+        crate::engine::testutil::raw_render(TypingMethod::Telex, keys, true, true)
     }
 
     #[test]
