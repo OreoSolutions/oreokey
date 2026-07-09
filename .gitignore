@@ -3,6 +3,8 @@ target/
 
 # Swift / SwiftPM
 app/.build/
+# venv công cụ đóng DMG (make-dmg.sh tự dựng)
+/.build/
 .swiftpm/
 *.xcuserstate
 
