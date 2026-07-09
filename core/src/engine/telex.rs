@@ -338,8 +338,9 @@ mod tests {
             censor_enabled: false,
         });
         assert_eq!(type_str(&mut e, "nanag"), "nanag");
+        e.reset(); // hai từ riêng biệt — ngắt từ (như gõ dấu cách thật)
         // Dạng liền kề cổ điển vẫn hoạt động.
-        assert_eq!(type_str(&mut e, " naang".trim()), "nâng");
+        assert_eq!(type_str(&mut e, "naang"), "nâng");
     }
 
     fn t_spell(keys: &str) -> String {
