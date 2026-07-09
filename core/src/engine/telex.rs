@@ -74,6 +74,8 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                         // Chỉ giữ nếu ra âm tiết hợp lệ — tránh biến từ
                         // tiếng Anh (banana) thành tiếng Việt nửa mùa.
                         state.letters[i].circ = true;
+                        // Luôn kiểm strict (false) kể cả ở chế độ loose: mũ
+                        // muộn chỉ nên áp khi ra âm tiết TV hợp lệ hẳn.
                         if spell::is_acceptable(state, false) {
                             return;
                         }
@@ -338,7 +340,9 @@ mod tests {
             censor_enabled: false,
         });
         assert_eq!(type_str(&mut e, "nanag"), "nanag");
-        e.reset(); // hai từ riêng biệt — ngắt từ (như gõ dấu cách thật)
+        e.reset(); // hai từ riêng biệt — ngắt từ (như gõ dấu cách thật).
+        // Không reset thì raw gộp "nanagnaang" (nguyên âm không liền) → loose
+        // khôi phục raw, đúng hành vi; test cũ chỉ đúng nhờ đặt-dấu-mù.
         // Dạng liền kề cổ điển vẫn hoạt động.
         assert_eq!(type_str(&mut e, "naang"), "nâng");
     }

@@ -220,19 +220,6 @@ mod tests {
         assert_eq!(t("class"), "class");
     }
 
-    #[test]
-    fn spell_off_transforms_anyway() {
-        let mut e = Engine::new(EngineConfig {
-            method: TypingMethod::Telex,
-            spell_check: false,
-            modern_tone: false,
-            macros_enabled: false,
-            flexible_marks: true,
-            censor_enabled: false,
-        });
-        assert_eq!(type_str(&mut e, "mask"), "mák");
-    }
-
     fn loose(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
@@ -275,5 +262,24 @@ mod tests {
         // Đánh đổi đã chấp nhận: cùng cấu trúc với nèk nên bị đặt dấu.
         assert_eq!(loose("mask"), "mák");
         assert_eq!(loose("task"), "ták");
+    }
+
+    fn loose_vni(keys: &str) -> String {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_check: false, // false = loose
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        type_str(&mut e, keys)
+    }
+
+    #[test]
+    fn loose_applies_to_vni() {
+        // Bộ lọc loose chạy trên WordState nên áp cho cả VNI (đ tạo bằng d9).
+        assert_eq!(loose_vni("d9c"), "đc"); // đ + c, không nguyên âm
+        assert_eq!(loose_vni("vie65t"), "việt"); // âm tiết hợp lệ vẫn giữ
     }
 }
