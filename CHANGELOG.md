@@ -6,6 +6,12 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã đổi
+- **Chế độ "gõ thoải mái"**: khi tắt "Kiểm tra chính tả (chặt)", engine giờ cho
+  gõ tắt tiếng Việt (`đc`, `nèk`, `ko`…) mà vẫn tự nhận diện và giữ nguyên từ
+  tiếng Anh có cụm bất khả (`clear`, `sound`, `status`…), thay vì đặt dấu bừa
+  như trước. Bật lại để ưu tiên bảo vệ tối đa từ tiếng Anh.
+
 ## [0.2.0] - 2026-07-08
 
 ### Đã thêm
