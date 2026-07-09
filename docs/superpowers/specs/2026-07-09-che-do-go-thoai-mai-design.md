@@ -155,6 +155,7 @@ Bộ test mới cho loose (thêm vào `spell.rs`):
 | `ddc` (`đc`) | `ddc` | `đc` |
 | `nefk` (`nèk`) | `nefk` | `nèk` |
 | `mask` | `mask` | `mák` (đánh đổi) |
+| `status` | `status` | `status` (nguyên âm a…u không liên tục) |
 | `vieetj` | `việt` | `việt` |
 | `for` | `for` | `for` |
 | `class` | `class` | `class` |
