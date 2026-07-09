@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.4.0] - 2026-07-09
+
 ### Đã thêm
 - **Gõ `đ` linh hoạt (Telex)**: gõ `đ` bằng cả `dd` liền kề *hoặc* đặt `d` muộn
   ở cuối âm tiết — `did` → `đi`, `dangd` → `đang`. Song song với "gõ mũ muộn"

@@ -42,6 +42,28 @@
                  type="application/octet-stream"
                  sparkle:edSignature="87siygTqkzoqUzissEdwVRd7EFnkutB1bCY3ApyDJr5z9g1Vr9uLJEfUabpp4TMnxPi5pU9ppsUY39ffbjFxBw==" length="5506678" />
     </item>
+    <item>
+      <title>0.4.0</title>
+      <pubDate>Thu, 09 Jul 2026 07:21:55 +0000</pubDate>
+      <sparkle:version>4</sparkle:version>
+      <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<pre>### Đã thêm
+- **Gõ `đ` linh hoạt (Telex)**: gõ `đ` bằng cả `dd` liền kề *hoặc* đặt `d` muộn
+  ở cuối âm tiết — `did` → `đi`, `dangd` → `đang`. Song song với &quot;gõ mũ muộn&quot;
+  (`nanag` → `nâng`) và chung công tắc **&quot;Gõ dấu mũ linh hoạt&quot;**; chỉ áp khi ra
+  âm tiết tiếng Việt hợp lệ nên từ tiếng Anh (`dryad`) giữ nguyên.
+
+### Đã sửa
+- **Cặp `ươ` (Telex) khi còn nguyên âm cuối**: một chữ `w` giờ móc đúng cả cặp
+  trong `ươi`/`ươu` — `nguoiwf` → `người`, `cuoiwf` → `cười`, `ruouwj` → `rượu`.
+  Trước đây chỉ móc mỗi chữ `o`, buộc phải gõ tay từng dấu (`cuwowif`).</pre>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.4.0/OreoKey.dmg"
+                 sparkle:version="4"
+                 sparkle:shortVersionString="0.4.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="EsZFjRQMwufP4dZ4oQdwMAkLikWT0JOu2G8M2f/Rkc7MqKmbwWUmuCwvOdAIqq4A5PkscA5rP+XBI54GR55kCg==" length="5507423" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
