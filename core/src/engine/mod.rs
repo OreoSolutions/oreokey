@@ -338,10 +338,9 @@ impl Engine {
             return (String::new(), false);
         }
         let state = self.build_state(raw);
-        // Từ bị biến đổi nhưng không phải âm tiết tiếng Việt → trả phím gốc.
-        if self.cfg.spell_check
-            && spell::is_transformed(&state)
-            && !spell::is_acceptable(&state)
+        // Từ bị biến đổi nhưng không phải âm tiết chấp nhận được → trả phím gốc.
+        if spell::is_transformed(&state)
+            && !spell::is_acceptable(&state, !self.cfg.spell_check)
         {
             return (raw.to_string(), true);
         }

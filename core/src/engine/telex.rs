@@ -74,7 +74,7 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                         // Chỉ giữ nếu ra âm tiết hợp lệ — tránh biến từ
                         // tiếng Anh (banana) thành tiếng Việt nửa mùa.
                         state.letters[i].circ = true;
-                        if spell::is_acceptable(state) {
+                        if spell::is_acceptable(state, false) {
                             return;
                         }
                         state.letters[i].circ = false;
