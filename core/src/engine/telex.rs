@@ -174,6 +174,18 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                     return;
                 }
             }
+            // Gạch ngang muộn: phím d sau khi đã có nguyên âm vẫn tìm về chữ
+            // d đầu từ (did → đi), song song mũ muộn. Chỉ áp khi ra âm tiết TV
+            // hợp lệ để không biến từ tiếng Anh (dryad giữ nguyên).
+            if flexible_marks
+                && state.letters.first().is_some_and(|l| l.base == 'd' && !l.stroke)
+            {
+                state.letters[0].stroke = true;
+                if spell::is_acceptable(state, false) {
+                    return;
+                }
+                state.letters[0].stroke = false;
+            }
             state.letters.push(Letter::plain(c));
         }
         _ => state.letters.push(Letter::plain(c)),
@@ -311,6 +323,34 @@ mod tests {
         assert_eq!(t("ddd"), "dd");
         assert_eq!(t("dddd"), "ddd");
         assert_eq!(t("ddi"), "đi");
+    }
+
+    #[test]
+    fn late_stroke_d() {
+        // Gạch ngang muộn: phím d sau nguyên âm vẫn tìm về chữ d đầu từ
+        // (did → đi), song song với mũ muộn (nanag → nâng). Cách cũ dd vẫn chạy.
+        assert_eq!(t("did"), "đi");
+        assert_eq!(t("ddi"), "đi");
+        assert_eq!(t("dangd"), "đang");
+        assert_eq!(t("dungwd"), "đưng");
+        // Rào chắn: chỉ áp khi ra âm tiết TV hợp lệ — từ tiếng Anh giữ nguyên.
+        assert_eq!(t("dryad"), "dryad");
+    }
+
+    #[test]
+    fn late_stroke_d_respects_flexible_marks() {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_check: false,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: false,
+            censor_enabled: false,
+        });
+        // Tắt "dấu linh hoạt" → gạch muộn không áp; dd liền kề vẫn được.
+        assert_eq!(type_str(&mut e, "did"), "did");
+        e.reset();
+        assert_eq!(type_str(&mut e, "ddi"), "đi");
     }
 
     #[test]
