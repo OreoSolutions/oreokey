@@ -133,6 +133,33 @@
                  type="application/octet-stream"
                  sparkle:edSignature="oeG/i8zu/jm8nznZ+SosJpuN9LXPBRt9dxfPhSQvEOeibmWxjXDEBjMI2839l0ZhCg5prKv18v31sp4Kg60KBQ==" length="5545102" />
     </item>
+    <item>
+      <title>0.6.0</title>
+      <pubDate>Fri, 10 Jul 2026 13:08:12 +0000</pubDate>
+      <sparkle:version>9</sparkle:version>
+      <sparkle:shortVersionString>0.6.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã thêm</h3>
+<ul>
+<li><strong>Trạng thái cập nhật ngay trên sidebar Cài đặt</strong>: chân sidebar hiện tên app và phiên bản — tick xanh ✓ *Mới nhất* khi đang chạy bản mới nhất, cảnh báo cam ⚠ ngay khi có bản mới; bấm vào dòng đó để kiểm tra/cài đặt. Mở cửa sổ Cài đặt là app tự dò bản mới ở chế độ nền, không bật hộp thoại.</li>
+<li><strong>Nút GitHub</strong> trong tab Giới thiệu, dẫn về trang mã nguồn.</li>
+<li><strong>Tài liệu hướng dẫn</strong>: thêm <code>docs/install.md</code> (cài đặt, cấp quyền, gỡ bỏ) và <code>docs/user-guide.md</code> (bảng gõ Telex/VNI, mọi tính năng, xử lý sự cố).</li>
+</ul>
+<h3>Đã đổi</h3>
+<ul>
+<li><strong>Menu bar gọn lại</strong>: hai mục &quot;Kiểm tra bản mới…&quot; và &quot;Khởi động cùng máy&quot; chuyển vào cửa sổ Cài đặt (mục Hệ thống trong tab Chung và chân sidebar); menu chỉ còn bật/tắt tiếng Việt, kiểu gõ, Cài đặt và Thoát.</li>
+<li><strong>Kiểm tra chính tả đổi sang thanh trượt 3 nấc</strong>: kéo càng cao kiểm tra càng chặt (Thoải mái → Thường → Chặt), có chấm đánh dấu từng nấc và tên mức hiện ngay cạnh — thay cho ô chọn 3 nút trước đây.</li>
+</ul>
+<h3>Đã sửa</h3>
+<ul>
+<li><strong>Cửa sổ Cài đặt chồng chữ vùng tiêu đề</strong>: nội dung cuộn lên đè vào titlebar trong suốt, và toolbar tự sinh (nút thu sidebar, tiêu đề lệch cạnh nút đèn) gây xô lệch phần đầu cửa sổ. Nay titlebar hiển thị bình thường, không còn nút thừa hay chữ đè nhau.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.6.0/OreoKey.dmg"
+                 sparkle:version="9"
+                 sparkle:shortVersionString="0.6.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="o0ijS2zrDvpgatdmsBd8MwJmsImlbhIZlOD0/F8N+uYiJNoa5/XDyfF9EqeMctChs01t6wylxpVFAZeAjzeOBA==" length="5615669" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>

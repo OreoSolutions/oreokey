@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.6.0] - 2026-07-10
+
 ### Đã thêm
 - **Trạng thái cập nhật ngay trên sidebar Cài đặt**: chân sidebar hiện tên app
   và phiên bản — tick xanh ✓ *Mới nhất* khi đang chạy bản mới nhất, cảnh báo
