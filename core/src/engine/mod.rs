@@ -260,7 +260,14 @@ impl Engine {
         } else {
             let (text, restored) = self.render_word(&self.raw);
             if restored {
-                self.raw_mode = true;
+                // Chỉ khóa khi từ CHẾT hẳn (cụm bất khả). Trạng thái CÒN
+                // SỐNG (tiền tố hợp lệ, vd nhân âm dở chờ dấu mũ) giữ raw
+                // hiển thị nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
+                // thiện âm tiết (issue #4).
+                let state = self.build_state(&self.raw);
+                if !spell::is_live_prefix(&state) {
+                    self.raw_mode = true;
+                }
                 // Từ đang sạch mà thêm một phím dấu làm nó không hợp lệ:
                 // chỉ nên rơi phím đó xuống thành ký tự thường, KHÔNG bung
                 // lại raw (raw còn giữ cả phím dấu ĐÃ HỦY — bung ra sẽ làm
@@ -506,5 +513,39 @@ mod tests {
         let mut e = engine_mode(SpellMode::Strict);
         assert_eq!(type_str(&mut e, "mask"), "mask");
         assert_eq!(type_str(&mut e, "class"), "class");
+    }
+
+    #[test]
+    fn vni_tone_before_circumflex_midsyllable() {
+        // Issue #4: gõ số thanh trước số mũ giữa âm tiết không được kẹt raw.
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_mode: SpellMode::Strict,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        assert_eq!(type_str(&mut e, "thie16u"), "thiếu");
+        let mut e2 = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_mode: SpellMode::Strict,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        assert_eq!(type_str(&mut e2, "tie61t"), "tiết");
+    }
+
+    #[test]
+    fn english_still_restored_after_live_prefix_fix() {
+        // Trạng thái còn-sống KHÔNG được phá auto-restore tiếng Anh (telex).
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "dies"), "dies");
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "lies"), "lies");
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "class"), "class"); // dead-cluster latch ngay
     }
 }
