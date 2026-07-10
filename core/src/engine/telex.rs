@@ -195,12 +195,12 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
 #[cfg(test)]
 mod tests {
     use crate::engine::testutil::type_str;
-    use crate::engine::{Engine, EngineConfig, TypingMethod};
+    use crate::engine::{Engine, EngineConfig, SpellMode, TypingMethod};
 
     fn engine(modern: bool) -> Engine {
         Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false,
+            spell_mode: SpellMode::Standard,
             modern_tone: modern,
             macros_enabled: false,
             flexible_marks: true,
@@ -341,7 +341,7 @@ mod tests {
     fn late_stroke_d_respects_flexible_marks() {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false,
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: false,
@@ -384,10 +384,10 @@ mod tests {
     }
 
     #[test]
-    fn late_circumflex_respects_spell_check() {
+    fn late_circumflex_respects_spell_mode() {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: true,
+            spell_mode: SpellMode::Strict,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -401,7 +401,7 @@ mod tests {
     fn flexible_marks_off_disables_late_circumflex() {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false,
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: false,
@@ -418,7 +418,7 @@ mod tests {
     fn t_spell(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: true,
+            spell_mode: SpellMode::Strict,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,

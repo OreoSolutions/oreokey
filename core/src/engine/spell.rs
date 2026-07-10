@@ -131,12 +131,12 @@ pub fn is_acceptable(state: &WordState, loose: bool) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::engine::testutil::type_str;
-    use crate::engine::{Engine, EngineConfig, TypingMethod};
+    use crate::engine::{Engine, EngineConfig, SpellMode, TypingMethod};
 
     fn t(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: true,
+            spell_mode: SpellMode::Strict,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -223,7 +223,7 @@ mod tests {
     fn loose(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false, // false = chế độ gõ thoải mái (loose)
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -267,7 +267,7 @@ mod tests {
     fn loose_vni(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Vni,
-            spell_check: false, // false = loose
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,

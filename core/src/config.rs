@@ -102,7 +102,11 @@ impl Settings {
             } else {
                 crate::engine::TypingMethod::Telex
             },
-            spell_check: self.spell_check,
+            spell_mode: if self.spell_check {
+                crate::engine::SpellMode::Strict
+            } else {
+                crate::engine::SpellMode::Standard
+            },
             modern_tone: self.modern_tone,
             macros_enabled: self.macros_enabled,
             flexible_marks: self.flexible_marks,

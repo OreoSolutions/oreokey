@@ -52,6 +52,15 @@ pub enum TypingMethod {
     Vni,
 }
 
+/// Mức kiểm tra chính tả: Chặt (bảo vệ tối đa tiếng Anh) → Thường (gõ
+/// tắt, vẫn bắt cụm bất khả) → Thoải mái (không khôi phục, luôn đặt dấu).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpellMode {
+    Strict,
+    Standard,
+    Loose,
+}
+
 /// Thanh điệu (không tính thanh ngang).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tone {
@@ -127,7 +136,7 @@ impl WordState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EngineConfig {
     pub method: TypingMethod,
-    pub spell_check: bool,
+    pub spell_mode: SpellMode,
     /// Kiểu đặt dấu mới (`hoà`) thay vì kiểu cũ (`hòa`).
     pub modern_tone: bool,
     pub macros_enabled: bool,
@@ -142,7 +151,7 @@ impl Default for EngineConfig {
     fn default() -> Self {
         EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: true,
+            spell_mode: SpellMode::Strict,
             modern_tone: false,
             macros_enabled: true,
             flexible_marks: true,
@@ -339,8 +348,10 @@ impl Engine {
         }
         let state = self.build_state(raw);
         // Từ bị biến đổi nhưng không phải âm tiết chấp nhận được → trả phím gốc.
-        if spell::is_transformed(&state)
-            && !spell::is_acceptable(&state, !self.cfg.spell_check)
+        // Thoải mái (Loose) không bao giờ khôi phục; Chặt/Thường dùng gate.
+        if self.cfg.spell_mode != SpellMode::Loose
+            && spell::is_transformed(&state)
+            && !spell::is_acceptable(&state, self.cfg.spell_mode == SpellMode::Standard)
         {
             return (raw.to_string(), true);
         }
@@ -431,7 +442,7 @@ mod tests {
     fn telex_no_spell() -> Engine {
         Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false,
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -468,5 +479,32 @@ mod tests {
     fn backspace_on_empty_buffer_passes() {
         let mut e = telex_no_spell();
         assert_eq!(e.on_key(KeyInput::Backspace), Action::PassThrough);
+    }
+
+    fn engine_mode(mode: SpellMode) -> Engine {
+        Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_mode: mode,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        })
+    }
+
+    #[test]
+    fn loose_never_restores_english() {
+        // Thoải mái: KHÔNG khôi phục — từ có dấu vẫn giữ dấu.
+        let mut e = engine_mode(SpellMode::Loose);
+        assert_eq!(type_str(&mut e, "mask"), "mák"); // strict sẽ bung "mask"
+        let mut e = engine_mode(SpellMode::Loose);
+        assert_eq!(type_str(&mut e, "class"), "clas"); // s hủy s (ass→as), không bung raw
+    }
+
+    #[test]
+    fn strict_still_restores_english() {
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "mask"), "mask");
+        assert_eq!(type_str(&mut e, "class"), "class");
     }
 }

@@ -24,12 +24,12 @@ pub fn mask(word: &str) -> String {
 #[cfg(test)]
 mod tests {
     use crate::engine::testutil::type_str;
-    use crate::engine::{Action, Engine, EngineConfig, KeyInput, TypingMethod};
+    use crate::engine::{Action, Engine, EngineConfig, KeyInput, SpellMode, TypingMethod};
 
     fn engine() -> Engine {
         Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: true,
+            spell_mode: SpellMode::Strict,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
