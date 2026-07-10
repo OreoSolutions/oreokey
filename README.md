@@ -23,6 +23,35 @@ Sửa chữ theo 4 tầng, tốt nhất trước:
    VS Code/JetBrains/Electron bơm nhanh không AX. Người dùng override
    từng app trong Cài đặt → Ứng dụng mà không cần chờ bản mới.
 
+## Nếu bị nháy hoặc dính chữ
+
+Đa số app đã chạy tốt sẵn. Nếu **một app cụ thể** vẫn nháy chữ (chữ nhấp
+nháy khi gõ dấu) hoặc dính chữ, bạn tự chỉnh được ngay, không cần chờ bản mới:
+
+1. Mở **Cài đặt → Ứng dụng → "Chế độ tương thích"**.
+2. Bấm **"Thêm override…"** và chọn app đang bị lỗi (app cần đang chạy).
+3. Đổi chế độ cho app đó, thử theo thứ tự:
+   - **Bơm phím nhanh** — hợp với phần lớn app bị nháy (terminal, app Java/Swing,
+     Electron). Bỏ qua đường Accessibility hay gây nháy, gõ thẳng bằng bơm phím.
+   - **Bơm phím chậm** — nếu vẫn sót, dùng cho app tự điền lại nội dung sau mỗi
+     phím (Word/Excel/PowerPoint và vài trình soạn thảo online).
+   - **Tự động** — mặc định (Accessibility trước, tự rơi về bơm phím). Đưa về đây
+     nếu muốn hoàn tác.
+
+Terminal phổ biến (Terminal, iTerm2, kitty, Alacritty, WezTerm, Ghostty, Warp,
+Hyper, VS Code, JetBrains) đã được đặt sẵn **Bơm phím nhanh**. Một số app Java
+Swing (vd Burp Suite) chưa có sẵn hồ sơ — dùng cách override ở trên.
+
+**Giúp app được hỗ trợ mặc định:** gửi cho tụi mình *bundle ID* của app để thêm
+vào hồ sơ đóng gói (mọi người khỏi phải chỉnh tay). Lấy bundle ID:
+
+```bash
+osascript -e 'id of app "Tên App"'   # ví dụ: id of app "kitty"
+```
+
+Rồi mở issue kèm tên app + bundle ID + chế độ chạy tốt tại
+https://github.com/OreoSolutions/oreokey/issues.
+
 ## Build
 
 ```bash
