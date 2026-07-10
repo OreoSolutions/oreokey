@@ -160,6 +160,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="o0ijS2zrDvpgatdmsBd8MwJmsImlbhIZlOD0/F8N+uYiJNoa5/XDyfF9EqeMctChs01t6wylxpVFAZeAjzeOBA==" length="5615669" />
     </item>
+    <item>
+      <title>0.6.1</title>
+      <pubDate>Fri, 10 Jul 2026 15:16:48 +0000</pubDate>
+      <sparkle:version>10</sparkle:version>
+      <sparkle:shortVersionString>0.6.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã thêm</h3>
+<ul>
+<li><strong>Nút Trang chủ</strong> trong tab Giới thiệu, dẫn tới website chính thức https://oreokey.vercel.app.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.6.1/OreoKey.dmg"
+                 sparkle:version="10"
+                 sparkle:shortVersionString="0.6.1"
+                 type="application/octet-stream"
+                 sparkle:edSignature="9SbYUzWHRK2RkjeX8Y+HI4HGS4fejo+N4Nhg9nLD/LR/MKAm8+5mbyVA/JgRYnlyZJ6kqCLeaGMtb9X6Ku5uBg==" length="5615174" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
