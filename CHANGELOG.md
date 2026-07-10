@@ -1,8 +1,8 @@
 # Changelog
 
 Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạng
-[Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), phiên bản theo
-[SemVer](https://semver.org/lang/vi/).
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo
+[SemVer](https://semver.org/).
 
 ## [Chưa phát hành]
 

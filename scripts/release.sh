@@ -81,4 +81,15 @@ gh release create "v$VERSION" dist/OreoKey.dmg \
 # --- 8. Đẩy appcast + version bump lên main -------------------------------
 git push origin HEAD:main
 
+# --- 9. Build lại website (Vercel Deploy Hook) để changelog trên site cập nhật.
+#        Tạo hook tại: Vercel → Project → Settings → Git → Deploy Hooks,
+#        rồi export OREOKEY_WEBSITE_DEPLOY_HOOK trong shell profile.
+if [[ -n "${OREOKEY_WEBSITE_DEPLOY_HOOK:-}" ]]; then
+    curl -fsS -X POST "$OREOKEY_WEBSITE_DEPLOY_HOOK" >/dev/null \
+        && echo "  Website: đã kích hoạt build lại trên Vercel." \
+        || echo "  ⚠ Gọi deploy hook thất bại — build lại website thủ công."
+else
+    echo "  ⚠ Chưa đặt OREOKEY_WEBSITE_DEPLOY_HOOK — changelog trên website sẽ chỉ cập nhật ở lần deploy sau."
+fi
+
 echo "✅ Đã phát hành OreoKey v$VERSION — DMG đã ký + notarize, appcast đã cập nhật."
