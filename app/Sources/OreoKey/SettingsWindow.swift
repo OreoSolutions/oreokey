@@ -398,6 +398,9 @@ private struct RunningAppPicker: View {
     let title: String
     let onPick: (String) -> Void
 
+    @State private var showingManualEntry = false
+    @State private var manualBundle = ""
+
     var body: some View {
         Menu {
             let apps = NSWorkspace.shared.runningApplications
@@ -408,11 +411,31 @@ private struct RunningAppPicker: View {
                     Button(app.localizedName ?? bundle) { onPick(bundle) }
                 }
             }
+            Divider()
+            Button("Nhập bundle ID…") {
+                manualBundle = ""
+                showingManualEntry = true
+            }
         } label: {
             Label(title, systemImage: "plus.circle")
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+        .alert("Nhập bundle ID", isPresented: $showingManualEntry) {
+            TextField("com.example.app", text: $manualBundle)
+                .autocorrectionDisabled()
+            Button("Thêm", action: addManual)
+            Button("Huỷ", role: .cancel) {}
+        } message: {
+            Text("Dùng cho app không đang chạy. Khớp chính xác chuỗi — không hỗ trợ ký tự đại diện (com.foo.*).")
+        }
+    }
+
+    private func addManual() {
+        let bundle = manualBundle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !bundle.isEmpty,
+              !bundle.contains(where: \.isWhitespace) else { return }
+        onPick(bundle)
     }
 }
 
