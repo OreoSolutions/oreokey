@@ -548,4 +548,40 @@ mod tests {
         let mut e = engine_mode(SpellMode::Strict);
         assert_eq!(type_str(&mut e, "class"), "class"); // dead-cluster latch ngay
     }
+
+    #[test]
+    fn issue4_fix_behavior_is_uniform_across_methods() {
+        // Issue #4 sửa cho CẢ hai bộ gõ (không phân biệt VNI/Telex): trạng
+        // thái còn-sống (tiền tố hợp lệ chờ hoàn thiện âm tiết) không bị
+        // khóa raw_mode nữa. Test này khóa lại quyết định: giữ nguyên đồng
+        // nhất giữa hai bộ gõ, chấp nhận đánh đổi hẹp ở tiếng Anh (telex).
+        let strict = |method: TypingMethod| {
+            Engine::new(EngineConfig {
+                method,
+                spell_mode: SpellMode::Strict,
+                modern_tone: false,
+                macros_enabled: false,
+                flexible_marks: true,
+                censor_enabled: false,
+            })
+        };
+
+        // THẮNG (cả hai bộ gõ phải qua): số thanh trước số mũ (VNI) và dấu
+        // mũ muộn (Telex) đều hoàn thiện đúng âm tiết, không kẹt raw.
+        let mut vni_engine = strict(TypingMethod::Vni);
+        assert_eq!(type_str(&mut vni_engine, "thie16u"), "thiếu");
+        let mut telex_engine = strict(TypingMethod::Telex);
+        assert_eq!(type_str(&mut telex_engine, "thieesu"), "thiếu");
+
+        // CÁI GIÁ ĐÃ CHẤP NHẬN (KHÔNG PHẢI BUG — đừng "sửa" các assert dưới
+        // đây): vì fix áp dụng đồng nhất cho cả hai bộ gõ, một số từ tiếng
+        // Anh hiếm gặp trong telex ("diese", "liese") giờ hoàn thiện thành
+        // âm tiết tiếng Việt hợp lệ thay vì được khôi phục nguyên phím gốc.
+        // Đây là đánh đổi đã được người dùng chấp nhận có ý thức để đổi lấy
+        // việc sửa VNI "thie16u" → "thiếu". Từ thông dụng không bị ảnh hưởng.
+        let mut telex_engine = strict(TypingMethod::Telex);
+        assert_eq!(type_str(&mut telex_engine, "diese"), "diế");
+        let mut telex_engine = strict(TypingMethod::Telex);
+        assert_eq!(type_str(&mut telex_engine, "liese"), "liế");
+    }
 }
