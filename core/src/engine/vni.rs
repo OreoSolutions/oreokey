@@ -178,4 +178,23 @@ mod tests {
         assert_eq!(v("2026"), "2026");
         assert_eq!(v("x1"), "x1");
     }
+
+    #[test]
+    fn issue4_tone_before_mark_full_engine() {
+        use crate::engine::testutil::type_str;
+        use crate::engine::{Engine, EngineConfig, SpellMode, TypingMethod};
+        let mk = || {
+            Engine::new(EngineConfig {
+                method: TypingMethod::Vni,
+                spell_mode: SpellMode::Strict,
+                modern_tone: false,
+                macros_enabled: false,
+                flexible_marks: true,
+                censor_enabled: false,
+            })
+        };
+        assert_eq!(type_str(&mut mk(), "thie16u"), "thiếu");
+        assert_eq!(type_str(&mut mk(), "thieu61"), "thiếu"); // thứ tự cũ vẫn đúng
+        assert_eq!(type_str(&mut mk(), "thie61t"), "thiết");
+    }
 }

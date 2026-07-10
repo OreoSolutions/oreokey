@@ -3,8 +3,9 @@
 Bộ gõ tiếng Việt cho macOS — nhanh, nhẹ RAM, và tập trung xử lý triệt để
 hai lỗi kinh điển của các bộ gõ event-tap: **dính chữ** và **nháy chữ**.
 
-- Telex + VNI, kiểm tra chính tả (tự khôi phục từ tiếng Anh), gõ tắt,
-  loại trừ app / nhớ trạng thái theo app, chuyển mã Unicode/VNI-Windows/TCVN3
+- Telex + VNI, kiểm tra chính tả 3 mức (Chặt / Thường / Thoải mái — tự khôi
+  phục từ tiếng Anh), gõ tắt, loại trừ app / nhớ trạng thái theo app / thêm app
+  bằng bundle ID, chuyển mã Unicode/VNI-Windows/TCVN3
 - Engine viết bằng Rust (thư viện tĩnh ~1MB), UI Swift/AppKit + SwiftUI
 - macOS 13+, chạy nền dạng menu bar, RAM ~20MB
 
@@ -22,6 +23,56 @@ Sửa chữ theo 4 tầng, tốt nhất trước:
    Chrome/Safari có fix autocomplete thanh địa chỉ, Excel bơm chậm,
    VS Code/JetBrains/Electron bơm nhanh không AX. Người dùng override
    từng app trong Cài đặt → Ứng dụng mà không cần chờ bản mới.
+
+## Nếu bị nháy hoặc dính chữ
+
+Đa số app đã chạy tốt sẵn. Nếu **một app cụ thể** vẫn nháy chữ (chữ nhấp
+nháy khi gõ dấu) hoặc dính chữ, bạn tự chỉnh được ngay, không cần chờ bản mới:
+
+1. Mở **Cài đặt → Ứng dụng → "Chế độ tương thích"**.
+2. Bấm **"Thêm override…"** và chọn app đang bị lỗi (app cần đang chạy).
+3. Đổi chế độ cho app đó, thử theo thứ tự:
+   - **Bơm phím nhanh** — hợp với phần lớn app bị nháy (terminal, app Java/Swing,
+     Electron). Bỏ qua đường Accessibility hay gây nháy, gõ thẳng bằng bơm phím.
+   - **Bơm phím chậm** — nếu vẫn sót, dùng cho app tự điền lại nội dung sau mỗi
+     phím (Word/Excel/PowerPoint và vài trình soạn thảo online).
+   - **Tự động** — mặc định (Accessibility trước, tự rơi về bơm phím). Đưa về đây
+     nếu muốn hoàn tác.
+
+Terminal phổ biến (Terminal, iTerm2, kitty, Alacritty, WezTerm, Ghostty, Warp,
+Hyper, VS Code, JetBrains) đã được đặt sẵn **Bơm phím nhanh**. Một số app Java
+Swing (vd Burp Suite) chưa có sẵn hồ sơ — dùng cách override ở trên.
+
+App **đang chạy** thì hiện sẵn trong menu "Thêm…", chọn thẳng, khỏi cần bundle ID.
+App **chưa chạy** (hoặc muốn cấu hình trước) thì dùng mục **"Nhập bundle ID…"** ở
+cuối menu và dán ID lấy theo hướng dẫn dưới.
+
+### Cách lấy bundle ID
+
+- **App đang chạy** — dùng đúng *tên hiển thị* của app:
+
+  ```bash
+  osascript -e 'id of app "kitty"'          # → net.kovidgoyal.kitty
+  osascript -e 'id of app "Burp Suite Professional"'
+  ```
+
+- **Từ file .app trong Applications** (kể cả app chưa chạy):
+
+  ```bash
+  mdls -name kMDItemCFBundleIdentifier -raw "/Applications/kitty.app"
+  # hoặc
+  defaults read "/Applications/kitty.app/Contents/Info" CFBundleIdentifier
+  ```
+
+- **App đang ở cửa sổ trước mặt** — bấm vào app đó rồi:
+
+  ```bash
+  osascript -e 'id of app (path to frontmost application as text)'
+  ```
+
+**Giúp app được hỗ trợ mặc định:** gửi cho tụi mình *bundle ID* + tên app + chế độ
+chạy tốt, mở issue tại https://github.com/OreoSolutions/oreokey/issues để tụi mình
+thêm vào hồ sơ đóng gói (mọi người khỏi phải chỉnh tay).
 
 ## Build
 

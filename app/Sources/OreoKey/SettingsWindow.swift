@@ -148,10 +148,19 @@ private struct GeneralPane: View {
                 }
 
                 Section("Hành vi gõ") {
-                    ToggleRow(
-                        title: "Kiểm tra chính tả (chặt)",
-                        detail: "Tắt = gõ thoải mái: cho gõ tắt (đc, nèk) mà vẫn nhận diện tiếng Anh có cụm bất khả (clear, sound). Bật: bảo vệ tối đa từ tiếng Anh (mask, class).",
-                        isOn: binding.spell_check)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Kiểm tra chính tả")
+                        Picker("Kiểm tra chính tả", selection: binding.spell_mode) {
+                            Text("Chặt").tag("strict")
+                            Text("Thường").tag("standard")
+                            Text("Thoải mái").tag("loose")
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        Text(spellModeDetail(binding.wrappedValue.spell_mode))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     ToggleRow(
                         title: "Gõ dấu mũ linh hoạt",
                         detail: "nanag → nâng, viete → viêt",
@@ -186,6 +195,17 @@ private struct GeneralPane: View {
                     binding.wrappedValue.hotkey = preset.1
                 }
             })
+    }
+
+    private func spellModeDetail(_ mode: String) -> String {
+        switch mode {
+        case "loose":
+            return "Luôn đặt dấu, không khôi phục từ tiếng Anh."
+        case "standard":
+            return "Cho gõ tắt (đc, nèk), vẫn nhận diện tiếng Anh có cụm bất khả (clear, sound)."
+        default:
+            return "Bảo vệ tối đa từ tiếng Anh (mask, class)."
+        }
     }
 }
 
@@ -378,6 +398,9 @@ private struct RunningAppPicker: View {
     let title: String
     let onPick: (String) -> Void
 
+    @State private var showingManualEntry = false
+    @State private var manualBundle = ""
+
     var body: some View {
         Menu {
             let apps = NSWorkspace.shared.runningApplications
@@ -388,11 +411,38 @@ private struct RunningAppPicker: View {
                     Button(app.localizedName ?? bundle) { onPick(bundle) }
                 }
             }
+            Divider()
+            Button("Nhập bundle ID…") {
+                manualBundle = ""
+                showingManualEntry = true
+            }
         } label: {
             Label(title, systemImage: "plus.circle")
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+        .alert("Nhập bundle ID", isPresented: $showingManualEntry) {
+            TextField("com.example.app", text: $manualBundle)
+                .autocorrectionDisabled()
+            Button("Thêm", action: addManual)
+            Button("Huỷ", role: .cancel) {}
+        } message: {
+            Text("""
+            Dùng cho app không đang chạy. Khớp chính xác chuỗi — không hỗ trợ \
+            ký tự đại diện (com.foo.*).
+
+            Lấy ID: mở Terminal chạy
+            osascript -e 'id of app "Tên App"'
+            hoặc  mdls -name kMDItemCFBundleIdentifier -raw "/Applications/Tên App.app"
+            """)
+        }
+    }
+
+    private func addManual() {
+        let bundle = manualBundle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !bundle.isEmpty,
+              !bundle.contains(where: \.isWhitespace) else { return }
+        onPick(bundle)
     }
 }
 

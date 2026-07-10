@@ -52,6 +52,15 @@ pub enum TypingMethod {
     Vni,
 }
 
+/// Mức kiểm tra chính tả: Chặt (bảo vệ tối đa tiếng Anh) → Thường (gõ
+/// tắt, vẫn bắt cụm bất khả) → Thoải mái (không khôi phục, luôn đặt dấu).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SpellMode {
+    Strict,
+    Standard,
+    Loose,
+}
+
 /// Thanh điệu (không tính thanh ngang).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tone {
@@ -127,7 +136,7 @@ impl WordState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EngineConfig {
     pub method: TypingMethod,
-    pub spell_check: bool,
+    pub spell_mode: SpellMode,
     /// Kiểu đặt dấu mới (`hoà`) thay vì kiểu cũ (`hòa`).
     pub modern_tone: bool,
     pub macros_enabled: bool,
@@ -142,7 +151,7 @@ impl Default for EngineConfig {
     fn default() -> Self {
         EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: true,
+            spell_mode: SpellMode::Strict,
             modern_tone: false,
             macros_enabled: true,
             flexible_marks: true,
@@ -251,7 +260,17 @@ impl Engine {
         } else {
             let (text, restored) = self.render_word(&self.raw);
             if restored {
-                self.raw_mode = true;
+                // Chỉ khóa khi từ CHẾT hẳn (cụm bất khả). Trạng thái CÒN
+                // SỐNG (tiền tố hợp lệ, vd nhân âm dở chờ dấu mũ) giữ raw
+                // hiển thị nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
+                // thiện âm tiết (issue #4).
+                let state = self.build_state(&self.raw);
+                // is_live_prefix cố ý KHÔNG xét thanh điệu (tone-blind) — nhờ
+                // vậy một nhân âm đã có thanh nhưng chưa xong dấu mũ/móc vẫn
+                // được coi là còn sống. Đừng thêm kiểm tra thanh ở đây.
+                if !spell::is_live_prefix(&state) {
+                    self.raw_mode = true;
+                }
                 // Từ đang sạch mà thêm một phím dấu làm nó không hợp lệ:
                 // chỉ nên rơi phím đó xuống thành ký tự thường, KHÔNG bung
                 // lại raw (raw còn giữ cả phím dấu ĐÃ HỦY — bung ra sẽ làm
@@ -339,8 +358,10 @@ impl Engine {
         }
         let state = self.build_state(raw);
         // Từ bị biến đổi nhưng không phải âm tiết chấp nhận được → trả phím gốc.
-        if spell::is_transformed(&state)
-            && !spell::is_acceptable(&state, !self.cfg.spell_check)
+        // Thoải mái (Loose) không bao giờ khôi phục; Chặt/Thường dùng gate.
+        if self.cfg.spell_mode != SpellMode::Loose
+            && spell::is_transformed(&state)
+            && !spell::is_acceptable(&state, self.cfg.spell_mode == SpellMode::Standard)
         {
             return (raw.to_string(), true);
         }
@@ -431,7 +452,7 @@ mod tests {
     fn telex_no_spell() -> Engine {
         Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false,
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -468,5 +489,102 @@ mod tests {
     fn backspace_on_empty_buffer_passes() {
         let mut e = telex_no_spell();
         assert_eq!(e.on_key(KeyInput::Backspace), Action::PassThrough);
+    }
+
+    fn engine_mode(mode: SpellMode) -> Engine {
+        Engine::new(EngineConfig {
+            method: TypingMethod::Telex,
+            spell_mode: mode,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        })
+    }
+
+    #[test]
+    fn loose_never_restores_english() {
+        // Thoải mái: KHÔNG khôi phục — từ có dấu vẫn giữ dấu.
+        let mut e = engine_mode(SpellMode::Loose);
+        assert_eq!(type_str(&mut e, "mask"), "mák"); // strict sẽ bung "mask"
+        let mut e = engine_mode(SpellMode::Loose);
+        assert_eq!(type_str(&mut e, "class"), "clas"); // s hủy s (ass→as), không bung raw
+    }
+
+    #[test]
+    fn strict_still_restores_english() {
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "mask"), "mask");
+        assert_eq!(type_str(&mut e, "class"), "class");
+    }
+
+    #[test]
+    fn vni_tone_before_circumflex_midsyllable() {
+        // Issue #4: gõ số thanh trước số mũ giữa âm tiết không được kẹt raw.
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_mode: SpellMode::Strict,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        assert_eq!(type_str(&mut e, "thie16u"), "thiếu");
+        let mut e2 = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_mode: SpellMode::Strict,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        assert_eq!(type_str(&mut e2, "tie61t"), "tiết");
+    }
+
+    #[test]
+    fn english_still_restored_after_live_prefix_fix() {
+        // Trạng thái còn-sống KHÔNG được phá auto-restore tiếng Anh (telex).
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "dies"), "dies");
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "lies"), "lies");
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "class"), "class"); // dead-cluster latch ngay
+    }
+
+    #[test]
+    fn issue4_fix_behavior_is_uniform_across_methods() {
+        // Issue #4 sửa cho CẢ hai bộ gõ (không phân biệt VNI/Telex): trạng
+        // thái còn-sống (tiền tố hợp lệ chờ hoàn thiện âm tiết) không bị
+        // khóa raw_mode nữa. Test này khóa lại quyết định: giữ nguyên đồng
+        // nhất giữa hai bộ gõ, chấp nhận đánh đổi hẹp ở tiếng Anh (telex).
+        let strict = |method: TypingMethod| {
+            Engine::new(EngineConfig {
+                method,
+                spell_mode: SpellMode::Strict,
+                modern_tone: false,
+                macros_enabled: false,
+                flexible_marks: true,
+                censor_enabled: false,
+            })
+        };
+
+        // THẮNG (cả hai bộ gõ phải qua): số thanh trước số mũ (VNI) và dấu
+        // mũ muộn (Telex) đều hoàn thiện đúng âm tiết, không kẹt raw.
+        let mut vni_engine = strict(TypingMethod::Vni);
+        assert_eq!(type_str(&mut vni_engine, "thie16u"), "thiếu");
+        let mut telex_engine = strict(TypingMethod::Telex);
+        assert_eq!(type_str(&mut telex_engine, "thieesu"), "thiếu");
+
+        // CÁI GIÁ ĐÃ CHẤP NHẬN (KHÔNG PHẢI BUG — đừng "sửa" các assert dưới
+        // đây): vì fix áp dụng đồng nhất cho cả hai bộ gõ, một số từ tiếng
+        // Anh hiếm gặp trong telex ("diese", "liese") giờ hoàn thiện thành
+        // âm tiết tiếng Việt hợp lệ thay vì được khôi phục nguyên phím gốc.
+        // Đây là đánh đổi đã được người dùng chấp nhận có ý thức để đổi lấy
+        // việc sửa VNI "thie16u" → "thiếu". Từ thông dụng không bị ảnh hưởng.
+        let mut telex_engine = strict(TypingMethod::Telex);
+        assert_eq!(type_str(&mut telex_engine, "diese"), "diế");
+        let mut telex_engine = strict(TypingMethod::Telex);
+        assert_eq!(type_str(&mut telex_engine, "liese"), "liế");
     }
 }

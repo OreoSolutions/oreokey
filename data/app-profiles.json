@@ -21,6 +21,10 @@
     "com.apple.Terminal": { "mode": "inject_fast" },
     "dev.warp.Warp-Stable": { "mode": "inject_fast" },
     "com.mitchellh.ghostty": { "mode": "inject_fast" },
+    "net.kovidgoyal.kitty": { "mode": "inject_fast" },
+    "org.alacritty": { "mode": "inject_fast" },
+    "com.github.wez.wezterm": { "mode": "inject_fast" },
+    "co.zeit.hyper": { "mode": "inject_fast" },
 
     "com.hnc.Discord": { "mode": "inject_fast" },
     "com.facebook.archon": { "mode": "inject_fast" },

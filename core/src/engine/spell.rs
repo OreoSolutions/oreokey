@@ -54,6 +54,63 @@ fn can_become(cluster: &str, valid: &str) -> bool {
         .all(|(c, v)| c == v || (c == base_of(c) && base_of(v) == c))
 }
 
+/// `cluster` có phải TIỀN TỐ của `valid` không (cho phép nguyên âm trơn
+/// khớp bản có dấu: "ie" là tiền tố của "iê", "iêu"). Khác `can_become`
+/// ở chỗ không đòi cùng độ dài.
+fn can_become_prefix(cluster: &str, valid: &str) -> bool {
+    let cc: Vec<char> = cluster.chars().collect();
+    let vc: Vec<char> = valid.chars().collect();
+    if cc.len() > vc.len() {
+        return false;
+    }
+    cc.iter()
+        .zip(vc.iter())
+        .all(|(&c, &v)| c == v || (c == base_of(c) && base_of(v) == c))
+}
+
+/// Cụm hiện tại còn có thể trở thành âm tiết hợp lệ bằng cách gõ THÊM
+/// dấu/chữ không (tiền tố hợp lệ)? Dùng để KHÔNG khóa `raw_mode` quá sớm:
+/// trạng thái "còn sống" khác "chết hẳn" (cụm bất khả như `cl`, nguyên âm
+/// rời). Cho phép nhân âm dở kể cả khi ĐÃ có thanh (khác `is_acceptable`).
+pub fn is_live_prefix(state: &WordState) -> bool {
+    let letters = &state.letters;
+    if letters.iter().any(|l| !l.base.is_ascii_alphabetic()) {
+        return false;
+    }
+    if letters.iter().skip(1).any(|l| l.stroke) {
+        return false;
+    }
+    let vidx = vowel_indices(letters);
+    let Some(&run_start) = vidx.first() else {
+        // Chưa có nguyên âm: phụ âm đầu phải là tiền tố của một INITIAL.
+        let initial = letters.iter().map(marked_lower).collect::<String>();
+        return INITIALS.iter().any(|i| i.starts_with(&initial));
+    };
+    // Cụm nguyên âm phải liên tục.
+    let mut run_end = run_start;
+    for &i in &vidx[1..] {
+        if i == run_end + 1 {
+            run_end = i;
+        } else {
+            return false;
+        }
+    }
+    let render_range =
+        |a: usize, b: usize| letters[a..b].iter().map(marked_lower).collect::<String>();
+    // Đã có nguyên âm → phụ âm đầu phải khớp HẲN một INITIAL.
+    let initial = render_range(0, run_start);
+    if !INITIALS.contains(&initial.as_str()) {
+        return false;
+    }
+    let nucleus = render_range(run_start, run_end + 1);
+    if !NUCLEI.iter().any(|n| can_become_prefix(&nucleus, n)) {
+        return false;
+    }
+    // Phụ âm cuối đang gõ dở phải là tiền tố của một FINAL.
+    let final_c = render_range(run_end + 1, letters.len());
+    FINALS.iter().any(|f| f.starts_with(&final_c))
+}
+
 /// Từ có bị engine biến đổi không (có thanh hoặc dấu phụ). Chỉ những từ
 /// bị biến đổi mới cần khôi phục — kết quả của việc hủy dấu (`ass`→`as`)
 /// không được tính.
@@ -131,12 +188,12 @@ pub fn is_acceptable(state: &WordState, loose: bool) -> bool {
 #[cfg(test)]
 mod tests {
     use crate::engine::testutil::type_str;
-    use crate::engine::{Engine, EngineConfig, TypingMethod};
+    use crate::engine::{Engine, EngineConfig, SpellMode, TypingMethod};
 
     fn t(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: true,
+            spell_mode: SpellMode::Strict,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -220,10 +277,10 @@ mod tests {
         assert_eq!(t("class"), "class");
     }
 
-    fn loose(keys: &str) -> String {
+    fn standard(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
-            spell_check: false, // false = chế độ gõ thoải mái (loose)
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -235,39 +292,39 @@ mod tests {
     #[test]
     fn loose_allows_abbreviations() {
         // Từ viết tắt có dấu, phụ âm cuối/không nguyên âm → được giữ.
-        assert_eq!(loose("ddc"), "đc"); // đ + c, không nguyên âm
-        assert_eq!(loose("nefk"), "nèk"); // đuôi k không hợp lệ vẫn cho
+        assert_eq!(standard("ddc"), "đc"); // đ + c, không nguyên âm
+        assert_eq!(standard("nefk"), "nèk"); // đuôi k không hợp lệ vẫn cho
     }
 
     #[test]
     fn loose_still_restores_english() {
         // Cụm bất khả (phụ âm đầu / nguyên âm / nguyên âm không liền) vẫn bắt.
-        assert_eq!(loose("clear"), "clear"); // cl đầu bất khả
-        assert_eq!(loose("sound"), "sound"); // ou bất khả
-        assert_eq!(loose("for"), "for"); // f đầu bất khả
-        assert_eq!(loose("class"), "class");
-        assert_eq!(loose("dies"), "dies"); // ie + thanh → bất khả
-        assert_eq!(loose("status"), "status"); // a…u không liên tục
+        assert_eq!(standard("clear"), "clear"); // cl đầu bất khả
+        assert_eq!(standard("sound"), "sound"); // ou bất khả
+        assert_eq!(standard("for"), "for"); // f đầu bất khả
+        assert_eq!(standard("class"), "class");
+        assert_eq!(standard("dies"), "dies"); // ie + thanh → bất khả
+        assert_eq!(standard("status"), "status"); // a…u không liên tục
     }
 
     #[test]
     fn loose_keeps_valid_vietnamese() {
-        assert_eq!(loose("vieetj"), "việt");
-        assert_eq!(loose("dduongwf"), "đường");
-        assert_eq!(loose("toans"), "toán");
+        assert_eq!(standard("vieetj"), "việt");
+        assert_eq!(standard("dduongwf"), "đường");
+        assert_eq!(standard("toans"), "toán");
     }
 
     #[test]
     fn loose_transforms_ambiguous_english_by_design() {
         // Đánh đổi đã chấp nhận: cùng cấu trúc với nèk nên bị đặt dấu.
-        assert_eq!(loose("mask"), "mák");
-        assert_eq!(loose("task"), "ták");
+        assert_eq!(standard("mask"), "mák");
+        assert_eq!(standard("task"), "ták");
     }
 
-    fn loose_vni(keys: &str) -> String {
+    fn standard_vni(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Vni,
-            spell_check: false, // false = loose
+            spell_mode: SpellMode::Standard,
             modern_tone: false,
             macros_enabled: false,
             flexible_marks: true,
@@ -279,7 +336,30 @@ mod tests {
     #[test]
     fn loose_applies_to_vni() {
         // Bộ lọc loose chạy trên WordState nên áp cho cả VNI (đ tạo bằng d9).
-        assert_eq!(loose_vni("d9c"), "đc"); // đ + c, không nguyên âm
-        assert_eq!(loose_vni("vie65t"), "việt"); // âm tiết hợp lệ vẫn giữ
+        assert_eq!(standard_vni("d9c"), "đc"); // đ + c, không nguyên âm
+        assert_eq!(standard_vni("vie65t"), "việt"); // âm tiết hợp lệ vẫn giữ
+    }
+
+    #[test]
+    fn live_prefix_recognizes_incomplete_toned_nucleus() {
+        use crate::engine::vni;
+        use crate::engine::WordState;
+        let build = |keys: &str| {
+            let mut s = WordState::default();
+            for c in keys.chars() {
+                vni::apply_key(&mut s, c);
+            }
+            s
+        };
+        // "thie1" (thié): nhân âm "ie" + thanh — CÒN SỐNG (chờ mũ 6).
+        assert!(super::is_live_prefix(&build("thie1")));
+        // "die" + s tương đương telex là live, nhưng dead-cluster thì không:
+        // "cla" (cl không phải phụ âm đầu tiếng Việt) → CHẾT.
+        let cla = {
+            let mut s = WordState::default();
+            for c in "cla".chars() { vni::apply_key(&mut s, c); }
+            s
+        };
+        assert!(!super::is_live_prefix(&cla));
     }
 }

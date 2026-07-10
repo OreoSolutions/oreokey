@@ -181,4 +181,22 @@ mod tests {
             FixMode::InjectSlow
         );
     }
+
+    #[test]
+    fn terminals_and_swing_use_inject_fast() {
+        let p = Profiles::load_default();
+        let none = HashMap::new();
+        for bundle in [
+            "net.kovidgoyal.kitty",
+            "org.alacritty",
+            "com.github.wez.wezterm",
+            "co.zeit.hyper",
+        ] {
+            assert_eq!(
+                p.resolve(bundle, &none, None).mode,
+                FixMode::InjectFast,
+                "{bundle} phải là InjectFast (tránh thử AX gây nháy)"
+            );
+        }
+    }
 }
