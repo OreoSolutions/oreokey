@@ -615,6 +615,8 @@ private struct RunningAppPicker: View {
 // MARK: - Giới thiệu
 
 private struct AboutPane: View {
+    /// Trang chủ chính thức của app.
+    private static let websiteURL = URL(string: "https://oreokey.vercel.app")!
     /// Trang chủ mã nguồn — kèm docs hướng dẫn cài đặt/sử dụng.
     private static let githubURL = URL(string: "https://github.com/OreoSolutions/oreokey")!
     /// Trang Issues để người dùng báo lỗi.
@@ -642,6 +644,10 @@ private struct AboutPane: View {
                 .padding(.top, 2)
 
             HStack(spacing: 10) {
+                Link(destination: Self.websiteURL) {
+                    Label("Trang chủ", systemImage: "globe")
+                }
+                .buttonStyle(.bordered)
                 Link(destination: Self.githubURL) {
                     Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
                 }

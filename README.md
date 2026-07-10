@@ -3,6 +3,8 @@
 Bộ gõ tiếng Việt cho macOS — nhanh, nhẹ RAM, và tập trung xử lý triệt để
 hai lỗi kinh điển của các bộ gõ event-tap: **dính chữ** và **nháy chữ**.
 
+**Trang chủ: https://oreokey.vercel.app**
+
 - Telex + VNI, kiểm tra chính tả 3 mức (Chặt / Thường / Thoải mái — tự khôi
   phục từ tiếng Anh), gõ tắt, loại trừ app / nhớ trạng thái theo app / thêm app
   bằng bundle ID, chuyển mã Unicode/VNI-Windows/TCVN3

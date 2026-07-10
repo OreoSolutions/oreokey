@@ -6,6 +6,10 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã thêm
+- **Nút Trang chủ** trong tab Giới thiệu, dẫn tới website chính thức
+  https://oreokey.vercel.app.
+
 ## [0.6.0] - 2026-07-10
 
 ### Đã thêm
