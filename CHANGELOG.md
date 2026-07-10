@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.5.1] - 2026-07-10
+
 ### Đã sửa
 - **`looos` ra `lóo` dù bật kiểm tra chính tả**: nhân âm `oo` (vốn chỉ có
   trong từ mượn đóng bằng `c`/`ng` như `xoong`, `soóc`) bị chấp nhận cả khi

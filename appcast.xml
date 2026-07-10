@@ -101,6 +101,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="Ekx+uXcNG7XQUKdv6hoIGf2VE1NhIGxKCSqbgAjfLEBa+CSxzixjmGOpvngWVKMQ4wwXi+yZ6rmJUJe20I/LBQ==" length="5544977" />
     </item>
+    <item>
+      <title>0.5.1</title>
+      <pubDate>Fri, 10 Jul 2026 04:24:24 +0000</pubDate>
+      <sparkle:version>7</sparkle:version>
+      <sparkle:shortVersionString>0.5.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong><code>looos</code> ra <code>lóo</code> dù bật kiểm tra chính tả</strong>: nhân âm <code>oo</code> (vốn chỉ có trong từ mượn đóng bằng <code>c</code>/<code>ng</code> như <code>xoong</code>, <code>soóc</code>) bị chấp nhận cả khi đứng cuối từ, nên <code>lóo</code> lọt lưới ở mức Chặt lẫn Thường; nay khôi phục đúng phím gốc. Đồng thời sửa lỗi kéo theo: gõ <code>soóc</code> kiểu đặt thanh sớm (<code>sooosc</code>) trước đây bị bung nhầm thành <code>sốc</code> — dấu mũ đã hủy tự quay lại. (Mức Thoải mái vẫn đặt dấu tự do theo đúng thiết kế.)</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.5.1/OreoKey.dmg"
+                 sparkle:version="7"
+                 sparkle:shortVersionString="0.5.1"
+                 type="application/octet-stream"
+                 sparkle:edSignature="3Dl7MMr+nTj8kdqkJmaBopSYbiTPf5ZGo+hFzqAAcrg4fiX5m3iUnbrIVNlt4/bMxWHUQHfXAHumL9IDgU6GCQ==" length="5545222" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
