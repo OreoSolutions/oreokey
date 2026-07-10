@@ -64,6 +64,25 @@
                  type="application/octet-stream"
                  sparkle:edSignature="EsZFjRQMwufP4dZ4oQdwMAkLikWT0JOu2G8M2f/Rkc7MqKmbwWUmuCwvOdAIqq4A5PkscA5rP+XBI54GR55kCg==" length="5507423" />
     </item>
+    <item>
+      <title>0.4.1</title>
+      <pubDate>Fri, 10 Jul 2026 01:59:07 +0000</pubDate>
+      <sparkle:version>5</sparkle:version>
+      <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<pre>### Đã sửa
+- **Telegram Desktop (Qt) kẹt vùng chọn, không gõ được**: bản Telegram tải từ
+  telegram.org (`com.tdesktop.Telegram`) nhận lệnh chọn vùng nhưng lờ lệnh thay
+  chữ mà vẫn báo thành công, để lại vùng bôi đen kẹt và chữ cũ nguyên vẹn. Nay
+  đã thêm hồ sơ riêng cho bản này và, sau khi ghi, OreoKey đọc lại để xác minh
+  chữ đã thật sự thay — nếu app &quot;nói dối&quot; thì khôi phục con trỏ rồi rơi về bơm
+  phím. Tự chữa cho mọi app cùng kiểu, không riêng Telegram.</pre>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.4.1/OreoKey.dmg"
+                 sparkle:version="5"
+                 sparkle:shortVersionString="0.4.1"
+                 type="application/octet-stream"
+                 sparkle:edSignature="wJChhuCEKx9FJS54k17zAJNlIFYEyR7ZxmZQUjgkFuxRQtA62Amv9SnUU13/L9lA5J3laSQOMaXMLM7MJEbYCw==" length="5509043" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
