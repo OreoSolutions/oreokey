@@ -250,10 +250,6 @@ impl Engine {
     }
 
     fn on_char(&mut self, c: char) -> Action {
-        // Trạng thái TRƯỚC khi thêm c đã "sạch đã chốt" chưa: đang hiển thị
-        // bình thường (không ở raw_mode) và không mang biến đổi nào — dấu
-        // đã bị hủy hết hoặc chưa từng có. Ví dụ "mas" (đã hủy sắc của má).
-        let was_settled = !self.raw_mode && !self.is_transformed(&self.raw);
         self.raw.push(c);
         let new_render = if self.raw_mode {
             self.raw.clone()
@@ -261,8 +257,8 @@ impl Engine {
             let (text, restored) = self.render_word(&self.raw);
             if restored {
                 // Chỉ khóa khi từ CHẾT hẳn (cụm bất khả). Trạng thái CÒN
-                // SỐNG (tiền tố hợp lệ, vd nhân âm dở chờ dấu mũ) giữ raw
-                // hiển thị nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
+                // SỐNG (tiền tố hợp lệ, vd nhân âm dở chờ dấu mũ) giữ văn
+                // bản khôi phục nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
                 // thiện âm tiết (issue #4).
                 let state = self.build_state(&self.raw);
                 // is_live_prefix cố ý KHÔNG xét thanh điệu (tone-blind) — nhờ
@@ -270,32 +266,15 @@ impl Engine {
                 // được coi là còn sống. Đừng thêm kiểm tra thanh ở đây.
                 if !spell::is_live_prefix(&state) {
                     self.raw_mode = true;
+                    // Từ đây raw_mode hiển thị self.raw nguyên văn — đồng bộ
+                    // raw với văn bản khôi phục (đã rút phím hủy) để phím sau
+                    // và backspace không làm chữ đã hủy hiện lại. Từ còn sống
+                    // thì KHÔNG đồng bộ: mất lịch sử phím hủy sẽ khiến replay
+                    // tự áp lại dấu đã hủy ("sooos" + c phải ra "soóc").
+                    self.raw = text.clone();
                 }
-                // Từ đang sạch mà thêm một phím dấu làm nó không hợp lệ:
-                // chỉ nên rơi phím đó xuống thành ký tự thường, KHÔNG bung
-                // lại raw (raw còn giữ cả phím dấu ĐÃ HỦY — bung ra sẽ làm
-                // chữ đã hủy hiện lại: "mas" + f phải là "masf", không phải
-                // "massf"). Khác hẳn khôi phục từ tiếng Anh ("asdf") vốn
-                // hoàn tác một dấu ĐANG hoạt động — lúc đó was_settled=false.
-                if was_settled {
-                    let mut kept = self.last_render.clone();
-                    kept.push(c);
-                    // Đồng bộ raw với đúng phần đang hiển thị để backspace
-                    // không lệch (bỏ lịch sử phím dấu đã hủy) — nhưng CHỈ
-                    // khi từ đã chết hẳn (raw_mode). Từ còn sống phải giữ
-                    // nguyên lịch sử phím: bỏ phím hủy đi thì replay sau sẽ
-                    // tự áp lại dấu người dùng đã cố tình hủy
-                    // ("sooos" + c phải ra "soóc", không phải "sốc").
-                    if self.raw_mode {
-                        self.raw = kept.clone();
-                    }
-                    kept
-                } else {
-                    text
-                }
-            } else {
-                text
             }
+            text
         };
         let action = diff_action(&self.last_render, &new_render, c);
         self.last_render = new_render;
@@ -351,9 +330,30 @@ impl Engine {
         state
     }
 
-    /// Chuỗi phím gốc có mang biến đổi nào không (dấu thanh / dấu phụ).
-    fn is_transformed(&self, raw: &str) -> bool {
-        spell::is_transformed(&self.build_state(raw))
+    /// Văn bản khôi phục cho từ không phải tiếng Việt: phần đầu dài nhất
+    /// còn "sạch" (chưa mang biến đổi) hiển thị theo dạng đã render — nhờ
+    /// vậy phím hủy dấu đã tiêu KHÔNG bung trở lại ("looo" là "loo") —
+    /// phần phím gõ sau đó giữ nguyên văn ("looos" + e → "loose", không
+    /// phải "looose"; "mas" + f → "masf", không phải "massf").
+    fn restore_text(&self, raw: &str) -> String {
+        let chars: Vec<char> = raw.chars().collect();
+        let mut state = WordState::default();
+        let mut settled = String::new();
+        let mut settled_len = 0;
+        for (i, &c) in chars.iter().enumerate() {
+            match self.cfg.method {
+                TypingMethod::Telex => {
+                    telex::apply_key(&mut state, c, self.cfg.flexible_marks)
+                }
+                TypingMethod::Vni => vni::apply_key(&mut state, c),
+            }
+            if !spell::is_transformed(&state) {
+                settled = render_letters(&state, self.cfg.modern_tone);
+                settled_len = i + 1;
+            }
+        }
+        settled.extend(&chars[settled_len..]);
+        settled
     }
 
     /// Render chuỗi phím gốc thành văn bản hiển thị. Cờ thứ hai báo
@@ -369,7 +369,7 @@ impl Engine {
             && spell::is_transformed(&state)
             && !spell::is_acceptable(&state, self.cfg.spell_mode == SpellMode::Standard)
         {
-            return (raw.to_string(), true);
+            return (self.restore_text(raw), true);
         }
         (render_letters(&state, self.cfg.modern_tone), false)
     }

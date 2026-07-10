@@ -287,6 +287,11 @@ mod tests {
         // Backspace sau khôi phục còn-sống: raw giữ lịch sử phím thật
         // ("sooos"), xóa một ký tự phải về đúng "soo".
         assert_eq!(t("sooos\u{8}"), "soo");
+        // Từ chết MUỘN (sau khi đã hủy mũ) cũng không được bung lại phím
+        // hủy: người dùng thấy "loos" rồi gõ e thì phải ra "loose",
+        // không phải "looose".
+        assert_eq!(t("looose"), "loose");
+        assert_eq!(standard("looose"), "loose");
     }
 
     #[test]
@@ -385,6 +390,7 @@ mod tests {
         assert!(!super::is_live_prefix(&cla));
     }
 }
+
 
 
 

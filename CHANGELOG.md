@@ -6,6 +6,12 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Gõ `loose` bị bung thành `looose`**: khi từ hóa ra không phải tiếng Việt
+  ở phím muộn (sau khi đã hủy mũ bằng `ooo`), văn bản khôi phục bung lại cả
+  phím hủy đã tiêu. Nay phần gõ trước khi có dấu giữ đúng dạng đã hiển thị
+  (`loos` + `e` → `loose`), phần sau giữ nguyên văn phím gõ.
+
 ## [0.5.1] - 2026-07-10
 
 ### Đã sửa
