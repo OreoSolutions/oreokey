@@ -21,7 +21,7 @@ struct CoreMacro: Codable, Equatable, Identifiable {
 struct CoreSettings: Codable, Equatable {
     var method: String
     var enabled: Bool
-    var spell_check: Bool
+    var spell_mode: String
     var modern_tone: Bool
     var macros_enabled: Bool
     var flexible_marks: Bool
