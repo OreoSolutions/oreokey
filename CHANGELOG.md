@@ -7,7 +7,7 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 ## [Chưa phát hành]
 
 ### Đã thêm
-- **Test deploy webhook** (sẽ xóa):
+- **Fix**:
   Em không là nàng thơ
   Anh cũng không còn là nhạc sĩ mộng mơ
   Tình này nhẹ như gió
