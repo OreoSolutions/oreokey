@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.5.2] - 2026-07-10
+
 ### Đã sửa
 - **Gõ `loose` bị bung thành `looose`**: khi từ hóa ra không phải tiếng Việt
   ở phím muộn (sau khi đã hủy mũ bằng `ooo`), văn bản khôi phục bung lại cả

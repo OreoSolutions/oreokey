@@ -117,6 +117,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="3Dl7MMr+nTj8kdqkJmaBopSYbiTPf5ZGo+hFzqAAcrg4fiX5m3iUnbrIVNlt4/bMxWHUQHfXAHumL9IDgU6GCQ==" length="5545222" />
     </item>
+    <item>
+      <title>0.5.2</title>
+      <pubDate>Fri, 10 Jul 2026 04:37:26 +0000</pubDate>
+      <sparkle:version>8</sparkle:version>
+      <sparkle:shortVersionString>0.5.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Gõ <code>loose</code> bị bung thành <code>looose</code></strong>: khi từ hóa ra không phải tiếng Việt ở phím muộn (sau khi đã hủy mũ bằng <code>ooo</code>), văn bản khôi phục bung lại cả phím hủy đã tiêu. Nay phần gõ trước khi có dấu giữ đúng dạng đã hiển thị (<code>loos</code> + <code>e</code> → <code>loose</code>), phần sau giữ nguyên văn phím gõ.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.5.2/OreoKey.dmg"
+                 sparkle:version="8"
+                 sparkle:shortVersionString="0.5.2"
+                 type="application/octet-stream"
+                 sparkle:edSignature="oeG/i8zu/jm8nznZ+SosJpuN9LXPBRt9dxfPhSQvEOeibmWxjXDEBjMI2839l0ZhCg5prKv18v31sp4Kg60KBQ==" length="5545102" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
