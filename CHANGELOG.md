@@ -6,6 +6,13 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã thêm
+- **Test deploy webhook** (sẽ xóa):
+  Em không là nàng thơ
+  Anh cũng không còn là nhạc sĩ mộng mơ
+  Tình này nhẹ như gió
+  Lại trĩu lên tim ta những vết hằn
+
 ## [0.6.1] - 2026-07-10
 
 ### Đã thêm
