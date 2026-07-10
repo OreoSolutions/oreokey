@@ -12,6 +12,9 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
   (cho gõ tắt `đc`, `nèk` mà vẫn nhận diện tiếng Anh có cụm bất khả như `clear`,
   `sound`), **Thoải mái** (luôn đặt dấu, không bao giờ khôi phục từ tiếng Anh).
   Mặc định là Chặt.
+- **Thêm ứng dụng bằng bundle ID thủ công**: mục "Nhập bundle ID…" trong Cài đặt
+  → Ứng dụng cho phép loại trừ hoặc chỉnh chế độ tương thích cho app **chưa chạy**
+  (vd Burp Suite), thay vì chỉ chọn được app đang mở.
 
 ### Đã sửa
 - **Nháy chữ ở một số terminal**: kitty, Alacritty, WezTerm, Hyper trước đây bị
@@ -19,6 +22,9 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 - **VNI đặt số thanh trước số mũ giữa từ**: gõ kiểu `thie16u` (bấm số thanh `1`
   ngay sau nguyên âm rồi mới số mũ `6`) trước đây bị kẹt thành `thie16u`; nay ra
   đúng `thiếu`. Tương tự với các từ có `iê` khác.
+- **Nội dung cập nhật hiển thị đúng định dạng**: hộp thoại "Có bản mới" của
+  Sparkle trước đây hiện ký tự Markdown thô (`###`, `-`, dấu backtick); nay render
+  thành tiêu đề, danh sách, chữ đậm và mã đúng cách.
 
 ## [0.4.1] - 2026-07-10
 
