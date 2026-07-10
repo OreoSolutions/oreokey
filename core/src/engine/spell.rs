@@ -277,7 +277,7 @@ mod tests {
         assert_eq!(t("class"), "class");
     }
 
-    fn loose(keys: &str) -> String {
+    fn standard(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Telex,
             spell_mode: SpellMode::Standard,
@@ -292,36 +292,36 @@ mod tests {
     #[test]
     fn loose_allows_abbreviations() {
         // Từ viết tắt có dấu, phụ âm cuối/không nguyên âm → được giữ.
-        assert_eq!(loose("ddc"), "đc"); // đ + c, không nguyên âm
-        assert_eq!(loose("nefk"), "nèk"); // đuôi k không hợp lệ vẫn cho
+        assert_eq!(standard("ddc"), "đc"); // đ + c, không nguyên âm
+        assert_eq!(standard("nefk"), "nèk"); // đuôi k không hợp lệ vẫn cho
     }
 
     #[test]
     fn loose_still_restores_english() {
         // Cụm bất khả (phụ âm đầu / nguyên âm / nguyên âm không liền) vẫn bắt.
-        assert_eq!(loose("clear"), "clear"); // cl đầu bất khả
-        assert_eq!(loose("sound"), "sound"); // ou bất khả
-        assert_eq!(loose("for"), "for"); // f đầu bất khả
-        assert_eq!(loose("class"), "class");
-        assert_eq!(loose("dies"), "dies"); // ie + thanh → bất khả
-        assert_eq!(loose("status"), "status"); // a…u không liên tục
+        assert_eq!(standard("clear"), "clear"); // cl đầu bất khả
+        assert_eq!(standard("sound"), "sound"); // ou bất khả
+        assert_eq!(standard("for"), "for"); // f đầu bất khả
+        assert_eq!(standard("class"), "class");
+        assert_eq!(standard("dies"), "dies"); // ie + thanh → bất khả
+        assert_eq!(standard("status"), "status"); // a…u không liên tục
     }
 
     #[test]
     fn loose_keeps_valid_vietnamese() {
-        assert_eq!(loose("vieetj"), "việt");
-        assert_eq!(loose("dduongwf"), "đường");
-        assert_eq!(loose("toans"), "toán");
+        assert_eq!(standard("vieetj"), "việt");
+        assert_eq!(standard("dduongwf"), "đường");
+        assert_eq!(standard("toans"), "toán");
     }
 
     #[test]
     fn loose_transforms_ambiguous_english_by_design() {
         // Đánh đổi đã chấp nhận: cùng cấu trúc với nèk nên bị đặt dấu.
-        assert_eq!(loose("mask"), "mák");
-        assert_eq!(loose("task"), "ták");
+        assert_eq!(standard("mask"), "mák");
+        assert_eq!(standard("task"), "ták");
     }
 
-    fn loose_vni(keys: &str) -> String {
+    fn standard_vni(keys: &str) -> String {
         let mut e = Engine::new(EngineConfig {
             method: TypingMethod::Vni,
             spell_mode: SpellMode::Standard,
@@ -336,8 +336,8 @@ mod tests {
     #[test]
     fn loose_applies_to_vni() {
         // Bộ lọc loose chạy trên WordState nên áp cho cả VNI (đ tạo bằng d9).
-        assert_eq!(loose_vni("d9c"), "đc"); // đ + c, không nguyên âm
-        assert_eq!(loose_vni("vie65t"), "việt"); // âm tiết hợp lệ vẫn giữ
+        assert_eq!(standard_vni("d9c"), "đc"); // đ + c, không nguyên âm
+        assert_eq!(standard_vni("vie65t"), "việt"); // âm tiết hợp lệ vẫn giữ
     }
 
     #[test]
