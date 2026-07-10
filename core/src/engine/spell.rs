@@ -164,11 +164,16 @@ pub fn is_acceptable(state: &WordState, loose: bool) -> bool {
     if !nucleus_ok {
         return false;
     }
+    let final_c = render_range(run_end + 1, letters.len());
+    // "oo" chỉ có trong từ mượn đóng bằng c/ng (xoong, boong, soóc) —
+    // không bao giờ kết thúc âm tiết, nên "lóo" bất khả ở cả hai mức.
+    if nucleus == "oo" && !matches!(final_c.as_str(), "c" | "ng") {
+        return false;
+    }
     // Loose: thả tự do phụ âm cuối và bỏ luật thanh trên phụ âm tắc.
     if loose {
         return true;
     }
-    let final_c = render_range(run_end + 1, letters.len());
     if !FINALS.contains(&final_c.as_str()) {
         return false;
     }
@@ -268,6 +273,23 @@ mod tests {
     }
 
     #[test]
+    fn oo_nucleus_requires_c_or_ng_final() {
+        // "oo" chỉ có trong từ mượn đóng bằng c/ng (xoong, boong, soóc,
+        // goòng) — không bao giờ kết thúc âm tiết, nên "lóo" là bất khả.
+        // Phím o thứ ba đã tiêu vào việc hủy mũ nên nguyên văn là "loos"
+        // (cùng thiết kế với `ass` → `as`).
+        assert_eq!(t("looos"), "loos");
+        assert_eq!(standard("looos"), "loos");
+        // Từ mượn hợp lệ vẫn gõ được, kể cả đặt thanh trước phụ âm cuối.
+        assert_eq!(t("sooocs"), "soóc");
+        assert_eq!(t("sooosc"), "soóc");
+        assert_eq!(t("gooongf"), "goòng");
+        // Backspace sau khôi phục còn-sống: raw giữ lịch sử phím thật
+        // ("sooos"), xóa một ký tự phải về đúng "soo".
+        assert_eq!(t("sooos\u{8}"), "soo");
+    }
+
+    #[test]
     fn cancelled_keys_not_restored() {
         // Hủy dấu là chủ ý của người dùng, không phải từ sai.
         assert_eq!(t("ass"), "as");
@@ -363,3 +385,6 @@ mod tests {
         assert!(!super::is_live_prefix(&cla));
     }
 }
+
+
+

@@ -281,8 +281,14 @@ impl Engine {
                     let mut kept = self.last_render.clone();
                     kept.push(c);
                     // Đồng bộ raw với đúng phần đang hiển thị để backspace
-                    // không lệch (bỏ lịch sử phím dấu đã hủy).
-                    self.raw = kept.clone();
+                    // không lệch (bỏ lịch sử phím dấu đã hủy) — nhưng CHỈ
+                    // khi từ đã chết hẳn (raw_mode). Từ còn sống phải giữ
+                    // nguyên lịch sử phím: bỏ phím hủy đi thì replay sau sẽ
+                    // tự áp lại dấu người dùng đã cố tình hủy
+                    // ("sooos" + c phải ra "soóc", không phải "sốc").
+                    if self.raw_mode {
+                        self.raw = kept.clone();
+                    }
                     kept
                 } else {
                     text

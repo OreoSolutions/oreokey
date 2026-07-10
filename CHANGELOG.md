@@ -6,6 +6,14 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **`looos` ra `lóo` dù bật kiểm tra chính tả**: nhân âm `oo` (vốn chỉ có
+  trong từ mượn đóng bằng `c`/`ng` như `xoong`, `soóc`) bị chấp nhận cả khi
+  đứng cuối từ, nên `lóo` lọt lưới ở mức Chặt lẫn Thường; nay khôi phục đúng
+  phím gốc. Đồng thời sửa lỗi kéo theo: gõ `soóc` kiểu đặt thanh sớm
+  (`sooosc`) trước đây bị bung nhầm thành `sốc` — dấu mũ đã hủy tự quay lại.
+  (Mức Thoải mái vẫn đặt dấu tự do theo đúng thiết kế.)
+
 ## [0.5.0] - 2026-07-10
 
 ### Đã thêm
