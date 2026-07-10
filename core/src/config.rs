@@ -58,7 +58,8 @@ pub struct Settings {
     /// "telex" | "vni".
     pub method: String,
     pub enabled: bool,
-    pub spell_check: bool,
+    /// "strict" | "standard" | "loose".
+    pub spell_mode: String,
     pub modern_tone: bool,
     pub macros_enabled: bool,
     /// Gõ dấu mũ muộn: `nanag` → `nâng`.
@@ -80,7 +81,7 @@ impl Default for Settings {
         Settings {
             method: "telex".into(),
             enabled: true,
-            spell_check: true,
+            spell_mode: "strict".into(),
             modern_tone: false,
             macros_enabled: true,
             flexible_marks: true,
@@ -102,10 +103,10 @@ impl Settings {
             } else {
                 crate::engine::TypingMethod::Telex
             },
-            spell_mode: if self.spell_check {
-                crate::engine::SpellMode::Strict
-            } else {
-                crate::engine::SpellMode::Standard
+            spell_mode: match self.spell_mode.as_str() {
+                "loose" => crate::engine::SpellMode::Loose,
+                "standard" => crate::engine::SpellMode::Standard,
+                _ => crate::engine::SpellMode::Strict,
             },
             modern_tone: self.modern_tone,
             macros_enabled: self.macros_enabled,
@@ -134,9 +135,26 @@ fn settings_path() -> PathBuf {
 /// một file lỗi).
 pub fn load() -> Settings {
     match fs::read_to_string(settings_path()) {
-        Ok(text) => serde_json::from_str(&text).unwrap_or_default(),
+        Ok(text) => serde_json::from_str(&migrate_json(&text)).unwrap_or_default(),
         Err(_) => Settings::default(),
     }
+}
+
+/// Di trú file cũ: `spell_check: bool` (đã bỏ) → `spell_mode`. Trả nguyên
+/// văn nếu không phải object JSON (load sẽ về default).
+fn migrate_json(text: &str) -> String {
+    let Ok(mut v) = serde_json::from_str::<serde_json::Value>(text) else {
+        return text.to_string();
+    };
+    if let Some(obj) = v.as_object_mut() {
+        if !obj.contains_key("spell_mode") {
+            if let Some(sc) = obj.get("spell_check").and_then(|x| x.as_bool()) {
+                let mode = if sc { "strict" } else { "standard" };
+                obj.insert("spell_mode".into(), serde_json::Value::String(mode.into()));
+            }
+        }
+    }
+    v.to_string()
 }
 
 /// Ghi atomic: ghi file tạm rồi rename để không bao giờ để lại file dở.
@@ -181,5 +199,28 @@ mod tests {
     fn corrupt_file_falls_back_to_default() {
         let s: Settings = serde_json::from_str("not json").unwrap_or_default();
         assert_eq!(s, Settings::default());
+    }
+
+    #[test]
+    fn migrates_legacy_spell_check() {
+        // File cũ chỉ có spell_check → map sang spell_mode.
+        let on: Settings = serde_json::from_str(&migrate_json(r#"{"spell_check":true}"#)).unwrap();
+        assert_eq!(on.spell_mode, "strict");
+        let off: Settings =
+            serde_json::from_str(&migrate_json(r#"{"spell_check":false}"#)).unwrap();
+        assert_eq!(off.spell_mode, "standard");
+    }
+
+    #[test]
+    fn keeps_explicit_spell_mode() {
+        let s: Settings =
+            serde_json::from_str(&migrate_json(r#"{"spell_mode":"loose"}"#)).unwrap();
+        assert_eq!(s.spell_mode, "loose");
+    }
+
+    #[test]
+    fn migrate_passes_through_non_object() {
+        // Không phải JSON hợp lệ → trả nguyên văn (load sẽ về default).
+        assert_eq!(migrate_json("not json"), "not json");
     }
 }
