@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.6.2] - 2026-07-10
+
 ### Đã thêm
 - **Fix**:
   Em không là nàng thơ

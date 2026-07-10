@@ -176,6 +176,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="9SbYUzWHRK2RkjeX8Y+HI4HGS4fejo+N4Nhg9nLD/LR/MKAm8+5mbyVA/JgRYnlyZJ6kqCLeaGMtb9X6Ku5uBg==" length="5615174" />
     </item>
+    <item>
+      <title>0.6.2</title>
+      <pubDate>Fri, 10 Jul 2026 15:45:09 +0000</pubDate>
+      <sparkle:version>11</sparkle:version>
+      <sparkle:shortVersionString>0.6.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã thêm</h3>
+<ul>
+<li><strong>Fix</strong>: Em không là nàng thơ Anh cũng không còn là nhạc sĩ mộng mơ Tình này nhẹ như gió Lại trĩu lên tim ta những vết hằn</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.6.2/OreoKey.dmg"
+                 sparkle:version="11"
+                 sparkle:shortVersionString="0.6.2"
+                 type="application/octet-stream"
+                 sparkle:edSignature="plyX9vILOpcN4p2JgtEcPDUCOal+MbIkALg9o0gKN8W3mQv3b2APBtcI5aHgXHapo+kJLXviVByGlZDcYHsXDA==" length="5615415" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
