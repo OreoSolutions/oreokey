@@ -6,6 +6,20 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã thêm
+- **Kiểm tra chính tả 3 mức**: ô cài đặt cũ bật/tắt giờ thành 3 mức chọn —
+  **Chặt** (bảo vệ tối đa từ tiếng Anh, `mask`, `class` giữ nguyên), **Thường**
+  (cho gõ tắt `đc`, `nèk` mà vẫn nhận diện tiếng Anh có cụm bất khả như `clear`,
+  `sound`), **Thoải mái** (luôn đặt dấu, không bao giờ khôi phục từ tiếng Anh).
+  Mặc định là Chặt.
+
+### Đã sửa
+- **Nháy chữ ở một số terminal**: kitty, Alacritty, WezTerm, Hyper trước đây bị
+  nháy/dính chữ khi gõ; nay đi thẳng đường bơm phím như các terminal khác.
+- **VNI đặt số thanh trước số mũ giữa từ**: gõ kiểu `thie16u` (bấm số thanh `1`
+  ngay sau nguyên âm rồi mới số mũ `6`) trước đây bị kẹt thành `thie16u`; nay ra
+  đúng `thiếu`. Tương tự với các từ có `iê` khác.
+
 ## [0.4.1] - 2026-07-10
 
 ### Đã sửa
