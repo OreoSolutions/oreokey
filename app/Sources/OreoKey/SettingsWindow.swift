@@ -427,7 +427,14 @@ private struct RunningAppPicker: View {
             Button("Thêm", action: addManual)
             Button("Huỷ", role: .cancel) {}
         } message: {
-            Text("Dùng cho app không đang chạy. Khớp chính xác chuỗi — không hỗ trợ ký tự đại diện (com.foo.*).")
+            Text("""
+            Dùng cho app không đang chạy. Khớp chính xác chuỗi — không hỗ trợ \
+            ký tự đại diện (com.foo.*).
+
+            Lấy ID: mở Terminal chạy
+            osascript -e 'id of app "Tên App"'
+            hoặc  mdls -name kMDItemCFBundleIdentifier -raw "/Applications/Tên App.app"
+            """)
         }
     }
 

@@ -42,15 +42,36 @@ Terminal phổ biến (Terminal, iTerm2, kitty, Alacritty, WezTerm, Ghostty, War
 Hyper, VS Code, JetBrains) đã được đặt sẵn **Bơm phím nhanh**. Một số app Java
 Swing (vd Burp Suite) chưa có sẵn hồ sơ — dùng cách override ở trên.
 
-**Giúp app được hỗ trợ mặc định:** gửi cho tụi mình *bundle ID* của app để thêm
-vào hồ sơ đóng gói (mọi người khỏi phải chỉnh tay). Lấy bundle ID:
+App **đang chạy** thì hiện sẵn trong menu "Thêm…", chọn thẳng, khỏi cần bundle ID.
+App **chưa chạy** (hoặc muốn cấu hình trước) thì dùng mục **"Nhập bundle ID…"** ở
+cuối menu và dán ID lấy theo hướng dẫn dưới.
 
-```bash
-osascript -e 'id of app "Tên App"'   # ví dụ: id of app "kitty"
-```
+### Cách lấy bundle ID
 
-Rồi mở issue kèm tên app + bundle ID + chế độ chạy tốt tại
-https://github.com/OreoSolutions/oreokey/issues.
+- **App đang chạy** — dùng đúng *tên hiển thị* của app:
+
+  ```bash
+  osascript -e 'id of app "kitty"'          # → net.kovidgoyal.kitty
+  osascript -e 'id of app "Burp Suite Professional"'
+  ```
+
+- **Từ file .app trong Applications** (kể cả app chưa chạy):
+
+  ```bash
+  mdls -name kMDItemCFBundleIdentifier -raw "/Applications/kitty.app"
+  # hoặc
+  defaults read "/Applications/kitty.app/Contents/Info" CFBundleIdentifier
+  ```
+
+- **App đang ở cửa sổ trước mặt** — bấm vào app đó rồi:
+
+  ```bash
+  osascript -e 'id of app (path to frontmost application as text)'
+  ```
+
+**Giúp app được hỗ trợ mặc định:** gửi cho tụi mình *bundle ID* + tên app + chế độ
+chạy tốt, mở issue tại https://github.com/OreoSolutions/oreokey/issues để tụi mình
+thêm vào hồ sơ đóng gói (mọi người khỏi phải chỉnh tay).
 
 ## Build
 
