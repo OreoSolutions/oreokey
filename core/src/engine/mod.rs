@@ -265,6 +265,9 @@ impl Engine {
                 // hiển thị nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
                 // thiện âm tiết (issue #4).
                 let state = self.build_state(&self.raw);
+                // is_live_prefix cố ý KHÔNG xét thanh điệu (tone-blind) — nhờ
+                // vậy một nhân âm đã có thanh nhưng chưa xong dấu mũ/móc vẫn
+                // được coi là còn sống. Đừng thêm kiểm tra thanh ở đây.
                 if !spell::is_live_prefix(&state) {
                     self.raw_mode = true;
                 }
