@@ -144,6 +144,17 @@ mod tests {
         // App lạ → Auto
         let unknown = p.resolve("com.example.unknown", &none, None);
         assert_eq!(unknown.mode, FixMode::Auto);
+
+        // Telegram có HAI bản trên macOS: bản Swift trên App Store
+        // (ru.keepcoder.Telegram) và Telegram Desktop Qt từ telegram.org
+        // (com.tdesktop.Telegram). Bản Qt nhận lệnh chọn vùng AX (thấy
+        // bôi đen) nhưng lờ lệnh ghi AXSelectedText mà vẫn trả success
+        // → kẹt vùng chọn, không gõ được (issue #2). Cả hai phải đi
+        // đường bơm phím.
+        let tg_native = p.resolve("ru.keepcoder.Telegram", &none, None);
+        assert_eq!(tg_native.mode, FixMode::InjectFast);
+        let tg_desktop = p.resolve("com.tdesktop.Telegram", &none, None);
+        assert_eq!(tg_desktop.mode, FixMode::InjectFast);
     }
 
     #[test]

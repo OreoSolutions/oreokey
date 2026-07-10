@@ -204,25 +204,55 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         {
             // App nhận range nhưng từ chối ghi text: khôi phục con trỏ
             // về vị trí cũ trước khi báo lỗi để fallback không phá vùng chọn.
-            let restore = CFRange {
-                location: caret.location,
-                length: 0,
-            };
-            let restore_value = AXValueCreate(
-                K_AX_VALUE_TYPE_CFRANGE,
-                &restore as *const CFRange as *const c_void,
-            );
-            if !restore_value.is_null() {
-                let restore_guard = CFType::wrap_under_create_rule(restore_value);
-                AXUIElementSetAttributeValue(
-                    element,
-                    attr("AXSelectedTextRange").as_concrete_TypeRef(),
-                    restore_guard.as_CFTypeRef(),
-                );
-            }
+            restore_caret(element, caret.location);
             return Err(AxFail::Unsupported);
         }
+
+        // Một số app nhận range (vùng chọn HIỆN LÊN màn hình) nhưng lờ
+        // lệnh ghi AXSelectedText mà vẫn trả success (Telegram Desktop/Qt,
+        // issue #2): tin vào success là kẹt luôn vùng chọn bôi đen, chữ cũ
+        // còn nguyên, người dùng không gõ tiếp được. Đọc lại để chắc text
+        // đã thật sự thay; chưa thay → trả con trỏ về chỗ cũ (hủy vùng
+        // chọn kẹt) rồi báo Unsupported để caller cache và bơm phím.
+        let new_len = text.encode_utf16().count() as isize;
+        let written = CFRange {
+            location: target.location,
+            length: new_len,
+        };
+        match read_string_for_range(element, &written) {
+            Some(actual) if actual != text => {
+                super::dlog(&format!(
+                    "  ax write ignored: actual={actual:?} vs text={text:?}"
+                ));
+                restore_caret(element, caret.location);
+                return Err(AxFail::Unsupported);
+            }
+            // Khớp → ghi thành công thật. Không đọc lại được → không đủ
+            // bằng chứng app nói dối, giữ nguyên hành vi cũ (tin success).
+            _ => {}
+        }
         Ok(())
+    }
+}
+
+/// Đưa con trỏ về `location` (hủy mọi vùng chọn) — dọn dẹp sau khi lệnh
+/// ghi AX thất bại giữa chừng, để fallback bơm phím xóa đúng chữ.
+unsafe fn restore_caret(element: AXUIElementRef, location: isize) {
+    let restore = CFRange {
+        location,
+        length: 0,
+    };
+    let restore_value = AXValueCreate(
+        K_AX_VALUE_TYPE_CFRANGE,
+        &restore as *const CFRange as *const c_void,
+    );
+    if !restore_value.is_null() {
+        let restore_guard = CFType::wrap_under_create_rule(restore_value);
+        AXUIElementSetAttributeValue(
+            element,
+            attr("AXSelectedTextRange").as_concrete_TypeRef(),
+            restore_guard.as_CFTypeRef(),
+        );
     }
 }
 

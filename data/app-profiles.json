@@ -26,6 +26,7 @@
     "com.facebook.archon": { "mode": "inject_fast" },
     "notion.id": { "mode": "inject_fast" },
     "com.tinyspeck.slackmacgap": { "mode": "inject_fast" },
-    "ru.keepcoder.Telegram": { "mode": "inject_fast" }
+    "ru.keepcoder.Telegram": { "mode": "inject_fast" },
+    "com.tdesktop.Telegram": { "mode": "inject_fast" }
   }
 }
