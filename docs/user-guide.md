@@ -144,6 +144,12 @@ cụ thể** vẫn nháy chữ hoặc dính chữ:
 Các terminal phổ biến (Terminal, iTerm2, kitty, Alacritty, WezTerm,
 Ghostty, Warp, Hyper, VS Code, JetBrains) đã được đặt sẵn chế độ phù hợp.
 
+> **VS Code + extension markdown** (vd Markdown All in One): extension xử
+> lý thêm sau mỗi lần buffer đổi nên file `.md` có thể nháy/dính dù file
+> khác gõ bình thường. Đặt override **Bơm phím chậm** cho VS Code theo các
+> bước trên, hoặc tắt `markdown.extension.completion.enabled` trong
+> settings của VS Code.
+
 Tìm được chế độ chạy tốt cho app chưa có sẵn hồ sơ? Mở
 [issue](https://github.com/OreoSolutions/oreokey/issues) gửi *bundle ID +
 tên app + chế độ* để bản sau hỗ trợ mặc định cho mọi người.
