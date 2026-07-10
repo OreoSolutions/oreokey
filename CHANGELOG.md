@@ -6,6 +6,14 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Telegram Desktop (Qt) kẹt vùng chọn, không gõ được**: bản Telegram tải từ
+  telegram.org (`com.tdesktop.Telegram`) nhận lệnh chọn vùng nhưng lờ lệnh thay
+  chữ mà vẫn báo thành công, để lại vùng bôi đen kẹt và chữ cũ nguyên vẹn. Nay
+  đã thêm hồ sơ riêng cho bản này và, sau khi ghi, OreoKey đọc lại để xác minh
+  chữ đã thật sự thay — nếu app "nói dối" thì khôi phục con trỏ rồi rơi về bơm
+  phím. Tự chữa cho mọi app cùng kiểu, không riêng Telegram.
+
 ## [0.4.0] - 2026-07-09
 
 ### Đã thêm
