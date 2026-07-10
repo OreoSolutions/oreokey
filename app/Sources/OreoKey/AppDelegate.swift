@@ -1,6 +1,4 @@
 import AppKit
-import ServiceManagement
-import Sparkle
 
 // Callback C không capture được context — trỏ về singleton.
 private func statusChanged(_ vnOn: Bool) {
@@ -21,7 +19,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var toggleItem: NSMenuItem!
     private var telexItem: NSMenuItem!
     private var vniItem: NSMenuItem!
-    private var loginItem: NSMenuItem!
     private var onboarding: OnboardingController?
     private var settingsWindow: SettingsWindowController?
 
@@ -102,18 +99,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             title: "Cài đặt…", action: #selector(openSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
-
-        let updates = NSMenuItem(
-            title: "Kiểm tra bản mới…",
-            action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)),
-            keyEquivalent: "")
-        updates.target = Updater.shared.controller
-        menu.addItem(updates)
-
-        loginItem = NSMenuItem(
-            title: "Khởi động cùng máy", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
-        loginItem.target = self
-        menu.addItem(loginItem)
         menu.addItem(.separator())
 
         let quit = NSMenuItem(
@@ -216,19 +201,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         settingsWindow?.show()
     }
-
-    @objc private func toggleLaunchAtLogin() {
-        let service = SMAppService.mainApp
-        do {
-            if service.status == .enabled {
-                try service.unregister()
-            } else {
-                try service.register()
-            }
-        } catch {
-            NSLog("OreoKey: launch-at-login error: \(error)")
-        }
-    }
 }
 
 extension AppDelegate: NSMenuDelegate {
@@ -241,7 +213,6 @@ extension AppDelegate: NSMenuDelegate {
         let method = settings?.method ?? "telex"
         telexItem.state = method == "telex" ? .on : .off
         vniItem.state = method == "vni" ? .on : .off
-        loginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         if #available(macOS 15.0, *), let hotkey = settings?.hotkey {
             toggleItem.subtitle = Self.hotkeyDisplay(hotkey)
         }

@@ -1,4 +1,6 @@
 import AppKit
+import ServiceManagement
+import Sparkle
 import SwiftUI
 
 final class SettingsWindowController {
@@ -8,10 +10,9 @@ final class SettingsWindowController {
         if window == nil {
             let win = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 760, height: 500),
-                styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                styleMask: [.titled, .closable, .miniaturizable],
                 backing: .buffered, defer: false)
             win.title = "Cài đặt OreoKey"
-            win.titlebarAppearsTransparent = true
             win.isReleasedWhenClosed = false
             win.contentViewController = NSHostingController(rootView: SettingsView())
             window = win
@@ -72,8 +73,11 @@ struct SettingsView: View {
     @StateObject private var model = SettingsModel()
     @State private var pane: Pane = .general
 
+    // Sidebar tự dựng thay vì NavigationSplitView: split view tự sinh
+    // NSToolbar (nút thu sidebar + tiêu đề trồi lên titlebar) gây lệch,
+    // và .toolbar(.hidden) không gỡ được khi host trong NSWindow thường.
     var body: some View {
-        NavigationSplitView {
+        HStack(spacing: 0) {
             List(Pane.allCases, selection: $pane) { p in
                 Label {
                     Text(p.title)
@@ -88,20 +92,89 @@ struct SettingsView: View {
                 .tag(p)
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(190)
-        } detail: {
-            if model.settings != nil {
-                switch pane {
-                case .general: GeneralPane(model: model)
-                case .macros: MacrosPane(model: model)
-                case .apps: AppsPane(model: model)
-                case .about: AboutPane()
-                }
-            } else {
-                ContentUnavailableCompat()
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                UpdateFooter()
             }
+            .frame(width: 190)
+
+            Divider()
+
+            Group {
+                if model.settings != nil {
+                    switch pane {
+                    case .general: GeneralPane(model: model)
+                    case .macros: MacrosPane(model: model)
+                    case .apps: AppsPane(model: model)
+                    case .about: AboutPane()
+                    }
+                } else {
+                    ContentUnavailableCompat()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 760, minHeight: 500)
+    }
+}
+
+/// Chân sidebar: tên app + dòng "v… ✓ Mới nhất" căn giữa. Cả dòng bấm
+/// được để kiểm tra/cài bản mới; đổi thành cảnh báo cam khi có update
+/// (dò lại im lặng mỗi lần mở cửa sổ).
+private struct UpdateFooter: View {
+    @ObservedObject private var status = Updater.shared.status
+    @State private var hovering = false
+
+    private var version: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
+    }
+
+    var body: some View {
+        VStack(spacing: 5) {
+            Text("OreoKey")
+                .font(.system(size: 14, weight: .bold))
+            statusLine
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .onAppear { Updater.shared.probeQuietly() }
+    }
+
+    private var statusLine: some View {
+        Button {
+            Updater.shared.controller.checkForUpdates(nil)
+        } label: {
+            HStack(spacing: 5) {
+                Text("v\(version)")
+                    .foregroundStyle(.secondary)
+                switch status.state {
+                case .available(let newVersion):
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Bản \(newVersion)")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.orange)
+                case .upToDate:
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Mới nhất")
+                        .foregroundStyle(.secondary)
+                case .unknown:
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .foregroundStyle(.secondary)
+                    Text("Kiểm tra")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.caption)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.primary.opacity(hovering ? 0.08 : 0)))
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
     }
 }
 
@@ -121,6 +194,7 @@ private struct ContentUnavailableCompat: View {
 
 private struct GeneralPane: View {
     @ObservedObject var model: SettingsModel
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     private let hotkeyPresets: [(String, CoreHotkey)] = [
         ("⌃⇧Space", CoreHotkey(ctrl: true, shift: true, alt: false, cmd: false, keycode: 49)),
@@ -149,14 +223,14 @@ private struct GeneralPane: View {
 
                 Section("Hành vi gõ") {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Kiểm tra chính tả")
-                        Picker("Kiểm tra chính tả", selection: binding.spell_mode) {
-                            Text("Chặt").tag("strict")
-                            Text("Thường").tag("standard")
-                            Text("Thoải mái").tag("loose")
+                        HStack(spacing: 10) {
+                            Text("Kiểm tra chính tả")
+                            Spacer()
+                            Text(spellModeName(binding.wrappedValue.spell_mode))
+                                .foregroundStyle(.secondary)
+                            StepSlider(index: spellIndexBinding(binding), steps: 3)
+                                .frame(width: 150)
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
                         Text(spellModeDetail(binding.wrappedValue.spell_mode))
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -178,9 +252,30 @@ private struct GeneralPane: View {
                         detail: "Từ nhạy cảm tự thay bằng dấu * khi chốt từ",
                         isOn: binding.censor_enabled)
                 }
+
+                Section("Hệ thống") {
+                    ToggleRow(
+                        title: "Khởi động cùng máy",
+                        detail: "Tự chạy OreoKey khi đăng nhập",
+                        isOn: $launchAtLogin)
+                }
             }
             .formStyle(.grouped)
             .navigationTitle("Chung")
+            .onChange(of: launchAtLogin) { on in
+                let service = SMAppService.mainApp
+                guard on != (service.status == .enabled) else { return }
+                do {
+                    if on {
+                        try service.register()
+                    } else {
+                        try service.unregister()
+                    }
+                } catch {
+                    NSLog("OreoKey: launch-at-login error: \(error)")
+                    launchAtLogin = service.status == .enabled
+                }
+            }
         }
     }
 
@@ -197,6 +292,28 @@ private struct GeneralPane: View {
             })
     }
 
+    /// Thứ tự nấc slider: mức độ kiểm tra tăng dần — full là chặt nhất.
+    private static let spellModes = ["loose", "standard", "strict"]
+
+    private func spellIndexBinding(_ binding: Binding<CoreSettings>) -> Binding<Int> {
+        Binding<Int>(
+            get: {
+                Self.spellModes.firstIndex(of: binding.wrappedValue.spell_mode) ?? 0
+            },
+            set: { index in
+                let clamped = min(max(index, 0), Self.spellModes.count - 1)
+                binding.wrappedValue.spell_mode = Self.spellModes[clamped]
+            })
+    }
+
+    private func spellModeName(_ mode: String) -> String {
+        switch mode {
+        case "loose": return "Thoải mái"
+        case "standard": return "Thường"
+        default: return "Chặt"
+        }
+    }
+
     private func spellModeDetail(_ mode: String) -> String {
         switch mode {
         case "loose":
@@ -206,6 +323,53 @@ private struct GeneralPane: View {
         default:
             return "Bảo vệ tối đa từ tiếng Anh (mask, class)."
         }
+    }
+}
+
+/// Slider nấc rời tự vẽ: track dày, chấm đánh dấu từng nấc, núm tròn màu
+/// accent — Slider hệ thống không cho chỉnh độ dày track.
+private struct StepSlider: View {
+    @Binding var index: Int
+    let steps: Int
+
+    private let trackHeight: CGFloat = 7
+    private let thumbSize: CGFloat = 16
+
+    var body: some View {
+        GeometryReader { geo in
+            let span = geo.size.width - thumbSize
+            let thumbX = span * CGFloat(index) / CGFloat(steps - 1)
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.primary.opacity(0.18))
+                    .frame(height: trackHeight)
+                Capsule()
+                    .fill(Color.accentColor)
+                    .frame(width: thumbX + thumbSize / 2, height: trackHeight)
+                ForEach(0..<steps, id: \.self) { i in
+                    Circle()
+                        .fill(.white.opacity(i <= index ? 0.95 : 0.45))
+                        .frame(width: 3, height: 3)
+                        .offset(x: thumbSize / 2 + span * CGFloat(i) / CGFloat(steps - 1) - 1.5)
+                }
+                Circle()
+                    .fill(Color.accentColor)
+                    .frame(width: thumbSize, height: thumbSize)
+                    .shadow(color: .black.opacity(0.3), radius: 1.5, y: 1)
+                    .offset(x: thumbX)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let t = min(max((value.location.x - thumbSize / 2) / span, 0), 1)
+                        index = Int((t * CGFloat(steps - 1)).rounded())
+                    })
+            .animation(.easeOut(duration: 0.12), value: index)
+        }
+        .frame(height: 20)
     }
 }
 
@@ -451,6 +615,8 @@ private struct RunningAppPicker: View {
 // MARK: - Giới thiệu
 
 private struct AboutPane: View {
+    /// Trang chủ mã nguồn — kèm docs hướng dẫn cài đặt/sử dụng.
+    private static let githubURL = URL(string: "https://github.com/OreoSolutions/oreokey")!
     /// Trang Issues để người dùng báo lỗi.
     private static let bugReportURL = URL(string: "https://github.com/OreoSolutions/oreokey/issues")!
     /// TODO: cập nhật khi có kênh ủng hộ (GitHub Sponsors / Ko-fi…).
@@ -476,6 +642,10 @@ private struct AboutPane: View {
                 .padding(.top, 2)
 
             HStack(spacing: 10) {
+                Link(destination: Self.githubURL) {
+                    Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                }
+                .buttonStyle(.bordered)
                 Link(destination: Self.bugReportURL) {
                     Label("Báo lỗi", systemImage: "ladybug.fill")
                 }

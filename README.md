@@ -9,6 +9,13 @@ hai lỗi kinh điển của các bộ gõ event-tap: **dính chữ** và **nhá
 - Engine viết bằng Rust (thư viện tĩnh ~1MB), UI Swift/AppKit + SwiftUI
 - macOS 13+, chạy nền dạng menu bar, RAM ~20MB
 
+## Tài liệu
+
+- [Hướng dẫn cài đặt](docs/install.md) — tải DMG, cấp quyền Accessibility,
+  thiết lập ban đầu, gỡ cài đặt
+- [Hướng dẫn sử dụng đầy đủ](docs/user-guide.md) — bảng gõ Telex/VNI,
+  kiểm tra chính tả, gõ tắt, cài đặt theo app, xử lý sự cố
+
 ## Chống dính/nháy chữ
 
 Sửa chữ theo 4 tầng, tốt nhất trước:

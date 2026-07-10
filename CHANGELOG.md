@@ -6,6 +6,29 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã thêm
+- **Trạng thái cập nhật ngay trên sidebar Cài đặt**: chân sidebar hiện tên app
+  và phiên bản — tick xanh ✓ *Mới nhất* khi đang chạy bản mới nhất, cảnh báo
+  cam ⚠ ngay khi có bản mới; bấm vào dòng đó để kiểm tra/cài đặt. Mở cửa sổ
+  Cài đặt là app tự dò bản mới ở chế độ nền, không bật hộp thoại.
+- **Nút GitHub** trong tab Giới thiệu, dẫn về trang mã nguồn.
+- **Tài liệu hướng dẫn**: thêm `docs/install.md` (cài đặt, cấp quyền, gỡ bỏ)
+  và `docs/user-guide.md` (bảng gõ Telex/VNI, mọi tính năng, xử lý sự cố).
+
+### Đã đổi
+- **Menu bar gọn lại**: hai mục "Kiểm tra bản mới…" và "Khởi động cùng máy"
+  chuyển vào cửa sổ Cài đặt (mục Hệ thống trong tab Chung và chân sidebar);
+  menu chỉ còn bật/tắt tiếng Việt, kiểu gõ, Cài đặt và Thoát.
+- **Kiểm tra chính tả đổi sang thanh trượt 3 nấc**: kéo càng cao kiểm tra càng
+  chặt (Thoải mái → Thường → Chặt), có chấm đánh dấu từng nấc và tên mức hiện
+  ngay cạnh — thay cho ô chọn 3 nút trước đây.
+
+### Đã sửa
+- **Cửa sổ Cài đặt chồng chữ vùng tiêu đề**: nội dung cuộn lên đè vào titlebar
+  trong suốt, và toolbar tự sinh (nút thu sidebar, tiêu đề lệch cạnh nút đèn)
+  gây xô lệch phần đầu cửa sổ. Nay titlebar hiển thị bình thường, không còn
+  nút thừa hay chữ đè nhau.
+
 ## [0.5.2] - 2026-07-10
 
 ### Đã sửa
