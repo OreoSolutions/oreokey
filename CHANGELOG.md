@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.5.0] - 2026-07-10
+
 ### Đã thêm
 - **Kiểm tra chính tả 3 mức**: ô cài đặt cũ bật/tắt giờ thành 3 mức chọn —
   **Chặt** (bảo vệ tối đa từ tiếng Anh, `mask`, `class` giữ nguyên), **Thường**

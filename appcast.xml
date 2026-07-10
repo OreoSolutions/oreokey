@@ -78,6 +78,29 @@
                  type="application/octet-stream"
                  sparkle:edSignature="wJChhuCEKx9FJS54k17zAJNlIFYEyR7ZxmZQUjgkFuxRQtA62Amv9SnUU13/L9lA5J3laSQOMaXMLM7MJEbYCw==" length="5509043" />
     </item>
+    <item>
+      <title>0.5.0</title>
+      <pubDate>Fri, 10 Jul 2026 03:57:09 +0000</pubDate>
+      <sparkle:version>6</sparkle:version>
+      <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã thêm</h3>
+<ul>
+<li><strong>Kiểm tra chính tả 3 mức</strong>: ô cài đặt cũ bật/tắt giờ thành 3 mức chọn — <strong>Chặt</strong> (bảo vệ tối đa từ tiếng Anh, <code>mask</code>, <code>class</code> giữ nguyên), <strong>Thường</strong> (cho gõ tắt <code>đc</code>, <code>nèk</code> mà vẫn nhận diện tiếng Anh có cụm bất khả như <code>clear</code>, <code>sound</code>), <strong>Thoải mái</strong> (luôn đặt dấu, không bao giờ khôi phục từ tiếng Anh). Mặc định là Chặt.</li>
+<li><strong>Thêm ứng dụng bằng bundle ID thủ công</strong>: mục &quot;Nhập bundle ID…&quot; trong Cài đặt → Ứng dụng cho phép loại trừ hoặc chỉnh chế độ tương thích cho app <strong>chưa chạy</strong> (vd Burp Suite), thay vì chỉ chọn được app đang mở.</li>
+</ul>
+<h3>Đã sửa</h3>
+<ul>
+<li><strong>Nháy chữ ở một số terminal</strong>: kitty, Alacritty, WezTerm, Hyper trước đây bị nháy/dính chữ khi gõ; nay đi thẳng đường bơm phím như các terminal khác.</li>
+<li><strong>VNI đặt số thanh trước số mũ giữa từ</strong>: gõ kiểu <code>thie16u</code> (bấm số thanh <code>1</code> ngay sau nguyên âm rồi mới số mũ <code>6</code>) trước đây bị kẹt thành <code>thie16u</code>; nay ra đúng <code>thiếu</code>. Tương tự với các từ có <code>iê</code> khác.</li>
+<li><strong>Nội dung cập nhật hiển thị đúng định dạng</strong>: hộp thoại &quot;Có bản mới&quot; của Sparkle trước đây hiện ký tự Markdown thô (<code>###</code>, <code>-</code>, dấu backtick); nay render thành tiêu đề, danh sách, chữ đậm và mã đúng cách.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.5.0/OreoKey.dmg"
+                 sparkle:version="6"
+                 sparkle:shortVersionString="0.5.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="Ekx+uXcNG7XQUKdv6hoIGf2VE1NhIGxKCSqbgAjfLEBa+CSxzixjmGOpvngWVKMQ4wwXi+yZ6rmJUJe20I/LBQ==" length="5544977" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
