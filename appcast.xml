@@ -192,6 +192,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="plyX9vILOpcN4p2JgtEcPDUCOal+MbIkALg9o0gKN8W3mQv3b2APBtcI5aHgXHapo+kJLXviVByGlZDcYHsXDA==" length="5615415" />
     </item>
+    <item>
+      <title>0.6.3</title>
+      <pubDate>Sat, 11 Jul 2026 10:53:34 +0000</pubDate>
+      <sparkle:version>12</sparkle:version>
+      <sparkle:shortVersionString>0.6.3</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã đổi</h3>
+<ul>
+<li><strong>Nút Ủng hộ</strong> trong tab Giới thiệu trỏ tới trang Ko-fi của tác giả (https://ko-fi.com/nguyenhuyquang); README thêm badge và mục Ủng hộ.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.6.3/OreoKey.dmg"
+                 sparkle:version="12"
+                 sparkle:shortVersionString="0.6.3"
+                 type="application/octet-stream"
+                 sparkle:edSignature="Ple6g5I2Rj2UQzqolQ95udmogupt42A3fkdOuwbHB11bpFOrFSRQzLHTiSyflCoKtR2VE+bzO+7BrUDNiCNGDw==" length="5615069" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
