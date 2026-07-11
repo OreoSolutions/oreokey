@@ -81,15 +81,30 @@ gh release create "v$VERSION" dist/OreoKey.dmg \
 # --- 8. Đẩy appcast + version bump lên main -------------------------------
 git push origin HEAD:main
 
-# --- 9. Build lại website (Vercel Deploy Hook) để changelog trên site cập nhật.
-#        Tạo hook tại: Vercel → Project → Settings → Git → Deploy Hooks,
-#        rồi export OREOKEY_WEBSITE_DEPLOY_HOOK trong shell profile.
-if [[ -n "${OREOKEY_WEBSITE_DEPLOY_HOOK:-}" ]]; then
-    curl -fsS -X POST "$OREOKEY_WEBSITE_DEPLOY_HOOK" >/dev/null \
-        && echo "  Website: đã kích hoạt build lại trên Vercel." \
-        || echo "  ⚠ Gọi deploy hook thất bại — build lại website thủ công."
-else
-    echo "  ⚠ Chưa đặt OREOKEY_WEBSITE_DEPLOY_HOOK — changelog trên website sẽ chỉ cập nhật ở lần deploy sau."
-fi
+# --- 9. Sync changelog sang repo website rồi đẩy lên main (Vercel tự deploy
+#        theo git push). Repo website mặc định nằm cạnh repo app; đặt
+#        OREOKEY_WEBSITE_DIR nếu ở chỗ khác. Lỗi ở bước này không hủy release
+#        (DMG + appcast đã lên) — chỉ cảnh báo để sync tay.
+WEBSITE_DIR="${OREOKEY_WEBSITE_DIR:-$ROOT/../oreokey-website}"
+sync_website_changelog() {
+    [[ -d "$WEBSITE_DIR/.git" ]] \
+        || { echo "  ⚠ Không thấy repo website tại $WEBSITE_DIR — sync changelog thủ công."; return; }
+    local branch
+    branch="$(git -C "$WEBSITE_DIR" rev-parse --abbrev-ref HEAD)"
+    [[ "$branch" == "main" ]] \
+        || { echo "  ⚠ Repo website đang ở nhánh '$branch' (cần main) — sync changelog thủ công."; return; }
+    node "$WEBSITE_DIR/scripts/sync-changelog.mjs" "$ROOT/CHANGELOG.md" \
+        || { echo "  ⚠ Chạy sync-changelog.mjs thất bại — sync changelog thủ công."; return; }
+    if git -C "$WEBSITE_DIR" diff --quiet -- src/docs/changelog.md; then
+        echo "  Website: changelog không đổi — bỏ qua."
+        return
+    fi
+    # commit kèm pathspec: chỉ lấy đúng file changelog, không đụng thay đổi khác trong repo website
+    git -C "$WEBSITE_DIR" commit -m "chore: sync changelog v$VERSION" -- src/docs/changelog.md \
+        && git -C "$WEBSITE_DIR" push origin main \
+        && echo "  Website: đã đẩy changelog v$VERSION lên main — Vercel sẽ tự deploy." \
+        || echo "  ⚠ Commit/push changelog sang website thất bại — sync thủ công."
+}
+sync_website_changelog
 
 echo "✅ Đã phát hành OreoKey v$VERSION — DMG đã ký + notarize, appcast đã cập nhật."

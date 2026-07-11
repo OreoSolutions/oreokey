@@ -621,8 +621,8 @@ private struct AboutPane: View {
     private static let githubURL = URL(string: "https://github.com/OreoSolutions/oreokey")!
     /// Trang Issues để người dùng báo lỗi.
     private static let bugReportURL = URL(string: "https://github.com/OreoSolutions/oreokey/issues")!
-    /// TODO: cập nhật khi có kênh ủng hộ (GitHub Sponsors / Ko-fi…).
-    private static let sponsorsURL = URL(string: "https://github.com/sponsors/OreoSolutions")!
+    /// Kênh ủng hộ tác giả (Ko-fi).
+    private static let sponsorsURL = URL(string: "https://ko-fi.com/nguyenhuyquang")!
 
     private var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"

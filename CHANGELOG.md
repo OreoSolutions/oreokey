@@ -6,6 +6,10 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã đổi
+- **Nút Ủng hộ** trong tab Giới thiệu trỏ tới trang Ko-fi của tác giả
+  (https://ko-fi.com/nguyenhuyquang); README thêm badge và mục Ủng hộ.
+
 ## [0.6.2] - 2026-07-10
 
 ### Đã thêm
