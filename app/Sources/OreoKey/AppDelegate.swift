@@ -214,20 +214,7 @@ extension AppDelegate: NSMenuDelegate {
         telexItem.state = method == "telex" ? .on : .off
         vniItem.state = method == "vni" ? .on : .off
         if #available(macOS 15.0, *), let hotkey = settings?.hotkey {
-            toggleItem.subtitle = Self.hotkeyDisplay(hotkey)
+            toggleItem.subtitle = hotkey.display
         }
-    }
-
-    private static func hotkeyDisplay(_ hk: CoreHotkey) -> String {
-        var parts = ""
-        if hk.ctrl { parts += "⌃" }
-        if hk.alt { parts += "⌥" }
-        if hk.shift { parts += "⇧" }
-        if hk.cmd { parts += "⌘" }
-        let keyNames: [UInt16: String] = [49: "Space", 6: "Z", 48: "Tab"]
-        if let code = hk.keycode {
-            parts += keyNames[code] ?? "#\(code)"
-        }
-        return parts
     }
 }

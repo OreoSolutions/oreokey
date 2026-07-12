@@ -199,6 +199,7 @@ private struct GeneralPane: View {
     private let hotkeyPresets: [(String, CoreHotkey)] = [
         ("⌃⇧Space", CoreHotkey(ctrl: true, shift: true, alt: false, cmd: false, keycode: 49)),
         ("⌃Space", CoreHotkey(ctrl: true, shift: false, alt: false, cmd: false, keycode: 49)),
+        ("⌃⌥Space", CoreHotkey(ctrl: true, shift: false, alt: true, cmd: false, keycode: 49)),
         ("⌘⇧Space", CoreHotkey(ctrl: false, shift: true, alt: false, cmd: true, keycode: 49)),
         ("⌥Z", CoreHotkey(ctrl: false, shift: false, alt: true, cmd: false, keycode: 6)),
     ]
@@ -214,10 +215,8 @@ private struct GeneralPane: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
 
-                    Picker("Phím tắt bật / tắt tiếng Việt", selection: hotkeyBinding(binding)) {
-                        ForEach(hotkeyPresets, id: \.0) { name, _ in
-                            Text(name).tag(name)
-                        }
+                    LabeledContent("Phím tắt bật / tắt tiếng Việt") {
+                        HotkeyControl(hotkey: binding.hotkey, presets: hotkeyPresets)
                     }
                 }
 
@@ -279,19 +278,6 @@ private struct GeneralPane: View {
         }
     }
 
-    private func hotkeyBinding(_ binding: Binding<CoreSettings>) -> Binding<String> {
-        Binding<String>(
-            get: {
-                hotkeyPresets.first { $0.1 == binding.wrappedValue.hotkey }?.0
-                    ?? hotkeyPresets[0].0
-            },
-            set: { name in
-                if let preset = hotkeyPresets.first(where: { $0.0 == name }) {
-                    binding.wrappedValue.hotkey = preset.1
-                }
-            })
-    }
-
     /// Thứ tự nấc slider: mức độ kiểm tra tăng dần — full là chặt nhất.
     private static let spellModes = ["loose", "standard", "strict"]
 
@@ -323,6 +309,81 @@ private struct GeneralPane: View {
         default:
             return "Bảo vệ tối đa từ tiếng Anh (mask, class)."
         }
+    }
+}
+
+/// Control chọn phím tắt: menu các preset + mục "Ghi tổ hợp phím mới…"
+/// bắt trực tiếp tổ hợp người dùng nhấn qua NSEvent monitor cục bộ.
+private struct HotkeyControl: View {
+    @Binding var hotkey: CoreHotkey
+    let presets: [(String, CoreHotkey)]
+
+    @State private var isRecording = false
+    @State private var monitor: Any?
+
+    var body: some View {
+        Group {
+            if isRecording {
+                HStack(spacing: 8) {
+                    Text("Nhấn tổ hợp phím… (⎋ để hủy)")
+                        .foregroundStyle(.secondary)
+                    Button("Hủy") { stopRecording() }
+                }
+            } else {
+                Menu {
+                    ForEach(presets, id: \.0) { name, hk in
+                        Toggle(name, isOn: presetBinding(hk))
+                    }
+                    Divider()
+                    Button("Ghi tổ hợp phím mới…") { startRecording() }
+                } label: {
+                    Text(hotkey.display)
+                }
+                .fixedSize()
+            }
+        }
+        .onDisappear { stopRecording() }
+    }
+
+    private func presetBinding(_ hk: CoreHotkey) -> Binding<Bool> {
+        Binding(
+            get: { hotkey == hk },
+            set: { if $0 { hotkey = hk } })
+    }
+
+    private func startRecording() {
+        guard monitor == nil else { return }
+        isRecording = true
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            record(event)
+            return nil  // nuốt event, không để lọt xuống UI bên dưới
+        }
+    }
+
+    private func record(_ event: NSEvent) {
+        if event.keyCode == 53 {  // Esc = hủy ghi
+            stopRecording()
+            return
+        }
+        let flags = event.modifierFlags
+        let ctrl = flags.contains(.control)
+        let alt = flags.contains(.option)
+        let cmd = flags.contains(.command)
+        let shift = flags.contains(.shift)
+        // Bắt buộc có ⌃/⌥/⌘: phím trần hay ⇧+phím là gõ chữ thường,
+        // dùng làm hotkey toàn cục sẽ nuốt mất phím khi gõ văn bản.
+        guard ctrl || alt || cmd else {
+            NSSound.beep()
+            return
+        }
+        hotkey = CoreHotkey(ctrl: ctrl, shift: shift, alt: alt, cmd: cmd, keycode: event.keyCode)
+        stopRecording()
+    }
+
+    private func stopRecording() {
+        if let m = monitor { NSEvent.removeMonitor(m) }
+        monitor = nil
+        isRecording = false
     }
 }
 
