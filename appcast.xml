@@ -208,6 +208,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="Ple6g5I2Rj2UQzqolQ95udmogupt42A3fkdOuwbHB11bpFOrFSRQzLHTiSyflCoKtR2VE+bzO+7BrUDNiCNGDw==" length="5615069" />
     </item>
+    <item>
+      <title>0.6.4</title>
+      <pubDate>Sun, 12 Jul 2026 09:44:22 +0000</pubDate>
+      <sparkle:version>13</sparkle:version>
+      <sparkle:shortVersionString>0.6.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã thêm</h3>
+<ul>
+<li><strong>Tự ghi phím tắt bật/tắt</strong>: mục &quot;Ghi tổ hợp phím mới…&quot; trong Cài đặt → Chung — nhấn thẳng tổ hợp muốn dùng (cần kèm ⌃/⌥/⌘, ⎋ để hủy) thay vì chỉ chọn từ danh sách có sẵn. Thêm preset <strong>⌃⌥Space</strong>. Tổ hợp tùy chỉnh hiển thị đúng ở cả menu bar lẫn Cài đặt.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.6.4/OreoKey.dmg"
+                 sparkle:version="13"
+                 sparkle:shortVersionString="0.6.4"
+                 type="application/octet-stream"
+                 sparkle:edSignature="QHf+afDgZ/F2MO+7R55RvNKvlqCb/YKi9CzLYtus/DpdFJKolXPY+U7rUMfi57N1bqD5NXWe+mPXnp6/PzoRAg==" length="5635099" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>

@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.6.4] - 2026-07-12
+
 ### Đã thêm
 - **Tự ghi phím tắt bật/tắt**: mục "Ghi tổ hợp phím mới…" trong Cài đặt →
   Chung — nhấn thẳng tổ hợp muốn dùng (cần kèm ⌃/⌥/⌘, ⎋ để hủy) thay vì
