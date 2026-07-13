@@ -5,7 +5,7 @@ hai lỗi kinh điển của các bộ gõ event-tap: **dính chữ** và **nhá
 
 **Trang chủ: https://oreokey.vercel.app**
 
-[![Ủng hộ trên Ko-fi](https://img.shields.io/badge/Ko--fi-Ủng%20hộ%20tác%20giả-ff5f5f?logo=kofi&logoColor=white)](https://ko-fi.com/nguyenhuyquang)
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A3S8230CZF)
 
 - Telex + VNI, kiểm tra chính tả 3 mức (Chặt / Thường / Thoải mái — tự khôi
   phục từ tiếng Anh), gõ tắt, loại trừ app / nhớ trạng thái theo app / thêm app
@@ -147,7 +147,7 @@ Thiết kế chi tiết: `docs/superpowers/specs/2026-07-08-oreokey-design.md`.
 ## Ủng hộ
 
 OreoKey miễn phí và mã nguồn mở. Nếu app hữu ích với bạn, có thể mời tác giả
-một ly nước cam tại **[ko-fi.com/nguyenhuyquang](https://ko-fi.com/nguyenhuyquang)** ☕
+một ly nước cam tại **[Ko-fi](https://ko-fi.com/A3S8230CZF)** ☕
 
 ## Giấy phép
 
