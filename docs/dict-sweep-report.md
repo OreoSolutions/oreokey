@@ -15,14 +15,14 @@ Từ điển: 8.784 âm tiết duy nhất trích từ Viet74K (tách theo khoả
 
 - **8.579 âm tiết** xử lý được (205 âm tiết bỏ qua do không phân rã được), **83.134 biến thể cách gõ**.
 - **2.035 lỗi → pass rate 97,6%**. Kiểu đặt thanh mới cho kết quả giống hệt.
-- Toàn bộ lỗi phân lớp được thành 4 nhóm, trong đó **2 nhóm là bug engine thật**:
+- Toàn bộ lỗi phân lớp được thành 4 nhóm; sau điều tra đầy đủ chỉ có **1 bug engine thật (BUG 1, đã sửa)** — nhóm từng nghi là "BUG 2" hóa ra là vần ngoài bảng NUCLEI (mục 3):
 
 | Nhóm | Lỗi | Từ | Bản chất |
 |---|---|---|---|
 | Từ đa âm tiết viết liền (đăngten, vôlăng, bêtông, đôla…) | 1.012 | 190 | Giới hạn theo thiết kế — spell gate chỉ nhận 1 âm tiết |
 | **BUG 1: gõ thanh/dấu ngay sau "qu"/"gi"** | 386 | 132 | **Bug engine, đã xác minh 3 lần độc lập** |
 | Phụ âm đầu ngoại lai (đr-, xt-, cr-, bl-, pl-…) | ~320 | ~76 | Giới hạn theo thiết kế — từ mượn/dân tộc |
-| **BUG 2 (lẫn noise): thanh sớm + mũ/trăng muộn ở từ không-qu** | 317 | 25 | **Bug engine trên từ thật (ngoẩy, khuều…) + noise từ điển (côống, sêếu, âớu)** |
+| ~~BUG 2~~ → vần ngoài bảng `NUCLEI` | 321 | 25 | **Không phải bug** (điều tra 2026-07-17, xem mục 3) — noise từ điển + từ mượn + biến thể phương ngữ |
 
 ## 2. BUG 1 — khóa raw-mode vĩnh viễn khi gõ thanh ngay sau "qu" — **ĐÃ SỬA (2026-07-17)**
 
@@ -52,14 +52,17 @@ Cơ chế (chuỗi nhân quả qua 3 file):
 
 Hướng sửa đã được kiểm chứng sơ bộ: bỏ điều kiện lookahead trong `vowel_indices()` (chữ `u` ngay sau `q` **luôn** thuộc phụ âm đầu — tiếng Việt không có âm tiết mà "qu" + u làm nhân âm). Một agent phân tích đã thử vá tạm và toàn bộ test suite hiện có vẫn pass. Cần cân nhắc thêm nhánh khớp-tiền-tố trong `is_live_prefix` cho "gi". Test hồi quy cần thêm: VNI `qu1an→quán`, `qu1a6y→quấy`; Telex `qusan→quán`, `qusaya→quấy`; tương tự cho "gi".
 
-## 3. BUG 2 — thanh sớm + mũ/trăng muộn ở từ không-"qu" (severity: medium, cần điều tra thêm)
+## 3. ~~BUG 2~~ — KHÔNG PHẢI BUG: vần nằm ngoài bảng `NUCLEI` (điều tra 2026-07-17)
 
-Trong 25 từ của nhóm "khác" có những từ thật kẹt raw khi gõ thanh trước rồi mới hoàn thiện dấu phụ:
+Giả thuyết ban đầu ("thanh sớm + mũ/trăng muộn gây kẹt như BUG 1") **bị bác bỏ** bằng thực nghiệm: chạy sweep riêng từng từ của nhóm này cho thấy **cả 25/25 từ fail ở MỌI thứ tự gõ** (failures == variants), kể cả thứ tự chuẩn nhất — tức không có bug trạng thái trung gian nào; các từ này đơn giản là không thể render vì cụm nguyên âm của chúng không có trong bảng vần `NUCLEI` (spell.rs). Sau khi sửa BUG 1, **toàn bộ 1.654 lỗi còn lại được quy kết trọn vẹn, không còn lỗi nào chưa giải thích được**: 1.013 đa-âm-tiết viết liền + 321 vần-ngoài-bảng + 320 onset ngoại lai.
 
-- `ngoẩy`: gõ `ngoraay` hoặc `ngoaray` → kẹt nguyên văn (kỳ vọng: `ngor→ngỏ`, `+a→ngoả`, `+a→ngoẩ` mũ muộn, `+y→ngoẩy`).
-- `khuều`: `khufeeu` kẹt; `khuắng`: `khusawng` kẹt.
+Phân loại 25 từ vần-ngoài-bảng:
 
-Cùng họ với BUG 1 (spell gate phán "chết" ở trạng thái trung gian mà các phím sau còn cứu được) nhưng cơ chế cụ thể chưa được mổ xẻ — cần điều tra riêng sau khi sửa BUG 1 rồi sweep lại. Phần còn lại của nhóm này (côống, khôống, sêếu, âớu, aỏi, gièy…) là noise của Viet74K, nên lọc khỏi từ điển test.
+- **Từ mượn đa âm tiết mà ranh giới âm tiết rơi giữa chuỗi nguyên âm liền** (bộ phân lớp theo cụm không nhìn thấy): `kiôt` (ki-ốt), `mayô` (may-ô), `layơn` (lay-ơn), `nôen` (Nô-en), `nêông` (nê-ông), `điot`/`điop` (đi-ốt/đi-ốp) — thực chất thuộc nhóm đa-âm-tiết ở mục 4.
+- **Biến thể phương ngữ/chính tả của từ thật**: `khuắng` (~khoắng), `khuều` (~khều), `ngoẩy` (~nguẩy/ngoảy), `quýu` (~quíu) — bảng NUCLEI chuẩn đúng khi không chứa "uă", "uêu", "oây", "yu".
+- **Noise thuần của Viet74K**: `aỏi`, `gièy`, `gỵa`, `sìi`, `miẻo`, `tiẻn`, `thôể`, `sêếu`, `âớu`, `âởu`, `côống`, `khôống`, `pôông`, `yô`.
+
+Kết luận: engine từ chối các từ này là **đúng thiết kế**. Việc cần làm không nằm ở engine mà ở từ điển test: lọc 3 nhóm lành tính khỏi danh sách âm tiết để sweep trong CI có kỳ vọng **0 lỗi**.
 
 ## 4. Nhóm không phải bug (ghi nhận để quyết định sản phẩm)
 
