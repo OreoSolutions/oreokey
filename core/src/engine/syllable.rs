@@ -11,12 +11,17 @@ pub fn vowel_indices(letters: &[Letter]) -> Vec<usize> {
         if !l.is_vowel() {
             continue;
         }
-        // "qu": u ngay sau q là một phần của phụ âm đầu nếu sau nó còn nguyên âm.
+        // "qu": u ngay sau q là một phần của phụ âm đầu nếu sau nó còn
+        // nguyên âm — hoặc chưa có gì theo sau (đang gõ dở: "qu" + thanh
+        // chờ nguyên âm chính; tiếng Việt không có âm tiết lấy u sau q
+        // làm nhân âm, nên không được tính u là nguyên âm rồi suy ra
+        // phụ âm đầu "q" trơ và khóa raw_mode oan).
         if l.base == 'u'
             && !l.has_mark()
             && i > 0
             && letters[i - 1].base == 'q'
-            && letters[i + 1..].iter().any(|x| x.is_vowel())
+            && (i + 1 == letters.len()
+                || letters[i + 1..].iter().any(|x| x.is_vowel()))
         {
             continue;
         }

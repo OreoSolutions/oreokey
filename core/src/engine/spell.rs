@@ -368,6 +368,34 @@ mod tests {
     }
 
     #[test]
+    fn tone_right_after_qu_onset_stays_live() {
+        // Bug sweep toàn từ điển: thanh gõ NGAY sau "qu" (trước nguyên âm
+        // chính) khiến 'u' bị tính là nhân âm ở trạng thái gõ dở, initial
+        // suy ra còn "q" trơ (không có trong INITIALS) → is_live_prefix
+        // false → raw_mode khóa vĩnh viễn, gõ đủ vần cũng không hồi phục.
+        assert_eq!(standard_vni("qu1an"), "quán");
+        assert_eq!(standard_vni("qu2ang"), "quàng");
+        assert_eq!(standard_vni("qu1a6y"), "quấy");
+        assert_eq!(standard("qusan"), "quán");
+        assert_eq!(standard("qufang"), "quàng");
+        assert_eq!(standard("qusaya"), "quấy");
+        // Strict cũng phải sống — cùng đường is_live_prefix.
+        assert_eq!(t("qusan"), "quán");
+        // Thứ tự bình thường không được hồi quy.
+        assert_eq!(standard("quans"), "quán");
+        assert_eq!(standard_vni("quan1"), "quán");
+    }
+
+    #[test]
+    fn tone_right_after_gi_onset_still_works() {
+        // Đối chứng "gi": chữ i sau g CÓ THỂ là nhân âm thật ("gì") nên
+        // không được áp cùng cách sửa như "qu"; hành vi hiện tại đúng.
+        assert_eq!(standard("gifa"), "già");
+        assert_eq!(standard_vni("gi2a"), "già");
+        assert_eq!(standard("gif"), "gì");
+    }
+
+    #[test]
     fn live_prefix_recognizes_incomplete_toned_nucleus() {
         use crate::engine::vni;
         use crate::engine::WordState;
