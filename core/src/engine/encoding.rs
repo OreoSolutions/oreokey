@@ -44,6 +44,7 @@
 //! thanh; đây là giới hạn cố hữu của TCVN3, không phải lỗi của module.
 
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Encoding {
@@ -144,7 +145,8 @@ const TCVN3_TABLE: &[(char, char)] = &[
 ];
 
 fn unicode_to_vni(s: &str) -> String {
-    let map: HashMap<char, &str> = VNI_TABLE.iter().copied().collect();
+    static MAP: OnceLock<HashMap<char, &'static str>> = OnceLock::new();
+    let map = MAP.get_or_init(|| VNI_TABLE.iter().copied().collect());
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         match map.get(&c) {
@@ -158,20 +160,25 @@ fn unicode_to_vni(s: &str) -> String {
 fn vni_to_unicode(s: &str) -> String {
     // Tách bảng thành 2 tầng tra cứu: chuỗi 1 ký tự (chữ dựng sẵn như
     // "ñ", "ô", "í"...) và chuỗi 2 ký tự (chữ gốc ASCII + ký tự dấu).
-    let mut single: HashMap<char, char> = HashMap::new();
-    let mut pair: HashMap<(char, char), char> = HashMap::new();
-    for &(uni, vni) in VNI_TABLE {
-        let mut it = vni.chars();
-        let first = it.next().expect("VNI_TABLE entry rỗng");
-        match it.next() {
-            None => {
-                single.insert(first, uni);
-            }
-            Some(second) => {
-                pair.insert((first, second), uni);
+    type VniMaps = (HashMap<char, char>, HashMap<(char, char), char>);
+    static MAPS: OnceLock<VniMaps> = OnceLock::new();
+    let (single, pair) = MAPS.get_or_init(|| {
+        let mut single: HashMap<char, char> = HashMap::new();
+        let mut pair: HashMap<(char, char), char> = HashMap::new();
+        for &(uni, vni) in VNI_TABLE {
+            let mut it = vni.chars();
+            let first = it.next().expect("VNI_TABLE entry rỗng");
+            match it.next() {
+                None => {
+                    single.insert(first, uni);
+                }
+                Some(second) => {
+                    pair.insert((first, second), uni);
+                }
             }
         }
-    }
+        (single, pair)
+    });
 
     let chars: Vec<char> = s.chars().collect();
     let mut out = String::with_capacity(chars.len());
@@ -194,7 +201,8 @@ fn vni_to_unicode(s: &str) -> String {
 }
 
 fn unicode_to_tcvn3(s: &str) -> String {
-    let map: HashMap<char, char> = TCVN3_TABLE.iter().copied().collect();
+    static MAP: OnceLock<HashMap<char, char>> = OnceLock::new();
+    let map = MAP.get_or_init(|| TCVN3_TABLE.iter().copied().collect());
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         if let Some(&b) = map.get(&c) {
@@ -218,7 +226,8 @@ fn unicode_to_tcvn3(s: &str) -> String {
 }
 
 fn tcvn3_to_unicode(s: &str) -> String {
-    let rev: HashMap<char, char> = TCVN3_TABLE.iter().map(|&(uni, b)| (b, uni)).collect();
+    static REV: OnceLock<HashMap<char, char>> = OnceLock::new();
+    let rev = REV.get_or_init(|| TCVN3_TABLE.iter().map(|&(uni, b)| (b, uni)).collect());
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
         out.push(*rev.get(&c).unwrap_or(&c));

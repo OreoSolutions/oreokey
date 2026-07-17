@@ -128,6 +128,30 @@ impl WordState {
         self.dead.contains(&c)
     }
 
+    /// Phím thanh — logic chung Telex (s f r x j) và VNI (1-5):
+    /// chưa có nguyên âm → phím rơi thành chữ thường; gõ lặp cùng thanh
+    /// → hủy và phím đó chết tới hết từ; khác → thay thanh cũ.
+    pub(crate) fn apply_tone_key(&mut self, tone: Tone, c: char) {
+        if !self.has_vowel() {
+            self.letters.push(Letter::plain(c));
+        } else if self.tone == Some(tone) {
+            self.tone = None;
+            self.dead.push(c.to_ascii_lowercase());
+            self.letters.push(Letter::plain(c));
+        } else {
+            self.tone = Some(tone);
+        }
+    }
+
+    /// Phím xóa thanh (Telex `z`, VNI `0`): không có thanh → chữ thường.
+    pub(crate) fn apply_tone_clear(&mut self, c: char) {
+        if self.tone.is_some() {
+            self.tone = None;
+        } else {
+            self.letters.push(Letter::plain(c));
+        }
+    }
+
     pub fn has_vowel(&self) -> bool {
         self.letters.iter().any(|l| l.is_vowel())
     }
@@ -254,13 +278,12 @@ impl Engine {
         let new_render = if self.raw_mode {
             self.raw.clone()
         } else {
-            let (text, restored) = self.render_word(&self.raw);
+            let (text, restored, state) = self.render_word(&self.raw);
             if restored {
                 // Chỉ khóa khi từ CHẾT hẳn (cụm bất khả). Trạng thái CÒN
                 // SỐNG (tiền tố hợp lệ, vd nhân âm dở chờ dấu mũ) giữ văn
                 // bản khôi phục nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
                 // thiện âm tiết (issue #4).
-                let state = self.build_state(&self.raw);
                 // is_live_prefix cố ý KHÔNG xét thanh điệu (tone-blind) — nhờ
                 // vậy một nhân âm đã có thanh nhưng chưa xong dấu mũ/móc vẫn
                 // được coi là còn sống. Đừng thêm kiểm tra thanh ở đây.
@@ -276,6 +299,16 @@ impl Engine {
             }
             text
         };
+        // Chống bệnh lý: token alnum liền dài (hex/base64 gõ tay, không
+        // space) không thể là âm tiết tiếng Việt — khóa raw để mỗi phím
+        // sau là O(1) thay vì replay O(n). Đồng bộ raw = văn bản hiển thị
+        // (cùng chính sách với nhánh khóa phía trên: giữ bất biến phím đã
+        // hủy không hiện lại). Từ tiếng Việt thật không bao giờ chạm cap.
+        const RAW_CAP: usize = 64;
+        if !self.raw_mode && new_render.chars().count() >= RAW_CAP {
+            self.raw_mode = true;
+            self.raw = new_render.clone();
+        }
         let action = diff_action(&self.last_render, &new_render, c);
         self.last_render = new_render;
         action
@@ -303,7 +336,7 @@ impl Engine {
                 // hình thì gỡ khóa — người dùng xóa để gõ lại không phải
                 // bấm space mới có dấu.
                 if self.raw_mode {
-                    let (text, restored) = self.render_word(&self.raw);
+                    let (text, restored, _) = self.render_word(&self.raw);
                     if !restored && text == self.last_render {
                         self.raw_mode = false;
                     }
@@ -358,9 +391,10 @@ impl Engine {
 
     /// Render chuỗi phím gốc thành văn bản hiển thị. Cờ thứ hai báo
     /// spell check đã phải khôi phục phím gốc (từ không phải tiếng Việt).
-    fn render_word(&self, raw: &str) -> (String, bool) {
+    /// Trả kèm `WordState` đã dựng để caller khỏi replay lần nữa.
+    fn render_word(&self, raw: &str) -> (String, bool, WordState) {
         if raw.is_empty() {
-            return (String::new(), false);
+            return (String::new(), false, WordState::default());
         }
         let state = self.build_state(raw);
         // Từ bị biến đổi nhưng không phải âm tiết chấp nhận được → trả phím gốc.
@@ -369,9 +403,10 @@ impl Engine {
             && spell::is_transformed(&state)
             && !spell::is_acceptable(&state, self.cfg.spell_mode == SpellMode::Standard)
         {
-            return (self.restore_text(raw), true);
+            return (self.restore_text(raw), true, state);
         }
-        (render_letters(&state, self.cfg.modern_tone), false)
+        let text = render_letters(&state, self.cfg.modern_tone);
+        (text, false, state)
     }
 }
 

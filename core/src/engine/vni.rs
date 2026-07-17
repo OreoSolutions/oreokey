@@ -20,23 +20,9 @@ pub fn apply_key(state: &mut WordState, c: char) {
                 '4' => Tone::Tilde,
                 _ => Tone::Dot,
             };
-            if !state.has_vowel() {
-                state.letters.push(Letter::plain(c));
-            } else if state.tone == Some(tone) {
-                state.tone = None;
-                state.dead.push(lower);
-                state.letters.push(Letter::plain(c));
-            } else {
-                state.tone = Some(tone);
-            }
+            state.apply_tone_key(tone, c);
         }
-        '0' => {
-            if state.tone.is_some() {
-                state.tone = None;
-            } else {
-                state.letters.push(Letter::plain(c));
-            }
-        }
+        '0' => state.apply_tone_clear(c),
         '6' => {
             // Áp lên nguyên âm a/e/o chưa có dấu gần cuối nhất.
             if let Some(i) = rpos(state, |l| {
@@ -116,6 +102,11 @@ pub fn apply_key(state: &mut WordState, c: char) {
     }
 }
 
+/// Quét MỌI chữ cái từ phải sang (không qua `vowel_indices` như Telex —
+/// cố ý, không phải thiếu sót): lấy phải-nhất nghĩa là nguyên âm chính
+/// luôn thắng u-trong-qu/i-trong-gi, còn các tổ hợp lệch (vd `qu7` khi
+/// chưa có nguyên âm chính) sinh âm tiết bất khả và bị spell gate khôi
+/// phục — hành vi cuối cùng vẫn đúng mà không cần lặp lại luật loại trừ.
 fn rpos(state: &WordState, pred: impl Fn(&Letter) -> bool) -> Option<usize> {
     state.letters.iter().rposition(|l| pred(l))
 }

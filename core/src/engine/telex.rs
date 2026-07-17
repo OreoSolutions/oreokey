@@ -21,24 +21,9 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                 'x' => Tone::Tilde,
                 _ => Tone::Dot,
             };
-            if !state.has_vowel() {
-                state.letters.push(Letter::plain(c));
-            } else if state.tone == Some(tone) {
-                // Gõ lặp phím thanh → hủy, trả phím về dạng chữ.
-                state.tone = None;
-                state.dead.push(lower);
-                state.letters.push(Letter::plain(c));
-            } else {
-                state.tone = Some(tone);
-            }
+            state.apply_tone_key(tone, c);
         }
-        'z' => {
-            if state.tone.is_some() {
-                state.tone = None;
-            } else {
-                state.letters.push(Letter::plain(c));
-            }
-        }
+        'z' => state.apply_tone_clear(c),
         'a' | 'e' | 'o' => {
             if let Some(last) = state.letters.last_mut() {
                 if last.base == lower && last.circ {
