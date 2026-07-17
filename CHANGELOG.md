@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.6.5] - 2026-07-17
+
 ### Đã sửa
 - **Gõ thanh ngay sau `qu` bị kẹt nguyên văn**: bấm phím thanh liền sau `qu`,
   trước nguyên âm chính — Telex `qusan`, VNI `qu1an` — trước đây khóa cứng cả

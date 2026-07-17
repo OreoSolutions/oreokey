@@ -224,6 +224,31 @@
                  type="application/octet-stream"
                  sparkle:edSignature="QHf+afDgZ/F2MO+7R55RvNKvlqCb/YKi9CzLYtus/DpdFJKolXPY+U7rUMfi57N1bqD5NXWe+mPXnp6/PzoRAg==" length="5635099" />
     </item>
+    <item>
+      <title>0.6.5</title>
+      <pubDate>Fri, 17 Jul 2026 12:47:53 +0000</pubDate>
+      <sparkle:version>14</sparkle:version>
+      <sparkle:shortVersionString>0.6.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Gõ thanh ngay sau <code>qu</code> bị kẹt nguyên văn</strong>: bấm phím thanh liền sau <code>qu</code>, trước nguyên âm chính — Telex <code>qusan</code>, VNI <code>qu1an</code> — trước đây khóa cứng cả từ thành phím gốc (<code>qusan</code> thay vì <code>quán</code>), gõ tiếp đúng vần cũng không hồi phục; ảnh hưởng 131 từ <code>qu-</code> thông dụng (<code>quá</code>, <code>quán</code>, <code>quấy</code>, <code>quỳnh</code>…). Nay ra đúng chữ ở mọi thứ tự gõ. Tìm ra nhờ sweep toàn từ điển bên dưới.</li>
+</ul>
+<h3>Đã thêm</h3>
+<ul>
+<li><strong>Bộ kiểm thử sweep toàn từ điển</strong> (<code>core/src/bin/sweep</code>): sinh *mọi cách gõ* (Telex + VNI, mọi vị trí thanh/mũ/móc/trăng/đ, hai kiểu đặt thanh) cho 8.784 âm tiết và đối chiếu kết quả engine — chạy hết trong ~0,2 giây. Sau bản sửa trên, engine sạch lỗi thứ tự gõ trên toàn bộ âm tiết hợp lệ; phần lệch còn lại đều là giới hạn có chủ đích (từ mượn đa âm tiết viết liền, vần/phụ âm ngoại lai) — chi tiết trong <code>docs/dict-sweep-report.md</code>.</li>
+<li><strong>Micro-benchmark hot path</strong> (<code>core/src/bin/bench</code>): đo ns/phím các kịch bản gõ thực tế và bệnh lý làm mốc so sánh cho các lần sửa engine sau.</li>
+</ul>
+<h3>Đã đổi</h3>
+<ul>
+<li><strong>Dọn engine theo review hai vòng</strong> (không đổi hành vi — sweep xác nhận giống hệt từng byte): gộp bước dựng lại từ chạy 2–3 lần mỗi phím thành 1; logic phím thanh Telex/VNI dùng chung một chỗ; bảng chuyển mã dựng một lần thay vì mỗi lượt. Gõ chuỗi dài không ngắt từ (mã hex, số seri…) nhẹ hơn ~2,5 lần nhờ chặn sớm token quá 64 ký tự — chắc chắn không phải tiếng Việt.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.6.5/OreoKey.dmg"
+                 sparkle:version="14"
+                 sparkle:shortVersionString="0.6.5"
+                 type="application/octet-stream"
+                 sparkle:edSignature="wKcsrI33lEFfBK4o+8nXrAureNX4cnnp1TSi3vLUhsrNzjpdQjbSyb8H79/SgVKXY+3VfbDKGSr6gJs3wTT/Ag==" length="5636375" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
