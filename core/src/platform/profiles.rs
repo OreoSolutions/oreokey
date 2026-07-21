@@ -74,11 +74,15 @@ impl Profiles {
             return Some(p);
         }
         // Wildcard: key dạng "com.jetbrains.*" khớp theo tiền tố.
-        self.apps.iter().find_map(|(k, v)| {
-            k.strip_suffix('*')
-                .filter(|prefix| bundle.starts_with(prefix))
-                .map(|_| v)
-        })
+        self.apps
+            .iter()
+            .filter_map(|(k, v)| {
+                k.strip_suffix('*')
+                    .filter(|prefix| bundle.starts_with(prefix))
+                    .map(|prefix| (prefix.len(), v))
+            })
+            .max_by_key(|(prefix_len, _)| *prefix_len)
+            .map(|(_, profile)| profile)
     }
 
     /// Override của người dùng thắng hồ sơ mặc định. `focused_proc` là
@@ -178,6 +182,32 @@ mod tests {
         user.insert("com.google.Chrome".to_string(), FixMode::InjectSlow);
         assert_eq!(
             p.resolve("com.google.Chrome", &user, None).mode,
+            FixMode::InjectSlow
+        );
+    }
+
+    #[test]
+    fn most_specific_wildcard_wins() {
+        let mut apps = HashMap::new();
+        apps.insert(
+            "com.example.*".to_string(),
+            AppProfile {
+                mode: Some(FixMode::InjectFast),
+                ..Default::default()
+            },
+        );
+        apps.insert(
+            "com.example.editor.*".to_string(),
+            AppProfile {
+                mode: Some(FixMode::InjectSlow),
+                ..Default::default()
+            },
+        );
+        let profiles = Profiles { apps };
+        assert_eq!(
+            profiles
+                .resolve("com.example.editor.beta", &HashMap::new(), None)
+                .mode,
             FixMode::InjectSlow
         );
     }

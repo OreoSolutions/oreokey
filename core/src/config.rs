@@ -6,6 +6,11 @@ use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
+use std::sync::Mutex;
+
+/// All writes originate in this process (the event tap and the Swift FFI).
+/// Serializing them keeps the atomic rename protocol atomic for callers too.
+static SAVE_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MacroEntry {
@@ -159,6 +164,7 @@ fn migrate_json(text: &str) -> String {
 
 /// Ghi atomic: ghi file tạm rồi rename để không bao giờ để lại file dở.
 pub fn save(settings: &Settings) -> io::Result<()> {
+    let _guard = SAVE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let dir = config_dir();
     fs::create_dir_all(&dir)?;
     let tmp = dir.join("settings.json.tmp");
@@ -213,8 +219,7 @@ mod tests {
 
     #[test]
     fn keeps_explicit_spell_mode() {
-        let s: Settings =
-            serde_json::from_str(&migrate_json(r#"{"spell_mode":"loose"}"#)).unwrap();
+        let s: Settings = serde_json::from_str(&migrate_json(r#"{"spell_mode":"loose"}"#)).unwrap();
         assert_eq!(s.spell_mode, "loose");
     }
 

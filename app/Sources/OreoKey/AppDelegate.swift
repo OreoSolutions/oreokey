@@ -192,7 +192,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setMethod(_ method: String) {
         guard var s = Core.loadSettings() else { return }
         s.method = method
-        Core.save(s)
+        guard !Core.save(s) else { return }
+        let alert = NSAlert()
+        alert.messageText = "Không thể lưu cài đặt"
+        alert.informativeText = "Hãy kiểm tra quyền ghi và thử lại."
+        alert.alertStyle = .warning
+        alert.runModal()
     }
 
     @objc func openSettings() {

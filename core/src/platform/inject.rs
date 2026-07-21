@@ -30,16 +30,21 @@ pub fn apply(
     bundle: &str,
     ax_ok: &mut HashMap<String, bool>,
     selection_len: Option<isize>,
-) {
+) -> bool {
     let backspaces = old.chars().count();
     // Chèn thuần (không xóa gì): bơm phím không thể nháy, và AX lúc này
     // dễ dính race với ký tự passthrough đang trên đường đến app → bơm.
     let ax_worth_it = !old.is_empty();
 
-    super::dlog(&format!(
-        "apply bundle={bundle} mode={:?} old={old:?} text={text:?} browser_fix={}",
-        profile.mode, profile.browser_fix
-    ));
+    if super::debug_enabled() {
+        super::dlog(&format!(
+            "apply bundle={bundle} mode={:?} replace_len={} text_len={} browser_fix={}",
+            profile.mode,
+            old.chars().count(),
+            text.chars().count(),
+            profile.browser_fix
+        ));
+    }
     match profile.mode {
         FixMode::Auto => {
             // AX trước nếu app này chưa từng fail hẳn.
@@ -48,7 +53,7 @@ pub fn apply(
                     Ok(()) => {
                         super::dlog("  -> AX ok");
                         ax_ok.insert(bundle.to_string(), true);
-                        return;
+                        return true;
                     }
                     // Mismatch = văn bản trước caret chưa ổn định (ký tự
                     // passthrough chưa vào app) — KHÔNG phải app không hỗ
@@ -64,13 +69,11 @@ pub fn apply(
             } else {
                 super::dlog("  -> inject (AX cached fail / insert-only)");
             }
-            key_inject(proxy, backspaces, text, profile, selection_len);
+            key_inject(proxy, backspaces, text, profile, selection_len)
         }
-        FixMode::AxOnly => {
-            let _ = ax::replace_tail(old, text);
-        }
+        FixMode::AxOnly => ax::replace_tail(old, text).is_ok(),
         FixMode::InjectFast | FixMode::InjectSlow => {
-            key_inject(proxy, backspaces, text, profile, selection_len);
+            key_inject(proxy, backspaces, text, profile, selection_len)
         }
     }
 }
@@ -81,9 +84,9 @@ fn key_inject(
     text: &str,
     profile: &ResolvedProfile,
     selection_len: Option<isize>,
-) {
+) -> bool {
     let Ok(source) = CGEventSource::new(CGEventSourceStateID::HIDSystemState) else {
-        return;
+        return false;
     };
     let delay = if profile.mode == FixMode::InjectSlow {
         Some(Duration::from_millis(profile.delay_ms.max(1)))
@@ -95,7 +98,9 @@ fn key_inject(
     // thua cuộc đua với autocomplete. Chọn ngược bằng Shift+← (tự hủy
     // ghost) rồi gõ đè lên vùng chọn — không có backspace nào để bị nuốt.
     if profile.select_replace && backspaces > 0 {
-        super::dlog(&format!("  select_replace bs={backspaces}"));
+        if super::debug_enabled() {
+            super::dlog(&format!("  select_replace bs={backspaces}"));
+        }
         for _ in 0..backspaces {
             post_key_flags(
                 &source,
@@ -106,12 +111,8 @@ fn key_inject(
                 delay,
             );
         }
-        let chars: Vec<char> = text.chars().collect();
-        for chunk in chars.chunks(CHUNK_UTF16) {
-            let s: String = chunk.iter().collect();
-            post_key(&source, proxy, 0, &s, delay);
-        }
-        return;
+        post_text_chunks(&source, proxy, text, delay);
+        return true;
     }
 
     // Ô nhập có autocomplete (thanh địa chỉ trình duyệt, Spotlight...)
@@ -130,9 +131,11 @@ fn key_inject(
                 Some(len) => len > 0,
                 None => profile.browser_fix,
             };
-        super::dlog(&format!(
-            "  inject bs={backspaces} sel={selection_len:?} clear={clear_needed}"
-        ));
+        if super::debug_enabled() {
+            super::dlog(&format!(
+                "  inject bs={backspaces} sel={selection_len:?} clear={clear_needed}"
+            ));
+        }
         if clear_needed {
             post_key(&source, proxy, KEY_SPACE, " ", delay);
             post_key(&source, proxy, KEY_BACKSPACE, "", delay);
@@ -143,10 +146,32 @@ fn key_inject(
         post_key(&source, proxy, KEY_BACKSPACE, "", delay);
     }
 
-    let chars: Vec<char> = text.chars().collect();
-    for chunk in chars.chunks(CHUNK_UTF16) {
-        let s: String = chunk.iter().collect();
-        post_key(&source, proxy, 0, &s, delay);
+    post_text_chunks(&source, proxy, text, delay);
+    true
+}
+
+/// Chunk by UTF-16 code units, matching the contract of `CHUNK_UTF16` even
+/// for non-BMP characters in macro expansions.
+fn post_text_chunks(
+    source: &CGEventSource,
+    proxy: CGEventTapProxy,
+    text: &str,
+    delay: Option<Duration>,
+) {
+    let mut chunk = String::new();
+    let mut units = 0;
+    for ch in text.chars() {
+        let ch_units = ch.len_utf16();
+        if !chunk.is_empty() && units + ch_units > CHUNK_UTF16 {
+            post_key(source, proxy, 0, &chunk, delay);
+            chunk.clear();
+            units = 0;
+        }
+        chunk.push(ch);
+        units += ch_units;
+    }
+    if !chunk.is_empty() {
+        post_key(source, proxy, 0, &chunk, delay);
     }
 }
 
@@ -159,7 +184,14 @@ fn post_key(
     text: &str,
     delay: Option<Duration>,
 ) {
-    post_key_flags(source, proxy, keycode, text, CGEventFlags::CGEventFlagNull, delay);
+    post_key_flags(
+        source,
+        proxy,
+        keycode,
+        text,
+        CGEventFlags::CGEventFlagNull,
+        delay,
+    );
 }
 
 fn post_key_flags(

@@ -6,6 +6,31 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Không còn ghi nội dung gõ vào log chẩn đoán**: khi bật `OREOKEY_DEBUG`,
+  log nay không lưu ký tự hay đoạn văn bản đang nhập; ô mật khẩu được nhận diện
+  trước mọi xử lý và log. File log chuyển vào vùng dữ liệu riêng của OreoKey,
+  chỉ người dùng hiện tại đọc được và tự giới hạn dung lượng.
+- **Lưu cài đặt đồng thời không bị mất dữ liệu**: thay đổi từ cửa sổ Cài đặt và
+  hotkey bật/tắt tiếng Việt nay được tuần tự hóa với thao tác ghi đĩa, tránh
+  đè file tạm hoặc để trạng thái đang chạy khác với file cài đặt. Nếu không
+  ghi được, Cài đặt và menu bar hiện thông báo thay vì im lặng bỏ qua.
+- **Không mất phím khi sửa qua Accessibility thất bại**: chế độ tương thích
+  chỉ dùng AX nay cho phím gốc đi qua và đồng bộ lại engine nếu app đích từ
+  chối thay chữ, thay vì nuốt mất ký tự.
+- **Khởi động/dừng bộ bắt phím ổn định hơn**: các yêu cầu start/stop đồng thời
+  được tuần tự hóa; app chờ tap cũ dọn xong trước khi tạo tap mới, tránh còn
+  tap cũ chạy ngầm hoặc báo đã khởi động khi đang dừng.
+- **Gõ tắt có emoji/ký tự ngoài BMP**: chuỗi bơm vào ứng dụng nay được chia
+  đúng theo số đơn vị UTF-16, nên không vượt giới hạn event khi macro có emoji.
+- **Hồ sơ ứng dụng wildcard nhất quán**: khi nhiều wildcard cùng khớp, OreoKey
+  luôn chọn tiền tố cụ thể nhất thay vì phụ thuộc thứ tự nội bộ.
+
+### Đã đổi
+- **Nhẹ hơn trên mỗi phím gõ**: khi tắt debug (mặc định), callback không còn
+  tạo chuỗi log hay giải mã Unicode chỉ để ghi log; file debug cũng được giữ
+  mở thay vì mở/đóng theo từng sự kiện.
+
 ## [0.6.5] - 2026-07-17
 
 ### Đã sửa

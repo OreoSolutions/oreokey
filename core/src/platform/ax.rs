@@ -117,10 +117,12 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         {
             return Err(AxFail::Unsupported);
         }
-        super::dlog(&format!(
-            "  ax caret loc={} len={} old_len={old_len}",
-            caret.location, caret.length
-        ));
+        if super::debug_enabled() {
+            super::dlog(&format!(
+                "  ax caret loc={} len={} old_len={old_len}",
+                caret.location, caret.length
+            ));
+        }
         if caret.length != 0 || caret.location < old_len {
             return Err(AxFail::Mismatch);
         }
@@ -136,7 +138,10 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         match read_string_for_range(element, &target) {
             Some(actual) if actual == old => {}
             Some(actual) => {
-                super::dlog(&format!("  ax verify FAIL actual={actual:?} vs old={old:?}"));
+                let _ = actual;
+                if super::debug_enabled() {
+                    super::dlog("  ax verify failed");
+                }
                 return Err(AxFail::Mismatch);
             }
             // App không hỗ trợ đọc theo range → không xác minh được →
@@ -147,8 +152,10 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
             }
         }
         // Chọn đúng đoạn cần thay...
-        let target_value =
-            AXValueCreate(K_AX_VALUE_TYPE_CFRANGE, &target as *const CFRange as *const c_void);
+        let target_value = AXValueCreate(
+            K_AX_VALUE_TYPE_CFRANGE,
+            &target as *const CFRange as *const c_void,
+        );
         if target_value.is_null() {
             return Err(AxFail::Unsupported);
         }
@@ -187,10 +194,12 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
             || applied.location != target.location
             || applied.length != target.length
         {
-            super::dlog(&format!(
-                "  ax range set ignored: applied=({},{}) target=({},{})",
-                applied.location, applied.length, target.location, target.length
-            ));
+            if super::debug_enabled() {
+                super::dlog(&format!(
+                    "  ax range set ignored: applied=({},{}) target=({},{})",
+                    applied.location, applied.length, target.location, target.length
+                ));
+            }
             return Err(AxFail::Unsupported);
         }
 
@@ -221,9 +230,10 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         };
         match read_string_for_range(element, &written) {
             Some(actual) if actual != text => {
-                super::dlog(&format!(
-                    "  ax write ignored: actual={actual:?} vs text={text:?}"
-                ));
+                let _ = actual;
+                if super::debug_enabled() {
+                    super::dlog("  ax write ignored");
+                }
                 restore_caret(element, caret.location);
                 return Err(AxFail::Unsupported);
             }
@@ -258,8 +268,10 @@ unsafe fn restore_caret(element: AXUIElementRef, location: isize) {
 
 /// Đọc chuỗi app đang hiển thị tại `range` (AXStringForRange).
 unsafe fn read_string_for_range(element: AXUIElementRef, range: &CFRange) -> Option<String> {
-    let range_value =
-        AXValueCreate(K_AX_VALUE_TYPE_CFRANGE, range as *const CFRange as *const c_void);
+    let range_value = AXValueCreate(
+        K_AX_VALUE_TYPE_CFRANGE,
+        range as *const CFRange as *const c_void,
+    );
     if range_value.is_null() {
         return None;
     }
@@ -326,8 +338,9 @@ pub fn focused_info() -> FocusedInfo {
             let mut buf = [0u8; 128];
             let n = proc_name(pid, buf.as_mut_ptr() as *mut c_void, buf.len() as u32);
             if n > 0 {
-                info.proc_name =
-                    std::str::from_utf8(&buf[..n as usize]).ok().map(String::from);
+                info.proc_name = std::str::from_utf8(&buf[..n as usize])
+                    .ok()
+                    .map(String::from);
             }
         }
 

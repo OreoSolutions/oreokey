@@ -8,7 +8,9 @@ use crate::engine::encoding::{self, Encoding};
 use crate::platform::{ax, event_tap, with_runtime, StatusCallback};
 
 fn to_c_string(s: String) -> *mut c_char {
-    CString::new(s).map(CString::into_raw).unwrap_or(std::ptr::null_mut())
+    CString::new(s)
+        .map(CString::into_raw)
+        .unwrap_or(std::ptr::null_mut())
 }
 
 unsafe fn from_c_str<'a>(p: *const c_char) -> Option<&'a str> {
@@ -68,11 +70,16 @@ pub unsafe extern "C" fn ok_settings_json_set(json: *const c_char) -> bool {
     let Ok(settings) = serde_json::from_str::<config::Settings>(json) else {
         return false;
     };
-    if config::save(&settings).is_err() {
-        return false;
-    }
-    with_runtime(|rt| rt.apply_settings(settings));
-    true
+    // Keep persistence and the in-memory update in the same runtime critical
+    // section. Otherwise a simultaneous hotkey toggle can be overwritten by
+    // this stale settings snapshot after it has already been persisted.
+    with_runtime(|rt| {
+        if config::save(&settings).is_err() {
+            return false;
+        }
+        rt.apply_settings(settings);
+        true
+    })
 }
 
 /// Đăng ký callback cập nhật icon menu bar khi trạng thái VN/EN đổi.
@@ -93,11 +100,7 @@ pub unsafe extern "C" fn ok_notify_frontmost_app(bundle_id: *const c_char) {
 
 /// Chuyển mã văn bản. from/to: 0 = Unicode, 1 = VNI-Windows, 2 = TCVN3.
 #[no_mangle]
-pub unsafe extern "C" fn ok_convert(
-    text: *const c_char,
-    from: i32,
-    to: i32,
-) -> *mut c_char {
+pub unsafe extern "C" fn ok_convert(text: *const c_char, from: i32, to: i32) -> *mut c_char {
     let Some(text) = from_c_str(text) else {
         return std::ptr::null_mut();
     };

@@ -4,12 +4,12 @@
 
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::mpsc;
+use std::sync::{mpsc, Mutex};
 
 use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
 use core_graphics::event::{
-    CGEvent, CGEventFlags, CGEventTap, CGEventTapLocation, CGEventTapOptions,
-    CGEventTapPlacement, CGEventTapProxy, CGEventType, EventField,
+    CGEvent, CGEventFlags, CGEventTap, CGEventTapLocation, CGEventTapOptions, CGEventTapPlacement,
+    CGEventTapProxy, CGEventType, EventField,
 };
 
 use crate::config::Hotkey;
@@ -33,6 +33,7 @@ extern "C" {
 static TAP_PORT: AtomicUsize = AtomicUsize::new(0);
 static RUN_LOOP: AtomicUsize = AtomicUsize::new(0);
 static RUNNING: AtomicBool = AtomicBool::new(false);
+static TAP_THREAD: Mutex<Option<std::thread::JoinHandle<()>>> = Mutex::new(None);
 
 /// Khởi động event tap trên thread riêng. Trả về false nếu không tạo
 /// được tap (thường do chưa cấp quyền Accessibility).
@@ -40,8 +41,17 @@ pub fn start() -> bool {
     if RUNNING.load(Ordering::SeqCst) {
         return true;
     }
+    // Serialize the full create/ready handshake. This prevents two callers
+    // from both observing a stopped tap and creating independent run loops.
+    let mut thread = TAP_THREAD.lock().unwrap_or_else(|e| e.into_inner());
+    if RUNNING.load(Ordering::SeqCst) {
+        return true;
+    }
+    if let Some(previous) = thread.take() {
+        let _ = previous.join();
+    }
     let (tx, rx) = mpsc::channel::<bool>();
-    std::thread::Builder::new()
+    let Ok(handle) = std::thread::Builder::new()
         .name("oreokey-tap".into())
         .spawn(move || {
             let tap = CGEventTap::new(
@@ -88,7 +98,10 @@ pub fn start() -> bool {
             RUN_LOOP.store(0, Ordering::SeqCst);
             drop(tap);
         })
-        .expect("spawn tap thread");
+    else {
+        return false;
+    };
+    *thread = Some(handle);
     rx.recv().unwrap_or(false)
 }
 
@@ -96,6 +109,12 @@ pub fn stop() {
     let rl = RUN_LOOP.load(Ordering::SeqCst);
     if rl != 0 {
         unsafe { CFRunLoopStop(rl as *mut c_void) };
+    }
+    // Wait for cleanup before returning so an immediate start creates a new
+    // tap instead of reporting success for a run loop that is stopping.
+    let handle = TAP_THREAD.lock().unwrap_or_else(|e| e.into_inner()).take();
+    if let Some(handle) = handle {
+        let _ = handle.join();
     }
 }
 
@@ -116,9 +135,7 @@ fn callback(proxy: CGEventTapProxy, etype: CGEventType, event: &CGEvent) -> Call
             }
             CallbackKeep::Keep
         }
-        CGEventType::LeftMouseDown
-        | CGEventType::RightMouseDown
-        | CGEventType::OtherMouseDown => {
+        CGEventType::LeftMouseDown | CGEventType::RightMouseDown | CGEventType::OtherMouseDown => {
             // Click chuột: con trỏ có thể đã dời — bỏ theo dõi từ hiện tại.
             with_runtime(|rt| rt.engine.reset());
             CallbackKeep::Keep
@@ -132,20 +149,27 @@ fn callback(proxy: CGEventTapProxy, etype: CGEventType, event: &CGEvent) -> Call
 use core_graphics::event::CallbackResult as CallbackKeep;
 
 fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
+    // Secure Input can cover password fields. Do this before extracting or
+    // logging any event data; debug logs must never become a keylogger.
+    if unsafe { IsSecureEventInputEnabled() } != 0 {
+        with_runtime(|rt| rt.engine.reset());
+        return CallbackKeep::Keep;
+    }
+
     let user_data = event.get_integer_value_field(EventField::EVENT_SOURCE_USER_DATA);
     let keycode = event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as u16;
-    let autorepeat =
-        event.get_integer_value_field(EventField::KEYBOARD_EVENT_AUTOREPEAT) != 0;
+    let autorepeat = event.get_integer_value_field(EventField::KEYBOARD_EVENT_AUTOREPEAT) != 0;
     let ev_ts = {
         use foreign_types::ForeignType;
         unsafe { CGEventGetTimestamp(event.as_ptr() as *const c_void) }
     };
     let src_pid = event.get_integer_value_field(EventField::EVENT_SOURCE_UNIX_PROCESS_ID);
-    super::dlog(&format!(
-        "keydown code={keycode} rep={autorepeat} magic={} ts={ev_ts} srcpid={src_pid} char={:?}",
-        user_data == inject::MAGIC,
-        event_char(event)
-    ));
+    if super::debug_enabled() {
+        super::dlog(&format!(
+            "keydown code={keycode} rep={autorepeat} magic={} ts={ev_ts} srcpid={src_pid}",
+            user_data == inject::MAGIC,
+        ));
+    }
     // Bỏ qua event do chính mình bơm ra.
     if user_data == inject::MAGIC {
         return CallbackKeep::Keep;
@@ -168,11 +192,6 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
             return CallbackKeep::Drop;
         }
         if !rt.effective_enabled() {
-            return CallbackKeep::Keep;
-        }
-        // Ô mật khẩu (Secure Input): không đụng vào bất cứ thứ gì.
-        if unsafe { IsSecureEventInputEnabled() } != 0 {
-            rt.engine.reset();
             return CallbackKeep::Keep;
         }
         // Phím tắt hệ thống (⌘/⌃/⌥/fn): không xử lý, bỏ theo dõi từ.
@@ -223,7 +242,7 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     finfo.proc_name.as_deref(),
                 );
                 let bundle = rt.current_bundle.clone();
-                inject::apply(
+                let applied = inject::apply(
                     proxy,
                     &old,
                     &text,
@@ -232,6 +251,13 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     &mut rt.ax_ok,
                     finfo.selection_len,
                 );
+                if !applied {
+                    // The engine has already consumed this key, but no
+                    // replacement was delivered. Preserve the physical key
+                    // and reset our buffer so future edits stay in sync.
+                    rt.engine.reset();
+                    return CallbackKeep::Keep;
+                }
                 // Phím này vừa gây Replace (callback chậm) → là ứng viên bị
                 // WindowServer giao lại. Ghi để nhận diện bản sao sắp tới.
                 rt.ghost.record_drop(keycode, ev_ts);

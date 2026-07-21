@@ -25,10 +25,11 @@ final class SettingsWindowController {
 
 // Nguồn sự thật là Rust: đọc khi mở, ghi ngay mỗi lần đổi.
 final class SettingsModel: ObservableObject {
+    @Published var saveError: String?
     @Published var settings: CoreSettings? {
         didSet {
             guard let s = settings, s != oldValue, oldValue != nil else { return }
-            Core.save(s)
+            saveError = Core.save(s) ? nil : "Không thể lưu cài đặt. Hãy kiểm tra quyền ghi và thử lại."
         }
     }
 
@@ -114,6 +115,14 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 760, minHeight: 500)
+        .alert("Không thể lưu cài đặt", isPresented: Binding(
+            get: { model.saveError != nil },
+            set: { if !$0 { model.saveError = nil } }
+        )) {
+            Button("Đóng", role: .cancel) { model.saveError = nil }
+        } message: {
+            Text(model.saveError ?? "")
+        }
     }
 }
 

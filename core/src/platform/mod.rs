@@ -108,7 +108,9 @@ impl Runtime {
 
     fn persist_enabled(&mut self) {
         self.settings.enabled = self.enabled;
-        let _ = config::save(&self.settings);
+        if config::save(&self.settings).is_err() {
+            dlog("settings persistence failed");
+        }
     }
 
     pub fn notify_status(&self) {
@@ -125,19 +127,46 @@ pub fn with_runtime<R>(f: impl FnOnce(&mut Runtime) -> R) -> R {
     f(rt)
 }
 
-/// Log chẩn đoán, bật bằng OREOKEY_DEBUG=1, ghi vào /tmp/oreokey-debug.log.
-pub fn dlog(msg: &str) {
-    use std::io::Write;
+/// Whether diagnostic logging is enabled. Callers on the event-tap hot path
+/// must check this before formatting a message or extracting event text.
+pub fn debug_enabled() -> bool {
     use std::sync::OnceLock;
     static ENABLED: OnceLock<bool> = OnceLock::new();
-    if !*ENABLED.get_or_init(|| std::env::var("OREOKEY_DEBUG").is_ok()) {
+    *ENABLED.get_or_init(|| std::env::var("OREOKEY_DEBUG").is_ok())
+}
+
+/// Log chẩn đoán, bật bằng OREOKEY_DEBUG=1. Nội dung phím và văn bản người
+/// dùng không bao giờ được ghi vào log.
+pub fn dlog(msg: &str) {
+    use std::io::Write;
+    use std::sync::{Mutex, OnceLock};
+
+    if !debug_enabled() {
         return;
     }
-    if let Ok(mut f) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("/tmp/oreokey-debug.log")
-    {
+    static FILE: OnceLock<Option<Mutex<std::fs::File>>> = OnceLock::new();
+    let file = FILE.get_or_init(|| {
+        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        let path = config::config_dir().join("debug.log");
+        let _ = std::fs::create_dir_all(config::config_dir());
+        let truncate = std::fs::metadata(&path)
+            .map(|m| m.len() > 1_048_576)
+            .unwrap_or(false);
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(!truncate)
+            .truncate(truncate)
+            .mode(0o600)
+            .open(&path)
+            .ok()?;
+        let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+        Some(Mutex::new(file))
+    });
+    let Some(file) = file else {
+        return;
+    };
+    if let Ok(mut f) = file.lock() {
         let _ = writeln!(f, "{msg}");
     }
 }

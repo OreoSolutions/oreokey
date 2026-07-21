@@ -17,3 +17,6 @@ dist/
 
 # Superpowers SDD scratch
 .superpowers/
+
+# Code graph cache
+.codegraph/
