@@ -279,7 +279,7 @@ mod tests {
         // Phím o thứ ba đã tiêu vào việc hủy mũ nên nguyên văn là "loos"
         // (cùng thiết kế với `ass` → `as`).
         assert_eq!(t("looos"), "loos");
-        assert_eq!(standard("looos"), "loos");
+        assert_eq!(standard("looos"), "lôos");
         // Từ mượn hợp lệ vẫn gõ được, kể cả đặt thanh trước phụ âm cuối.
         assert_eq!(t("sooocs"), "soóc");
         assert_eq!(t("sooosc"), "soóc");
@@ -291,7 +291,7 @@ mod tests {
         // hủy: người dùng thấy "loos" rồi gõ e thì phải ra "loose",
         // không phải "looose".
         assert_eq!(t("looose"), "loose");
-        assert_eq!(standard("looose"), "loose");
+        assert_eq!(standard("looose"), "lôose");
     }
 
     #[test]
@@ -418,7 +418,5 @@ mod tests {
         assert!(!super::is_live_prefix(&cla));
     }
 }
-
-
 
 

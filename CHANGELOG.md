@@ -6,6 +6,15 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã đổi
+- **Gõ tiếp sau âm tiết đã hoàn chỉnh ở mức Thường/Thoải mái**: khi phần đầu
+  đã là âm tiết tiếng Việt đúng, mọi ký tự nối tiếp làm cụm trở nên bất khả
+  được giữ nguyên phía sau thay vì làm engine bung lại phím gốc. Ví dụ:
+  `đô` + `uuuu` → `đôuuuu`, `đông` + `uuuu` → `đônguuuu`, `yêu` + `uuuu`
+  → `yêuuuuu`, `chào` + `ooooo` → `chàoooooo`. Xóa hết phần đuôi sẽ trở
+  lại gõ tiếng Việt bình thường; mức **Chặt** giữ cơ chế hủy dấu Telex cũ
+  (`gô` + `o` → `goo`).
+
 ## [0.6.6] - 2026-07-21
 
 ### Đã sửa

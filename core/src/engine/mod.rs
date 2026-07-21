@@ -195,6 +195,16 @@ pub struct Engine {
     /// nguyên phím gốc cho tới khi ngắt từ (tránh nuốt phím dấu khi
     /// người dùng gõ tiếng nước ngoài).
     raw_mode: bool,
+    /// Với mức Thường/Thoải mái: một âm tiết đã hợp lệ được giữ nguyên khi
+    /// phần đuôi mới làm nó thành cụm bất khả. `raw` vẫn giữ phím thật để
+    /// Backspace có thể quay lại engine bình thường ngay khi xóa hết đuôi.
+    frozen_prefix: Option<FrozenPrefix>,
+}
+
+#[derive(Debug, Clone)]
+struct FrozenPrefix {
+    render: String,
+    raw_len: usize,
 }
 
 impl Engine {
@@ -205,6 +215,7 @@ impl Engine {
             raw: String::new(),
             last_render: String::new(),
             raw_mode: false,
+            frozen_prefix: None,
         }
     }
 
@@ -226,6 +237,7 @@ impl Engine {
         self.raw.clear();
         self.last_render.clear();
         self.raw_mode = false;
+        self.frozen_prefix = None;
     }
 
     /// Từ đang gõ như đang hiển thị (phục vụ test/debug).
@@ -274,30 +286,51 @@ impl Engine {
     }
 
     fn on_char(&mut self, c: char) -> Action {
+        let raw_len_before = self.raw.chars().count();
+        // Chặt giữ nguyên cơ chế cũ. Ở hai mức dưới, chỉ bảo toàn khi phần
+        // trước đã là một âm tiết có biến đổi hợp lệ; nhờ vậy từ tiếng Anh
+        // thuần không vô tình được "đóng băng".
+        let keep_completed_prefix = !self.raw_mode && self.cfg.spell_mode != SpellMode::Strict && {
+            let previous = self.build_state(&self.raw);
+            spell::is_transformed(&previous) && spell::is_acceptable(&previous, false)
+        };
         self.raw.push(c);
         let new_render = if self.raw_mode {
-            self.raw.clone()
+            self.raw_mode_text()
         } else {
             let (text, restored, state) = self.render_word(&self.raw);
-            if restored {
-                // Chỉ khóa khi từ CHẾT hẳn (cụm bất khả). Trạng thái CÒN
-                // SỐNG (tiền tố hợp lệ, vd nhân âm dở chờ dấu mũ) giữ văn
-                // bản khôi phục nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
-                // thiện âm tiết (issue #4).
-                // is_live_prefix cố ý KHÔNG xét thanh điệu (tone-blind) — nhờ
-                // vậy một nhân âm đã có thanh nhưng chưa xong dấu mũ/móc vẫn
-                // được coi là còn sống. Đừng thêm kiểm tra thanh ở đây.
-                if !spell::is_live_prefix(&state) {
-                    self.raw_mode = true;
-                    // Từ đây raw_mode hiển thị self.raw nguyên văn — đồng bộ
-                    // raw với văn bản khôi phục (đã rút phím hủy) để phím sau
-                    // và backspace không làm chữ đã hủy hiện lại. Từ còn sống
-                    // thì KHÔNG đồng bộ: mất lịch sử phím hủy sẽ khiến replay
-                    // tự áp lại dấu đã hủy ("sooos" + c phải ra "soóc").
-                    self.raw = text.clone();
+            if keep_completed_prefix && !spell::is_acceptable(&state, true) {
+                // Ví dụ: "đô" + u → "đôu", "yêu" + u → "yêuu".
+                // Sau đó phần đuôi đi qua nguyên văn, nhưng vẫn giữ raw để
+                // Backspace về đúng trạng thái trước khi đóng băng.
+                self.raw_mode = true;
+                self.frozen_prefix = Some(FrozenPrefix {
+                    render: self.last_render.clone(),
+                    raw_len: raw_len_before,
+                });
+                self.raw_mode_text()
+            } else {
+                if restored {
+                    // Chỉ khóa khi từ CHẾT hẳn (cụm bất khả). Trạng thái CÒN
+                    // SỐNG (tiền tố hợp lệ, vd nhân âm dở chờ dấu mũ) giữ văn
+                    // bản khôi phục nhưng KHÔNG khóa — phím sau còn cơ hội hoàn
+                    // thiện âm tiết (issue #4).
+                    // is_live_prefix cố ý KHÔNG xét thanh điệu (tone-blind) — nhờ
+                    // vậy một nhân âm đã có thanh nhưng chưa xong dấu mũ/móc vẫn
+                    // được coi là còn sống. Đừng thêm kiểm tra thanh ở đây.
+                    if !spell::is_live_prefix(&state) {
+                        self.raw_mode = true;
+                        self.frozen_prefix = None;
+                        // Từ đây raw_mode hiển thị self.raw nguyên văn — đồng bộ
+                        // raw với văn bản khôi phục (đã rút phím hủy) để phím sau
+                        // và backspace không làm chữ đã hủy hiện lại. Từ còn sống
+                        // thì KHÔNG đồng bộ: mất lịch sử phím hủy sẽ khiến replay
+                        // tự áp lại dấu đã hủy ("sooos" + c phải ra "soóc").
+                        self.raw = text.clone();
+                    }
                 }
+                text
             }
-            text
         };
         // Chống bệnh lý: token alnum liền dài (hex/base64 gõ tay, không
         // space) không thể là âm tiết tiếng Việt — khóa raw để mỗi phím
@@ -307,6 +340,7 @@ impl Engine {
         const RAW_CAP: usize = 64;
         if !self.raw_mode && new_render.chars().count() >= RAW_CAP {
             self.raw_mode = true;
+            self.frozen_prefix = None;
             self.raw = new_render.clone();
         }
         let action = diff_action(&self.last_render, &new_render, c);
@@ -325,7 +359,7 @@ impl Engine {
         while !self.raw.is_empty() {
             self.raw.pop();
             let rendered = if self.raw_mode {
-                self.raw.clone()
+                self.raw_mode_text()
             } else {
                 self.render_word(&self.raw).0
             };
@@ -336,9 +370,18 @@ impl Engine {
                 // hình thì gỡ khóa — người dùng xóa để gõ lại không phải
                 // bấm space mới có dấu.
                 if self.raw_mode {
-                    let (text, restored, _) = self.render_word(&self.raw);
-                    if !restored && text == self.last_render {
+                    let frozen_done = self
+                        .frozen_prefix
+                        .as_ref()
+                        .is_some_and(|prefix| self.raw.chars().count() <= prefix.raw_len);
+                    if frozen_done {
                         self.raw_mode = false;
+                        self.frozen_prefix = None;
+                    } else if self.frozen_prefix.is_none() {
+                        let (text, restored, _) = self.render_word(&self.raw);
+                        if !restored && text == self.last_render {
+                            self.raw_mode = false;
+                        }
                     }
                 }
                 return Action::PassThrough;
@@ -361,6 +404,17 @@ impl Engine {
             }
         }
         state
+    }
+
+    /// Văn bản hiển thị khi đã khóa raw. Với khóa thông thường, nguyên văn
+    /// là đúng; với prefix bảo toàn, chỉ phần đuôi sau âm tiết hợp lệ mới là
+    /// nguyên văn.
+    fn raw_mode_text(&self) -> String {
+        let Some(prefix) = &self.frozen_prefix else {
+            return self.raw.clone();
+        };
+        let tail: String = self.raw.chars().skip(prefix.raw_len).collect();
+        format!("{}{}", prefix.render, tail)
     }
 
     /// Văn bản khôi phục cho từ không phải tiếng Việt: phần đầu dài nhất
@@ -557,6 +611,52 @@ mod tests {
         let mut e = engine_mode(SpellMode::Strict);
         assert_eq!(type_str(&mut e, "mask"), "mask");
         assert_eq!(type_str(&mut e, "class"), "class");
+    }
+
+    #[test]
+    fn strict_keeps_telex_mark_cancellation() {
+        let mut e = engine_mode(SpellMode::Strict);
+        // `goo` tạo "gô"; thêm o là thao tác hủy mũ Telex → "goo".
+        assert_eq!(type_str(&mut e, "gooo"), "goo");
+    }
+
+    #[test]
+    fn relaxed_modes_keep_a_completed_syllable_before_literal_tail() {
+        for mode in [SpellMode::Standard, SpellMode::Loose] {
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "ddoouuuu"), "đôuuuu");
+
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "ddoonguuuu"), "đônguuuu");
+
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "yeeuuuuu"), "yêuuuuu");
+
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "chaofuuuu"), "chàouuuu");
+
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "chafoooooo"), "chàoooooo");
+        }
+    }
+
+    #[test]
+    fn deleting_literal_tail_reenables_relaxed_typing() {
+        let mut e = engine_mode(SpellMode::Standard);
+        assert_eq!(type_str(&mut e, "ddoou\u{8}ng"), "đông");
+    }
+
+    #[test]
+    fn relaxed_literal_tail_also_works_in_vni() {
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_mode: SpellMode::Standard,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        assert_eq!(type_str(&mut e, "d9o6uuuu"), "đôuuuu");
     }
 
     #[test]
