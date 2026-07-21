@@ -290,6 +290,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="p6UgDRIvQFd0bCvCY8VOiZQnFStUDBSy7r0vDcZVfsxgtkOBKQUf8NoC7RSAYl/AcGVQF0oytQGGHXMQqjO0BQ==" length="5673047" />
     </item>
+    <item>
+      <title>0.7.1</title>
+      <pubDate>Tue, 21 Jul 2026 10:36:36 +0000</pubDate>
+      <sparkle:version>18</sparkle:version>
+      <sparkle:shortVersionString>0.7.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Gõ chữ <code>w</code> ở đầu từ</strong>: <code>w</code> hoặc <code>W</code> nay giữ nguyên là ký tự Latin thay vì tự đổi thành <code>ư</code>, nên có thể gõ từ như <code>web</code>/<code>Windows</code> bình thường. Cách gõ <code>ư</code> vẫn là <code>uw</code>.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.7.1/OreoKey.dmg"
+                 sparkle:version="18"
+                 sparkle:shortVersionString="0.7.1"
+                 type="application/octet-stream"
+                 sparkle:edSignature="QT4eYhHVQuxJWD0mHTkSnKT9hsDp2oPQQ1ictWyF/UJfNy5T9HTHWwKM4TsAXcKNZvmwK5VCympz+jckMVaRAg==" length="5673059" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
