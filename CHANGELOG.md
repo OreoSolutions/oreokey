@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.6.6] - 2026-07-21
+
 ### Đã sửa
 - **Không còn ghi nội dung gõ vào log chẩn đoán**: khi bật `OREOKEY_DEBUG`,
   log nay không lưu ký tự hay đoạn văn bản đang nhập; ô mật khẩu được nhận diện

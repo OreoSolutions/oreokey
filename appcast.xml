@@ -249,6 +249,31 @@
                  type="application/octet-stream"
                  sparkle:edSignature="wKcsrI33lEFfBK4o+8nXrAureNX4cnnp1TSi3vLUhsrNzjpdQjbSyb8H79/SgVKXY+3VfbDKGSr6gJs3wTT/Ag==" length="5636375" />
     </item>
+    <item>
+      <title>0.6.6</title>
+      <pubDate>Tue, 21 Jul 2026 09:00:08 +0000</pubDate>
+      <sparkle:version>15</sparkle:version>
+      <sparkle:shortVersionString>0.6.6</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Không còn ghi nội dung gõ vào log chẩn đoán</strong>: khi bật <code>OREOKEY_DEBUG</code>, log nay không lưu ký tự hay đoạn văn bản đang nhập; ô mật khẩu được nhận diện trước mọi xử lý và log. File log chuyển vào vùng dữ liệu riêng của OreoKey, chỉ người dùng hiện tại đọc được và tự giới hạn dung lượng.</li>
+<li><strong>Lưu cài đặt đồng thời không bị mất dữ liệu</strong>: thay đổi từ cửa sổ Cài đặt và hotkey bật/tắt tiếng Việt nay được tuần tự hóa với thao tác ghi đĩa, tránh đè file tạm hoặc để trạng thái đang chạy khác với file cài đặt. Nếu không ghi được, Cài đặt và menu bar hiện thông báo thay vì im lặng bỏ qua.</li>
+<li><strong>Không mất phím khi sửa qua Accessibility thất bại</strong>: chế độ tương thích chỉ dùng AX nay cho phím gốc đi qua và đồng bộ lại engine nếu app đích từ chối thay chữ, thay vì nuốt mất ký tự.</li>
+<li><strong>Khởi động/dừng bộ bắt phím ổn định hơn</strong>: các yêu cầu start/stop đồng thời được tuần tự hóa; app chờ tap cũ dọn xong trước khi tạo tap mới, tránh còn tap cũ chạy ngầm hoặc báo đã khởi động khi đang dừng.</li>
+<li><strong>Gõ tắt có emoji/ký tự ngoài BMP</strong>: chuỗi bơm vào ứng dụng nay được chia đúng theo số đơn vị UTF-16, nên không vượt giới hạn event khi macro có emoji.</li>
+<li><strong>Hồ sơ ứng dụng wildcard nhất quán</strong>: khi nhiều wildcard cùng khớp, OreoKey luôn chọn tiền tố cụ thể nhất thay vì phụ thuộc thứ tự nội bộ.</li>
+</ul>
+<h3>Đã đổi</h3>
+<ul>
+<li><strong>Nhẹ hơn trên mỗi phím gõ</strong>: khi tắt debug (mặc định), callback không còn tạo chuỗi log hay giải mã Unicode chỉ để ghi log; file debug cũng được giữ mở thay vì mở/đóng theo từng sự kiện.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.6.6/OreoKey.dmg"
+                 sparkle:version="15"
+                 sparkle:shortVersionString="0.6.6"
+                 type="application/octet-stream"
+                 sparkle:edSignature="M1ZZhxPY8+ErxIkmNUS8NZpIEMQSOctGFAF4I7PRs91N1suacCwiSmJ2cUthHTCdn4r8Jy7h3bv4dKPMZHSqBg==" length="5669137" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
