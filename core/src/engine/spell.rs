@@ -418,5 +418,3 @@ mod tests {
         assert!(!super::is_live_prefix(&cla));
     }
 }
-
-

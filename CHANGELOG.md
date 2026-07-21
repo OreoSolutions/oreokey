@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.1] - 2026-07-21
+
 ### Đã sửa
 - **Gõ chữ `w` ở đầu từ**: `w` hoặc `W` nay giữ nguyên là ký tự Latin thay
   vì tự đổi thành `ư`, nên có thể gõ từ như `web`/`Windows` bình thường.

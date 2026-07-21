@@ -71,15 +71,6 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
             state.letters.push(Letter::plain(c));
         }
         'w' => {
-            // Từ bắt đầu bằng w thường là Latin (web, Windows...), nên giữ
-            // cả chuỗi w nguyên văn thay vì diễn giải w thứ hai là tạo ư.
-            // Người dùng vẫn gõ ư đầu từ bằng `uw`.
-            if state.letters.first().is_none_or(|first| {
-                first.base == 'w' && !first.w_origin
-            }) {
-                state.letters.push(Letter::plain(c));
-                return;
-            }
             let n = state.letters.len();
             // Hủy cặp ươ → uo: quét cặp chữ u(móc)+o(móc) liền kề bất kỳ, kể
             // cả khi còn nguyên âm cuối theo sau (đối xứng chiều áp dụng
@@ -147,12 +138,18 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                 }
                 return;
             }
-            // w đứng một mình / sau phụ âm → ư.
-            let mut l = Letter::plain(c);
-            l.base = 'u';
-            l.horn = true;
-            l.w_origin = true;
-            state.letters.push(l);
+            // Chưa có nguyên âm → w là chữ Latin (switch, web). Nếu từ đã
+            // có nguyên âm, w vẫn có thể là ư đứng riêng trong cụm (giw… →
+            // giư…), nên giữ quy tắc Telex cũ.
+            if vidx.is_empty() {
+                state.letters.push(Letter::plain(c));
+            } else {
+                let mut l = Letter::plain(c);
+                l.base = 'u';
+                l.horn = true;
+                l.w_origin = true;
+                state.letters.push(l);
+            }
         }
         'd' => {
             if let Some(last) = state.letters.last_mut() {
@@ -258,8 +255,9 @@ mod tests {
         assert_eq!(t("ow"), "ơ");
         assert_eq!(t("uw"), "ư");
         assert_eq!(t("w"), "w");
-        assert_eq!(t("W"), "W");
-        assert_eq!(t("tw"), "tư");
+        assert_eq!(t("tw"), "tw");
+        assert_eq!(t("switch"), "switch");
+        assert_eq!(t("suw"), "sư");
         assert_eq!(t("aww"), "aw");
         assert_eq!(t("ww"), "ww");
         assert_eq!(t("www"), "www");
