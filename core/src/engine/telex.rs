@@ -71,6 +71,15 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
             state.letters.push(Letter::plain(c));
         }
         'w' => {
+            // Từ bắt đầu bằng w thường là Latin (web, Windows...), nên giữ
+            // cả chuỗi w nguyên văn thay vì diễn giải w thứ hai là tạo ư.
+            // Người dùng vẫn gõ ư đầu từ bằng `uw`.
+            if state.letters.first().is_none_or(|first| {
+                first.base == 'w' && !first.w_origin
+            }) {
+                state.letters.push(Letter::plain(c));
+                return;
+            }
             let n = state.letters.len();
             // Hủy cặp ươ → uo: quét cặp chữ u(móc)+o(móc) liền kề bất kỳ, kể
             // cả khi còn nguyên âm cuối theo sau (đối xứng chiều áp dụng
@@ -248,11 +257,12 @@ mod tests {
         assert_eq!(t("aw"), "ă");
         assert_eq!(t("ow"), "ơ");
         assert_eq!(t("uw"), "ư");
-        assert_eq!(t("w"), "ư");
+        assert_eq!(t("w"), "w");
+        assert_eq!(t("W"), "W");
         assert_eq!(t("tw"), "tư");
         assert_eq!(t("aww"), "aw");
-        assert_eq!(t("ww"), "w"); // ư hoàn về w
-        assert_eq!(t("www"), "ww"); // sau hủy, w chết
+        assert_eq!(t("ww"), "ww");
+        assert_eq!(t("www"), "www");
         assert_eq!(t("duongw"), "dương");
         assert_eq!(t("dduongwf"), "đường");
         assert_eq!(t("uwowng"), "ương");
