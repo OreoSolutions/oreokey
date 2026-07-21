@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.0] - 2026-07-21
+
 ### Đã đổi
 - **Gõ tiếp sau âm tiết đã hoàn chỉnh ở mức Thường/Thoải mái**: khi phần đầu
   đã là âm tiết tiếng Việt đúng, mọi ký tự nối tiếp làm cụm trở nên bất khả

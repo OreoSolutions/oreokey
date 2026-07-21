@@ -274,6 +274,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="M1ZZhxPY8+ErxIkmNUS8NZpIEMQSOctGFAF4I7PRs91N1suacCwiSmJ2cUthHTCdn4r8Jy7h3bv4dKPMZHSqBg==" length="5669137" />
     </item>
+    <item>
+      <title>0.7.0</title>
+      <pubDate>Tue, 21 Jul 2026 09:52:45 +0000</pubDate>
+      <sparkle:version>16</sparkle:version>
+      <sparkle:shortVersionString>0.7.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã đổi</h3>
+<ul>
+<li><strong>Gõ tiếp sau âm tiết đã hoàn chỉnh ở mức Thường/Thoải mái</strong>: khi phần đầu đã là âm tiết tiếng Việt đúng, mọi ký tự nối tiếp làm cụm trở nên bất khả được giữ nguyên phía sau thay vì làm engine bung lại phím gốc. Ví dụ: <code>đô</code> + <code>uuuu</code> → <code>đôuuuu</code>, <code>đông</code> + <code>uuuu</code> → <code>đônguuuu</code>, <code>yêu</code> + <code>uuuu</code> → <code>yêuuuuu</code>, <code>chào</code> + <code>ooooo</code> → <code>chàoooooo</code>. Xóa hết phần đuôi sẽ trở lại gõ tiếng Việt bình thường; mức <strong>Chặt</strong> giữ cơ chế hủy dấu Telex cũ (<code>gô</code> + <code>o</code> → <code>goo</code>).</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.7.0/OreoKey.dmg"
+                 sparkle:version="16"
+                 sparkle:shortVersionString="0.7.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="p6UgDRIvQFd0bCvCY8VOiZQnFStUDBSy7r0vDcZVfsxgtkOBKQUf8NoC7RSAYl/AcGVQF0oytQGGHXMQqjO0BQ==" length="5673047" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
