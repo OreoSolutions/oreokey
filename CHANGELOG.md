@@ -6,6 +6,12 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Hủy dấu mũ Telex ở mức Thường**: phím `a`/`e`/`o` lặp lại nay vẫn được
+  dùng để hủy `â`/`ê`/`ô` khi cần, thay vì luôn bị coi là phần đuôi kéo dài
+  của một âm tiết đã hoàn chỉnh. Ví dụ, gõ `dataaaa` cho ra `dataaa` (một
+  phím `a` được dùng để hủy mũ), trong khi `yeeuuu` vẫn cho ra `yêuuu`.
+
 ## [0.7.1] - 2026-07-21
 
 ### Đã sửa

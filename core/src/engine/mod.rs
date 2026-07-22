@@ -292,7 +292,20 @@ impl Engine {
         // thuần không vô tình được "đóng băng".
         let keep_completed_prefix = !self.raw_mode && self.cfg.spell_mode != SpellMode::Strict && {
             let previous = self.build_state(&self.raw);
-            spell::is_transformed(&previous) && spell::is_acceptable(&previous, false)
+            // Phím a/e/o lặp lại vẫn phải được quyền hủy dấu mũ Telex, kể
+            // cả khi trạng thái trước đó tình cờ là một âm tiết hợp lệ.
+            // Ví dụ `data` đang render thành `dâta`; phím a tiếp theo phải
+            // hủy mũ thành `dataa`, không được biến thành đuôi literal của
+            // frozen-prefix. `yêu` + u không phải thao tác hủy nên vẫn giữ.
+            let cancels_circumflex = self.cfg.spell_mode == SpellMode::Standard
+                && self.cfg.method == TypingMethod::Telex
+                && matches!(c.to_ascii_lowercase(), 'a' | 'e' | 'o')
+                && previous.letters.iter().any(|letter| {
+                    letter.base == c.to_ascii_lowercase() && letter.circ
+                });
+            !cancels_circumflex
+                && spell::is_transformed(&previous)
+                && spell::is_acceptable(&previous, false)
         };
         self.raw.push(c);
         let new_render = if self.raw_mode {
@@ -638,6 +651,15 @@ mod tests {
             let mut e = engine_mode(mode);
             assert_eq!(type_str(&mut e, "chafoooooo"), "chàoooooo");
         }
+    }
+
+    #[test]
+    fn standard_cancels_circumflex_but_keeps_a_literal_vowel_tail() {
+        let mut e = engine_mode(SpellMode::Standard);
+        assert_eq!(type_str(&mut e, "dataaaa"), "dataaa");
+
+        let mut e = engine_mode(SpellMode::Standard);
+        assert_eq!(type_str(&mut e, "yeeuuu"), "yêuuu");
     }
 
     #[test]
