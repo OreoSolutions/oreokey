@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.3] - 2026-07-22
+
 ### Đã sửa
 - **Gõ dấu trong ô tìm kiếm tab mới của Zen Browser**: thêm profile mặc định
   cho bundle ID `app.zen-browser.zen`, dùng chế độ **Bơm phím nhanh** và xử lý
