@@ -6,6 +6,7 @@
     "com.brave.Browser": { "mode": "auto", "browser_fix": true },
     "company.thebrowser.Browser": { "mode": "auto", "browser_fix": true },
     "org.mozilla.firefox": { "mode": "inject_fast", "browser_fix": true },
+    "app.zen-browser.zen": { "mode": "inject_fast", "browser_fix": true },
     "com.apple.Spotlight": { "mode": "inject_fast", "browser_fix": true },
     "proc:Spotlight": { "mode": "inject_fast", "select_replace": true },
     "proc:OreoKey": { "mode": "inject_fast" },

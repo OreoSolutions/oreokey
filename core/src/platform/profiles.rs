@@ -187,6 +187,14 @@ mod tests {
     }
 
     #[test]
+    fn zen_browser_uses_firefox_compatible_profile() {
+        let p = Profiles::load_default();
+        let zen = p.resolve("app.zen-browser.zen", &HashMap::new(), None);
+        assert_eq!(zen.mode, FixMode::InjectFast);
+        assert!(zen.browser_fix);
+    }
+
+    #[test]
     fn most_specific_wildcard_wins() {
         let mut apps = HashMap::new();
         apps.insert(
