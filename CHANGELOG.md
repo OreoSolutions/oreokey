@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.4] - 2026-07-27
+
 ### Đã sửa
 - **Kéo dài nguyên âm sau chữ có thanh ở mức Thường/Thoải mái**: khi gõ
   tiếp nguyên âm lặp sau một âm tiết một nguyên âm đã có thanh, OreoKey nay

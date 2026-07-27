@@ -338,6 +338,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="lZ93Ewe4tbbBZkhhT4Z6h1bbpwy01A1O6ydmGWVIbzry+yS7IDM9OHpCBLOO5XZiHxWuWdrLweUjd/BQ7VVpCw==" length="5673575" />
     </item>
+    <item>
+      <title>0.7.4</title>
+      <pubDate>Mon, 27 Jul 2026 07:29:26 +0000</pubDate>
+      <sparkle:version>21</sparkle:version>
+      <sparkle:shortVersionString>0.7.4</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Kéo dài nguyên âm sau chữ có thanh ở mức Thường/Thoải mái</strong>: khi gõ tiếp nguyên âm lặp sau một âm tiết một nguyên âm đã có thanh, OreoKey nay giữ dấu thay vì bung lại phím Telex gốc. Ví dụ <code>afaa</code> → <code>àa</code> và <code>afaaaaa</code> → <code>àaaaa</code>. Hành vi kéo dài hiện có vẫn được giữ (<code>yêuuuuu</code>, <code>đượcccc</code>); mức <strong>Chặt</strong> không thay đổi.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.7.4/OreoKey.dmg"
+                 sparkle:version="21"
+                 sparkle:shortVersionString="0.7.4"
+                 type="application/octet-stream"
+                 sparkle:edSignature="gZBmrdnZTfsFuSDMhR1DpAIZCY9sF7HfAGJSHnpR96EGBsi2Fr9Fy3H82USWp/wvkeq3IdGNhpw5J8tRWA98CQ==" length="5675963" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
