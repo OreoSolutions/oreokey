@@ -286,12 +286,37 @@ impl Engine {
     }
 
     fn on_char(&mut self, c: char) -> Action {
-        let raw_len_before = self.raw.chars().count();
         // Chặt giữ nguyên cơ chế cũ. Ở hai mức dưới, chỉ bảo toàn khi phần
         // trước đã là một âm tiết có biến đổi hợp lệ; nhờ vậy từ tiếng Anh
         // thuần không vô tình được "đóng băng".
+        let previous = (!self.raw_mode).then(|| self.build_state(&self.raw));
+        // `à` + a trước hết render thành `ầ`; nếu gõ thêm a, Telex vốn hủy
+        // mũ và spell gate trả về `afaa`. Ở hai mức thấp, coi đây là kéo dài
+        // nguyên âm: bỏ phím a trung gian đã tạo mũ, rồi giữ `à` + a. Chỉ áp
+        // cho âm tiết một nguyên âm có thanh để `dataaaa` vẫn hủy mũ như cũ.
+        let literal_toned_vowel_tail = !self.raw_mode
+            && self.cfg.spell_mode != SpellMode::Strict
+            && self.cfg.method == TypingMethod::Telex
+            && matches!(c.to_ascii_lowercase(), 'a' | 'e' | 'o')
+            && self.raw.ends_with(c)
+            && previous.as_ref().is_some_and(|state| {
+                state.tone.is_some()
+                    && state.letters.len() == 1
+                    && state.letters[0].base == c.to_ascii_lowercase()
+                    && state.letters[0].circ
+                    && spell::is_acceptable(state, false)
+            });
+        let literal_prefix = literal_toned_vowel_tail.then(|| {
+            let mut state = previous.clone().expect("state exists outside raw mode");
+            state.letters[0].circ = false;
+            render_letters(&state, self.cfg.modern_tone)
+        });
+        if literal_toned_vowel_tail {
+            self.raw.pop();
+        }
+        let raw_len_before = self.raw.chars().count();
         let keep_completed_prefix = !self.raw_mode && self.cfg.spell_mode != SpellMode::Strict && {
-            let previous = self.build_state(&self.raw);
+            let previous = previous.as_ref().expect("state exists outside raw mode");
             // Phím a/e/o lặp lại vẫn phải được quyền hủy dấu mũ Telex, kể
             // cả khi trạng thái trước đó tình cờ là một âm tiết hợp lệ.
             // Ví dụ `data` đang render thành `dâta`; phím a tiếp theo phải
@@ -309,6 +334,13 @@ impl Engine {
         };
         self.raw.push(c);
         let new_render = if self.raw_mode {
+            self.raw_mode_text()
+        } else if let Some(render) = literal_prefix {
+            self.raw_mode = true;
+            self.frozen_prefix = Some(FrozenPrefix {
+                render,
+                raw_len: raw_len_before,
+            });
             self.raw_mode_text()
         } else {
             let (text, restored, state) = self.render_word(&self.raw);
@@ -646,6 +678,9 @@ mod tests {
             assert_eq!(type_str(&mut e, "yeeuuuuu"), "yêuuuuu");
 
             let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "dduwowjcccc"), "đượcccc");
+
+            let mut e = engine_mode(mode);
             assert_eq!(type_str(&mut e, "chaofuuuu"), "chàouuuu");
 
             let mut e = engine_mode(mode);
@@ -660,6 +695,23 @@ mod tests {
 
         let mut e = engine_mode(SpellMode::Standard);
         assert_eq!(type_str(&mut e, "yeeuuu"), "yêuuu");
+    }
+
+    #[test]
+    fn relaxed_modes_keep_a_toned_vowel_before_a_literal_vowel_tail() {
+        // Sau khi âm tiết đã hoàn chỉnh, nguyên âm lặp là đuôi kéo dài chứ
+        // không được spell gate bung lại phím thanh: af + aa → àaa.
+        for mode in [SpellMode::Standard, SpellMode::Loose] {
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "afaa"), "àa");
+
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "afaaaaa"), "àaaaa");
+        }
+
+        // Chặt giữ nguyên cơ chế hủy/khôi phục cũ.
+        let mut e = engine_mode(SpellMode::Strict);
+        assert_eq!(type_str(&mut e, "afaa"), "afaa");
     }
 
     #[test]

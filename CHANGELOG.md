@@ -6,6 +6,13 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Kéo dài nguyên âm sau chữ có thanh ở mức Thường/Thoải mái**: khi gõ
+  tiếp nguyên âm lặp sau một âm tiết một nguyên âm đã có thanh, OreoKey nay
+  giữ dấu thay vì bung lại phím Telex gốc. Ví dụ `afaa` → `àa` và
+  `afaaaaa` → `àaaaa`. Hành vi kéo dài hiện có vẫn được giữ (`yêuuuuu`,
+  `đượcccc`); mức **Chặt** không thay đổi.
+
 ## [0.7.3] - 2026-07-22
 
 ### Đã sửa
