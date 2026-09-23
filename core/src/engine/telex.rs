@@ -122,20 +122,35 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                 }
             }
             // Nguyên âm áp dụng được gần cuối nhất: a → ă, o → ơ, u → ư.
-            if let Some(&i) = vidx
+            // Nhưng nếu kết quả là vần bất khả ("sua" + w → "suă"), thử
+            // nguyên âm trước đó ("sưa") — issue #8. Không ứng viên nào
+            // sống thì giữ luật gần-cuối cũ.
+            let candidates: Vec<usize> = vidx
                 .iter()
                 .rev()
-                .find(|&&i| {
+                .copied()
+                .filter(|&i| {
                     matches!(state.letters[i].base, 'a' | 'o' | 'u')
                         && !state.letters[i].has_mark()
                         && !state.letters[i].circ
                 })
-            {
+                .collect();
+            let set_mark = |state: &mut WordState, i: usize, on: bool| {
                 if state.letters[i].base == 'a' {
-                    state.letters[i].breve = true;
+                    state.letters[i].breve = on;
                 } else {
-                    state.letters[i].horn = true;
+                    state.letters[i].horn = on;
                 }
+            };
+            for &i in &candidates {
+                set_mark(state, i, true);
+                if spell::is_live_prefix(state) {
+                    return;
+                }
+                set_mark(state, i, false);
+            }
+            if let Some(&i) = candidates.first() {
+                set_mark(state, i, true);
                 return;
             }
             // Chưa có nguyên âm → w là chữ Latin (switch, web). Nếu từ đã
@@ -266,6 +281,23 @@ mod tests {
         assert_eq!(t("uwowng"), "ương");
         assert_eq!(t("khoawn"), "khoăn");
         assert_eq!(t("quow"), "quơ"); // u sau q không nhận móc
+    }
+
+    #[test]
+    fn w_prefers_vowel_that_keeps_syllable_live() {
+        // Issue #8: "sua" + w từng móc chữ a gần nhất → "suă" (vần bất khả,
+        // khóa raw). Phải chọn nguyên âm cho ra vần còn sống: "sưa".
+        assert_eq!(t("suaw"), "sưa");
+        assert_eq!(t("muaw"), "mưa");
+        assert_eq!(t("suawr"), "sửa");
+        assert_eq!(t("suraw"), "sửa");
+        // Không hồi quy: khi ă hợp lệ vẫn ưu tiên nguyên âm gần cuối.
+        assert_eq!(t("hoaw"), "hoă");
+        assert_eq!(t("khoawn"), "khoăn");
+        assert_eq!(t("quaw"), "quă");
+        // Qua cả tầng spell (Chặt) — chuỗi trong issue.
+        assert_eq!(t_spell("suawr"), "sửa");
+        assert_eq!(t_spell("suraw"), "sửa");
     }
 
     #[test]
