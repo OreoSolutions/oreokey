@@ -354,6 +354,23 @@
                  type="application/octet-stream"
                  sparkle:edSignature="gZBmrdnZTfsFuSDMhR1DpAIZCY9sF7HfAGJSHnpR96EGBsi2Fr9Fy3H82USWp/wvkeq3IdGNhpw5J8tRWA98CQ==" length="5675963" />
     </item>
+    <item>
+      <title>0.7.5</title>
+      <pubDate>Wed, 23 Sep 2026 09:08:28 +0000</pubDate>
+      <sparkle:version>22</sparkle:version>
+      <sparkle:shortVersionString>0.7.5</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Gõ thanh trước, dấu mũ sau ở mức Thường/Thoải mái</strong> (hồi quy từ 0.7.1): các từ bắt đầu bằng <code>đ</code> như <code>điện</code>, <code>điều</code>, <code>điểm</code>, <code>đuổi</code>, <code>đều</code> bị kẹt khi gõ thanh sớm rồi mới gõ mũ (<code>ddijeen</code> → <code>địeen</code>, VNI <code>d9e2u6</code> → <code>đèu6</code>). Nguyên nhân: tính năng giữ âm tiết hoàn chỉnh (0.7.1) đóng băng <code>đị</code> ngay khi gõ thêm nguyên âm, dù vần <code>ie</code> vẫn còn hoàn thiện được thành <code>iê</code>. Nay chỉ đóng băng khi phần mới chắc chắn không thành âm tiết; các đuôi kéo dài <code>đôu</code>, <code>yêuu</code>, <code>đượcccc</code> giữ nguyên hành vi. Sweep toàn từ điển (8.581 âm tiết, Telex + VNI): 4.337 → 1.662 lỗi, không có lỗi mới.</li>
+<li><strong>Gõ <code>w</code> sau cụm <code>ua</code> (Telex)</strong>: <code>suaw</code> nay ra <code>sưa</code> thay vì <code>suă</code> — vần không tồn tại, từng khiến cả từ hiện nguyên phím gốc. Gõ <code>suawr</code> hay <code>suraw</code> đều ra <code>sửa</code>, không còn bắt buộc thứ tự <code>suwra</code> (issue #8). Khi kết quả hợp lệ, <code>w</code> vẫn ưu tiên nguyên âm gần cuối như trước (<code>khoawn</code> → <code>khoăn</code>).</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.7.5/OreoKey.dmg"
+                 sparkle:version="22"
+                 sparkle:shortVersionString="0.7.5"
+                 type="application/octet-stream"
+                 sparkle:edSignature="KH+ttn491HmTHyOwyFvdekflYSy6sQsiABQUCDZA9wIkaLH0JeEuwoBJ/z6TQZ2DBJ2V5yvsrr4fXbk4BVdbBg==" length="5676804" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>

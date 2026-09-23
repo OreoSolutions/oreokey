@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.5] - 2026-09-23
+
 ### Đã sửa
 - **Gõ thanh trước, dấu mũ sau ở mức Thường/Thoải mái** (hồi quy từ 0.7.1):
   các từ bắt đầu bằng `đ` như `điện`, `điều`, `điểm`, `đuổi`, `đều` bị kẹt
