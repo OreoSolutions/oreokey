@@ -344,7 +344,14 @@ impl Engine {
             self.raw_mode_text()
         } else {
             let (text, restored, state) = self.render_word(&self.raw);
-            if keep_completed_prefix && !spell::is_acceptable(&state, true) {
+            if keep_completed_prefix
+                && !spell::is_acceptable(&state, true)
+                // Chỉ đóng băng khi phần mới CHẾT hẳn. Tiền tố còn sống
+                // ("đị" + e chờ ê → "điện") phải đi tiếp đường thường, nếu
+                // không mọi từ "đ + thanh sớm + mũ muộn" đều kẹt (sweep
+                // 1.788 → 4.445 lỗi sau 451636a).
+                && !spell::is_live_prefix(&state)
+            {
                 // Ví dụ: "đô" + u → "đôu", "yêu" + u → "yêuu".
                 // Sau đó phần đuôi đi qua nguyên văn, nhưng vẫn giữ raw để
                 // Backspace về đúng trạng thái trước khi đóng băng.
@@ -712,6 +719,32 @@ mod tests {
         // Chặt giữ nguyên cơ chế hủy/khôi phục cũ.
         let mut e = engine_mode(SpellMode::Strict);
         assert_eq!(type_str(&mut e, "afaa"), "afaa");
+    }
+
+    #[test]
+    fn relaxed_modes_do_not_freeze_a_live_prefix() {
+        // Hồi quy từ 451636a (sweep: 1.788 → 4.445 lỗi): "đị" + e từng bị
+        // đóng băng thành "đị" + đuôi literal dù "ie" còn sống (chờ ê).
+        // Chỉ đóng băng khi phần mới CHẾT hẳn, không phải khi mới gõ dở.
+        for mode in [SpellMode::Standard, SpellMode::Loose] {
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "ddijeen"), "điện");
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "dijdeen"), "điện");
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "dduroio"), "đuổi");
+            let mut e = engine_mode(mode);
+            assert_eq!(type_str(&mut e, "cusuw"), "cứu");
+        }
+        let mut e = Engine::new(EngineConfig {
+            method: TypingMethod::Vni,
+            spell_mode: SpellMode::Standard,
+            modern_tone: false,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        });
+        assert_eq!(type_str(&mut e, "d9e2u6"), "đều");
     }
 
     #[test]
