@@ -118,6 +118,9 @@ staple**, ký EdDSA cho Sparkle, cập nhật `appcast.xml`, tạo GitHub Releas
 DMG, rồi push tag + appcast lên `main`. Trước khi phát hành, điền nội dung vào
 mục `[Chưa phát hành]` của `CHANGELOG.md`.
 
+Checklist đầy đủ (gate sweep từ điển, xử lý khi script chết giữa chừng, kiểm
+tra sau phát hành): [docs/releasing.md](docs/releasing.md).
+
 Yêu cầu: đang ở nhánh `main` và cây làm việc sạch; `gh` đã đăng nhập;
 `NOTARY_PROFILE` (mặc định `oreokey-notary`) đã tạo bằng
 `xcrun notarytool store-credentials`.

@@ -6,6 +6,21 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Gõ thanh trước, dấu mũ sau ở mức Thường/Thoải mái** (hồi quy từ 0.7.1):
+  các từ bắt đầu bằng `đ` như `điện`, `điều`, `điểm`, `đuổi`, `đều` bị kẹt
+  khi gõ thanh sớm rồi mới gõ mũ (`ddijeen` → `địeen`, VNI `d9e2u6` →
+  `đèu6`). Nguyên nhân: tính năng giữ âm tiết hoàn chỉnh (0.7.1) đóng băng
+  `đị` ngay khi gõ thêm nguyên âm, dù vần `ie` vẫn còn hoàn thiện được thành
+  `iê`. Nay chỉ đóng băng khi phần mới chắc chắn không thành âm tiết; các
+  đuôi kéo dài `đôu`, `yêuu`, `đượcccc` giữ nguyên hành vi. Sweep toàn từ
+  điển (8.581 âm tiết, Telex + VNI): 4.337 → 1.662 lỗi, không có lỗi mới.
+- **Gõ `w` sau cụm `ua` (Telex)**: `suaw` nay ra `sưa` thay vì `suă` — vần
+  không tồn tại, từng khiến cả từ hiện nguyên phím gốc. Gõ `suawr` hay
+  `suraw` đều ra `sửa`, không còn bắt buộc thứ tự `suwra` (issue #8). Khi
+  kết quả hợp lệ, `w` vẫn ưu tiên nguyên âm gần cuối như trước (`khoawn` →
+  `khoăn`).
+
 ## [0.7.4] - 2026-07-27
 
 ### Đã sửa
