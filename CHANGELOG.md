@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.6] - 2026-10-01
+
 ### Đã sửa
 - **Hủy móc/trăng sau phụ âm cuối (Telex)**: gõ `w` sau `lơn`, `lăn`, `tưn`
   nay gỡ dấu thành `lonw`, `lanw`, `tunw` như gõ `w` lặp ngay sau nguyên
