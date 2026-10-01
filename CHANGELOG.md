@@ -6,6 +6,13 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Hủy móc/trăng sau phụ âm cuối (Telex)**: gõ `w` sau `lơn`, `lăn`, `tưn`
+  nay gỡ dấu thành `lonw`, `lanw`, `tunw` như gõ `w` lặp ngay sau nguyên
+  âm. Trước đây chỉ chữ cuối cùng được xét nên móc/trăng đứng trước phụ âm
+  cuối không hủy được: `w` sinh ra `ư` thừa rồi cả từ bị giữ nguyên
+  (`lonww` → `lơnw`). Chiều áp dụng không đổi: `uwowng` vẫn ra `ương`.
+
 ## [0.7.5] - 2026-09-23
 
 ### Đã sửa
