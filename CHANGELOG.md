@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.7] - 2026-10-06
+
 ### Đã sửa
 - **Hủy móc khi `w` không còn chỗ áp (Telex)**: gõ `w` sau `hưa` nay gỡ móc
   thành `huaw`. Trước đây nguyên âm cuối (`a`) không mang dấu nên nhánh hủy

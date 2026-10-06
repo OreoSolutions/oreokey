@@ -387,6 +387,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="ymyrzx1lwMf43JdeHEvHe4WzHzYrk5/ldNpZOnYAsU88TNdIH+JUOPU9ypyyPZQr0Nnhmw4ImSYyj0QPjOj8DQ==" length="5676770" />
     </item>
+    <item>
+      <title>0.7.7</title>
+      <pubDate>Tue, 06 Oct 2026 08:32:13 +0000</pubDate>
+      <sparkle:version>24</sparkle:version>
+      <sparkle:shortVersionString>0.7.7</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Hủy móc khi <code>w</code> không còn chỗ áp (Telex)</strong>: gõ <code>w</code> sau <code>hưa</code> nay gỡ móc thành <code>huaw</code>. Trước đây nguyên âm cuối (<code>a</code>) không mang dấu nên nhánh hủy bỏ qua, <code>w</code> ép trăng lên <code>a</code> thành <code>hưă</code> bất hợp lệ và cả từ bị giữ nguyên (<code>hưaw</code>). Khi không ứng viên nào ra vần hợp lệ, <code>w</code> giờ hủy móc/trăng đang có thay vì ép dấu. Chiều áp dụng không đổi: <code>uwowng</code> vẫn ra <code>ương</code>.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.7.7/OreoKey.dmg"
+                 sparkle:version="24"
+                 sparkle:shortVersionString="0.7.7"
+                 type="application/octet-stream"
+                 sparkle:edSignature="9iNqThvH8Hw2kAox9YWzkdWQaTCM0ZlI5O/VBvj9N8ht98JxanNPR+Hynsw2kEnlhEVb00f/F+jYW+sN8xdTBA==" length="5677303" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
