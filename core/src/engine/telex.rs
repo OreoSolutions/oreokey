@@ -155,6 +155,20 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                 }
                 set_mark(state, i, false);
             }
+            // Không ứng viên nào ra tiền tố hợp lệ: nếu từ đang có móc/trăng
+            // ở nguyên âm khác ("hưa" + w) thì hủy dấu đó thay vì ép dấu bất
+            // hợp lệ lên nguyên âm cuối ("hưă" → spell đóng băng "hưaw").
+            if let Some(&k) = vidx
+                .iter()
+                .rev()
+                .find(|&&k| state.letters[k].horn || state.letters[k].breve)
+            {
+                state.letters[k].horn = false;
+                state.letters[k].breve = false;
+                state.dead.push('w');
+                state.letters.push(Letter::plain(c));
+                return;
+            }
             if let Some(&i) = candidates.first() {
                 set_mark(state, i, true);
                 return;
@@ -495,6 +509,18 @@ mod tests {
         // động (không dính nhầm nhánh "sạch đã chốt").
         assert_eq!(t_spell("asdf"), "asdf");
         assert_eq!(t_spell("dds"), "dds"); // đ + s vô lệ → bung raw như cũ
+    }
+
+    #[test]
+    fn w_cancels_horn_when_no_valid_apply_target() {
+        // "hưa" + w: nguyên âm cuối (a) không mang móc nên nhánh hủy bỏ qua,
+        // rồi nhánh áp ép trăng lên a → "hưă" bất hợp lệ → spell đóng băng
+        // thành "hưaw". Không áp được vào đâu thì phải hủy móc đang có.
+        assert_eq!(t_spell("huwaw"), "huaw");
+        assert_eq!(t_spell("huwaww"), "huaww"); // sau hủy, w là chữ thường
+        // Chiều áp dụng vẫn giữ: ưo + w → ươ.
+        assert_eq!(t_spell("uwowng"), "ương");
+        assert_eq!(t_spell("huwow"), "hươ");
     }
 
     #[test]
