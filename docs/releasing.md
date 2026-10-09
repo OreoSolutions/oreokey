@@ -29,6 +29,14 @@ khác nhau. Sort hai file rồi `comm -13 cũ mới` để lấy lỗi *mới* �
 trong đó phải được truy nguyên (từ điển noise / từ mượn / từ đa âm tiết là
 lành tính; từ phổ thông là hồi quy).
 
+Cờ chẩn đoán (ngoài gate — mốc trên chỉ áp cho lệnh mặc định: mức Thường,
+không Backspace): `--mode strict|standard|loose` đổi mức chính tả;
+`--backspace N` gõ xong, xóa N ký tự rồi gõ lại chúng (chỉ biến thể gõ thẳng
+đã đúng và có N ký tự cuối là chữ ASCII trơn; số bị bỏ qua ở
+`backspace_skipped`). Mỗi lỗi kèm `why`: `untracked` (engine mất dấu từ sau
+khi xóa — gõ tắt, phím dấu sau đó sẽ sai), `screen` (gõ lại ra sai chữ),
+`replace` (Replace không khớp màn hình). Trong `keys`, `<` là Backspace.
+
 Điền `CHANGELOG.md` mục `## [Chưa phát hành]`, theo Keep a Changelog
 (`### Đã thêm` / `### Đã đổi` / `### Đã sửa`). Viết cho người dùng: hiện
 tượng họ thấy → giờ ra sao → ví dụ phím gõ. `roll-changelog.py` sẽ cuốn

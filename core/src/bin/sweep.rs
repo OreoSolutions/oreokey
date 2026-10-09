@@ -16,8 +16,8 @@
 //! spell/raw_mode) và so kết quả cuối với âm tiết mục tiêu.
 
 use oreokey_core::engine::{
-    syllable, telex, vni, Engine, EngineConfig, KeyInput, Letter, SpellMode, Tone, TypingMethod,
-    WordState,
+    syllable, telex, vni, Action, Engine, EngineConfig, KeyInput, Letter, SpellMode, Tone,
+    TypingMethod, WordState,
 };
 use std::collections::{BTreeMap, HashSet};
 use std::fs::File;
@@ -44,6 +44,9 @@ struct Args {
     method: MethodSel,
     modern: bool,
     limit: Option<usize>,
+    mode: SpellMode,
+    /// > 0: gõ xong, xóa N ký tự rồi gõ lại — kiểm Backspace giữ dấu từ.
+    backspace: usize,
 }
 
 fn parse_args() -> Result<Args, String> {
@@ -52,6 +55,8 @@ fn parse_args() -> Result<Args, String> {
     let mut method = MethodSel::Both;
     let mut modern = false;
     let mut limit: Option<usize> = None;
+    let mut mode = SpellMode::Standard;
+    let mut backspace = 0;
 
     let mut it = std::env::args().skip(1);
     while let Some(arg) = it.next() {
@@ -73,6 +78,19 @@ fn parse_args() -> Result<Args, String> {
                 let v = it.next().ok_or("--limit cần một số")?;
                 limit = Some(v.parse::<usize>().map_err(|e| e.to_string())?);
             }
+            "--mode" => {
+                let v = it.next().ok_or("--mode cần strict|standard|loose")?;
+                mode = match v.as_str() {
+                    "strict" => SpellMode::Strict,
+                    "standard" => SpellMode::Standard,
+                    "loose" => SpellMode::Loose,
+                    other => return Err(format!("--mode không hợp lệ: {other}")),
+                };
+            }
+            "--backspace" => {
+                let v = it.next().ok_or("--backspace cần một số")?;
+                backspace = v.parse::<usize>().map_err(|e| e.to_string())?;
+            }
             other if !other.starts_with("--") => positional.push(other.to_string()),
             other => return Err(format!("cờ không rõ: {other}")),
         }
@@ -84,7 +102,7 @@ fn parse_args() -> Result<Args, String> {
         .ok_or("thiếu đường dẫn <syllables.txt>")?;
     let out_path = out_path.ok_or("thiếu --out <failures.jsonl>")?;
 
-    Ok(Args { dict_path, out_path, method, modern, limit })
+    Ok(Args { dict_path, out_path, method, modern, limit, mode, backspace })
 }
 
 // ---------------------------------------------------------------------
@@ -594,23 +612,83 @@ fn write_failure(
     keys: &str,
     got: &str,
     axes: &[&'static str],
+    why: Option<&str>,
 ) -> std::io::Result<()> {
     let axes_json = axes
         .iter()
         .map(|a| format!("\"{}\"", json_escape(a)))
         .collect::<Vec<_>>()
         .join(",");
+    let why_json = why.map(|w| format!(",\"why\":\"{w}\"")).unwrap_or_default();
     writeln!(
         w,
-        "{{\"word\":\"{}\",\"expected\":\"{}\",\"method\":\"{}\",\"style\":\"{}\",\"keys\":\"{}\",\"got\":\"{}\",\"axes\":[{}]}}",
+        "{{\"word\":\"{}\",\"expected\":\"{}\",\"method\":\"{}\",\"style\":\"{}\",\"keys\":\"{}\",\"got\":\"{}\",\"axes\":[{}]{}}}",
         json_escape(word),
         json_escape(expected),
         method,
         style,
         json_escape(keys),
         json_escape(got),
-        axes_json
+        axes_json,
+        why_json
     )
+}
+
+/// Gõ `keys` (`<` = Backspace) qua engine, cập nhật văn bản màn hình mô
+/// phỏng. `false` nếu một Replace không khớp đuôi màn hình (ngoài đời AX
+/// verify sẽ từ chối).
+fn simulate(engine: &mut Engine, screen: &mut String, keys: &str) -> bool {
+    for c in keys.chars() {
+        let key = if c == '<' { KeyInput::Backspace } else { KeyInput::Char(c) };
+        match engine.on_key(key) {
+            Action::PassThrough if c == '<' => {
+                screen.pop();
+            }
+            Action::PassThrough => screen.push(c),
+            Action::Replace { old, text } => {
+                let Some(rest) = screen.strip_suffix(old.as_str()) else {
+                    return false;
+                };
+                *screen = rest.to_string() + &text;
+            }
+        }
+    }
+    true
+}
+
+/// Chế độ `--backspace N`: gõ `keys`, xóa N ký tự, gõ lại N ký tự đó. Chỉ
+/// chạy khi N ký tự cuối là chữ ASCII trơn (gõ lại không cần phím dấu) và
+/// gõ thẳng đã ra đúng (lỗi gõ thẳng thuộc về sweep mặc định).
+/// Trả `None` nếu bỏ qua, ngược lại (chuỗi phím đã gõ, màn hình, lỗi).
+fn backspace_run(
+    engine: &mut Engine,
+    keys: &str,
+    expected: &str,
+    n: usize,
+) -> Option<(String, String, Option<&'static str>)> {
+    let len = expected.chars().count();
+    let tail: String = expected.chars().skip(len.saturating_sub(n)).collect();
+    if len <= n || !tail.chars().all(|c| c.is_ascii_alphabetic()) {
+        return None;
+    }
+    let mut screen = String::new();
+    if !simulate(engine, &mut screen, keys) || screen != expected {
+        return None;
+    }
+    let typed = format!("{keys}{}", "<".repeat(n));
+    let why = if !simulate(engine, &mut screen, &typed[keys.len()..]) {
+        Some("replace")
+    } else if engine.current_word() != screen {
+        // Engine mất dấu từ đang hiển thị: gõ tắt / phím dấu sau đó sai.
+        Some("untracked")
+    } else if !simulate(engine, &mut screen, &tail) {
+        Some("replace")
+    } else if screen != expected {
+        Some("screen")
+    } else {
+        None
+    };
+    Some((typed + &tail, screen, why))
 }
 
 fn run() -> Result<(), String> {
@@ -635,7 +713,7 @@ fn run() -> Result<(), String> {
                 m,
                 Engine::new(EngineConfig {
                     method: m,
-                    spell_mode: SpellMode::Standard,
+                    spell_mode: args.mode,
                     modern_tone: args.modern,
                     macros_enabled: false,
                     flexible_marks: true,
@@ -651,6 +729,7 @@ fn run() -> Result<(), String> {
     let mut total_failures: usize = 0;
     let mut by_axis: BTreeMap<String, usize> = BTreeMap::new();
     let mut cap_hits: usize = 0;
+    let mut bs_skipped: usize = 0;
 
     'lines: for line in reader.lines() {
         let line = line.map_err(|e| e.to_string())?;
@@ -702,16 +781,28 @@ fn run() -> Result<(), String> {
 
                 for (keys, axes) in &variants {
                     engine.reset();
-                    for c in keys.chars() {
-                        engine.on_key(KeyInput::Char(c));
-                    }
-                    let got = engine.current_word();
-                    if got != expected {
+                    let (typed, got, why) = if args.backspace == 0 {
+                        for c in keys.chars() {
+                            engine.on_key(KeyInput::Char(c));
+                        }
+                        let got = engine.current_word().to_string();
+                        let fail = got != expected;
+                        (keys.clone(), got, fail.then_some("screen"))
+                    } else {
+                        let Some(run) = backspace_run(engine, keys, &expected, args.backspace) else {
+                            bs_skipped += 1;
+                            continue;
+                        };
+                        run
+                    };
+                    if let Some(why) = why {
                         total_failures += 1;
                         for &axis in axes {
                             *by_axis.entry(axis.to_string()).or_insert(0) += 1;
                         }
-                        write_failure(&mut out, token, &expected, method_name, style, keys, got, axes)
+                        // Mặc định giữ nguyên định dạng cũ để so tập lỗi với mốc.
+                        let why = (args.backspace > 0).then_some(why);
+                        write_failure(&mut out, token, &expected, method_name, style, &typed, &got, axes, why)
                             .map_err(|e| e.to_string())?;
                     }
                 }
@@ -730,9 +821,14 @@ fn run() -> Result<(), String> {
         .map(|(k, v)| format!("\"{}\":{}", json_escape(k), v))
         .collect::<Vec<_>>()
         .join(",");
+    let skipped_json = if args.backspace > 0 {
+        format!(",\"backspace_skipped\":{bs_skipped}")
+    } else {
+        String::new()
+    };
     println!(
-        "{{\"words\":{},\"variants\":{},\"failures\":{},\"by_axis\":{{{}}}}}",
-        words_tested, total_variants, total_failures, by_axis_json
+        "{{\"words\":{},\"variants\":{},\"failures\":{},\"by_axis\":{{{}}}{}}}",
+        words_tested, total_variants, total_failures, by_axis_json, skipped_json
     );
 
     Ok(())
@@ -744,7 +840,7 @@ fn main() -> ExitCode {
         Err(e) => {
             eprintln!("lỗi: {e}");
             eprintln!(
-                "cách dùng: sweep <syllables.txt> --out <failures.jsonl> [--method telex|vni|both] [--modern] [--limit N]"
+                "cách dùng: sweep <syllables.txt> --out <failures.jsonl> [--method telex|vni|both] [--modern] [--limit N] [--mode strict|standard|loose] [--backspace N]"
             );
             ExitCode::FAILURE
         }
