@@ -62,6 +62,9 @@ pub extern "C" fn ok_settings_json_get() -> *mut c_char {
 }
 
 /// Nhận JSON settings từ Swift: áp vào runtime + ghi đĩa.
+///
+/// # Safety
+/// `json` must be NULL or a valid NUL-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn ok_settings_json_set(json: *const c_char) -> bool {
     let Some(json) = from_c_str(json) else {
@@ -96,6 +99,9 @@ pub extern "C" fn ok_set_status_callback(cb: StatusCallback) {
 }
 
 /// Swift báo app đang focus đổi (NSWorkspace notification).
+///
+/// # Safety
+/// `bundle_id` must be NULL or a valid NUL-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn ok_notify_frontmost_app(bundle_id: *const c_char) {
     let bundle = from_c_str(bundle_id).unwrap_or("").to_string();
@@ -103,6 +109,9 @@ pub unsafe extern "C" fn ok_notify_frontmost_app(bundle_id: *const c_char) {
 }
 
 /// Chuyển mã văn bản. from/to: 0 = Unicode, 1 = VNI-Windows, 2 = TCVN3.
+///
+/// # Safety
+/// `text` must be NULL or a valid NUL-terminated C string.
 #[no_mangle]
 pub unsafe extern "C" fn ok_convert(text: *const c_char, from: i32, to: i32) -> *mut c_char {
     let Some(text) = from_c_str(text) else {
@@ -116,6 +125,10 @@ pub unsafe extern "C" fn ok_convert(text: *const c_char, from: i32, to: i32) -> 
     to_c_string(encoding::convert(text, enc(from), enc(to)))
 }
 
+/// Free a string returned by this library.
+///
+/// # Safety
+/// `p` must be NULL or a pointer previously returned by this library and not yet freed.
 #[no_mangle]
 pub unsafe extern "C" fn ok_str_free(p: *mut c_char) {
     if !p.is_null() {

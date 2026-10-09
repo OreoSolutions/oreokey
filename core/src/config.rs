@@ -197,7 +197,7 @@ pub fn save(settings: &Settings) -> io::Result<()> {
     fs::create_dir_all(&dir)?;
     let tmp = dir.join("settings.json.tmp");
     let json = serde_json::to_string_pretty(settings)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .map_err(|e| io::Error::other(e))?;
     // fsync before rename so a crash cannot leave an empty settings.json.
     let mut f = fs::File::create(&tmp)?;
     io::Write::write_all(&mut f, json.as_bytes())?;

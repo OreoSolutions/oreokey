@@ -38,6 +38,12 @@ pub struct Runtime {
 
 pub static RUNTIME: Mutex<Option<Runtime>> = Mutex::new(None);
 
+impl Default for Runtime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Runtime {
     pub fn new() -> Runtime {
         let settings = config::load();
