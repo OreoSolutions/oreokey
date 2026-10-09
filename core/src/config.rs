@@ -223,6 +223,14 @@ pub fn save(settings: &Settings) -> io::Result<()> {
     // fsync before rename so a crash cannot leave an empty settings.json.
     let mut f = fs::File::create(&tmp)?;
     io::Write::write_all(&mut f, json.as_bytes())?;
+    // sync_all() is F_FULLFSYNC on macOS (milliseconds to tens of ms), and
+    // hotkey toggles save from the event-tap callback. Plain fsync orders
+    // the data before the rename, which is what this needs.
+    #[cfg(target_os = "macos")]
+    if unsafe { libc::fsync(std::os::fd::AsRawFd::as_raw_fd(&f)) } != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    #[cfg(not(target_os = "macos"))]
     f.sync_all()?;
     drop(f);
     fs::rename(&tmp, settings_path())?;

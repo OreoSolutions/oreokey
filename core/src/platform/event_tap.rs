@@ -194,6 +194,9 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
             // Holding the hotkey must not toggle (and write to disk) per repeat.
             if !autorepeat {
                 rt.toggle();
+                // Like any swallowed key: if this callback was slow (toggle
+                // writes to disk), a re-delivered copy must not toggle back.
+                rt.ghost.record_drop(keycode, ev_ts);
             }
             return CallbackKeep::Drop;
         }
