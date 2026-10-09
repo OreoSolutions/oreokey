@@ -36,6 +36,9 @@ không Backspace): `--mode strict|standard|loose` đổi mức chính tả;
 `backspace_skipped`). Mỗi lỗi kèm `why`: `untracked` (engine mất dấu từ sau
 khi xóa — gõ tắt, phím dấu sau đó sẽ sai), `screen` (gõ lại ra sai chữ),
 `replace` (Replace không khớp màn hình). Trong `keys`, `<` là Backspace.
+Mốc tham khảo `--backspace 1`, từ điển đầy đủ, mức Thường: 1.396 lỗi kiểu
+cũ / 172 kiểu mới, đều là `untracked` trên nửa từ không dựng lại được (kiểu
+cũ "toá", "đoá"; từ mượn oo như "boó").
 
 Điền `CHANGELOG.md` mục `## [Chưa phát hành]`, theo Keep a Changelog
 (`### Đã thêm` / `### Đã đổi` / `### Đã sửa`). Viết cho người dùng: hiện
