@@ -32,12 +32,28 @@ extern "C" {
         attribute: CFStringRef,
         value: CFTypeRef,
     ) -> AXError;
+    fn AXUIElementSetMessagingTimeout(element: AXUIElementRef, timeout: f32) -> AXError;
     fn AXValueCreate(value_type: u32, value_ptr: *const c_void) -> CFTypeRef;
     fn AXValueGetValue(value: CFTypeRef, value_type: u32, out: *mut c_void) -> u8;
     fn AXUIElementGetPid(element: AXUIElementRef, pid: *mut i32) -> AXError;
     pub fn AXIsProcessTrusted() -> u8;
     // libproc (libSystem)
     fn proc_name(pid: i32, buffer: *mut c_void, buffersize: u32) -> i32;
+}
+
+/// Per-call AX timeout in seconds. The default is ~6s; a hung target app would
+/// then block the event-tap callback (RUNTIME lock held) long enough for
+/// macOS to disable the tap. 0.3s is far above a healthy AX round-trip.
+const AX_TIMEOUT_SECS: f32 = 0.3;
+
+/// Create the system-wide element with the messaging timeout applied (the
+/// system-wide timeout is the global default for all AX calls in the process).
+unsafe fn create_system_wide() -> AXUIElementRef {
+    let sw = AXUIElementCreateSystemWide();
+    if !sw.is_null() {
+        AXUIElementSetMessagingTimeout(sw, AX_TIMEOUT_SECS);
+    }
+    sw
 }
 
 fn attr(name: &'static str) -> CFString {
@@ -63,7 +79,7 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
     let old_len = old.encode_utf16().count() as isize;
 
     unsafe {
-        let system_wide = AXUIElementCreateSystemWide();
+        let system_wide = create_system_wide();
         if system_wide.is_null() {
             return Err(AxFail::Unsupported);
         }
@@ -315,7 +331,7 @@ pub fn focused_info() -> FocusedInfo {
         selection_len: None,
     };
     unsafe {
-        let system_wide = AXUIElementCreateSystemWide();
+        let system_wide = create_system_wide();
         if system_wide.is_null() {
             return info;
         }
@@ -334,7 +350,12 @@ pub fn focused_info() -> FocusedInfo {
         let element = focused_guard.as_CFTypeRef() as AXUIElementRef;
 
         let mut pid: i32 = 0;
-        if AXUIElementGetPid(element, &mut pid) == AX_SUCCESS && pid > 0 {
+        // Own window (Settings): AX calls back into this process from the
+        // tap thread; see the same guard in replace_tail.
+        if AXUIElementGetPid(element, &mut pid) == AX_SUCCESS && pid == libc::getpid() {
+            return info;
+        }
+        if pid > 0 {
             let mut buf = [0u8; 128];
             let n = proc_name(pid, buf.as_mut_ptr() as *mut c_void, buf.len() as u32);
             if n > 0 {
