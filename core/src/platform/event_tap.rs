@@ -249,7 +249,16 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                 // focus (Spotlight và panel nổi không đổi app frontmost)
                 // + vùng chọn. Callback phải nhanh — chậm là WindowServer
                 // giao lại event, phím nhân đôi.
-                let finfo = super::ax::focused_info();
+                // Insert-only (old empty) never uses AX nor the selection:
+                // skip the round-trip and resolve the profile by bundle.
+                let finfo = if old.is_empty() {
+                    super::ax::FocusedInfo {
+                        proc_name: None,
+                        selection_len: None,
+                    }
+                } else {
+                    super::ax::focused_info()
+                };
                 let profile = rt.profiles.resolve(
                     &rt.current_bundle,
                     &rt.settings.per_app_mode,
@@ -262,7 +271,7 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     &text,
                     &profile,
                     &bundle,
-                    &mut rt.ax_ok,
+                    &mut rt.ax_failed,
                     finfo.selection_len,
                 );
                 if !applied {

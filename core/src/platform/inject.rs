@@ -3,7 +3,7 @@
 //! key injection với diff tối thiểu, gộp chuỗi vào ít event nhất.
 
 use std::collections::HashMap;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapProxy, EventField};
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
@@ -14,6 +14,9 @@ use crate::config::FixMode;
 
 /// Đánh dấu event do OreoKey bơm ra để tap bỏ qua ("OREO").
 pub const MAGIC: i64 = 0x4F52_454F;
+
+/// How long an app stays marked "AX unsupported" before AX is tried again.
+pub const AX_RETRY: Duration = Duration::from_secs(60);
 
 const KEY_BACKSPACE: u16 = 51;
 const KEY_SPACE: u16 = 49;
@@ -28,7 +31,7 @@ pub fn apply(
     text: &str,
     profile: &ResolvedProfile,
     bundle: &str,
-    ax_ok: &mut HashMap<String, bool>,
+    ax_failed: &mut HashMap<String, Instant>,
     selection_len: Option<isize>,
 ) -> bool {
     let backspaces = old.chars().count();
@@ -48,11 +51,14 @@ pub fn apply(
     match profile.mode {
         FixMode::Auto => {
             // AX trước nếu app này chưa từng fail hẳn.
-            if ax_worth_it && *ax_ok.get(bundle).unwrap_or(&true) {
+            let ax_blocked = ax_failed
+                .get(bundle)
+                .is_some_and(|t| t.elapsed() < AX_RETRY);
+            if ax_worth_it && !ax_blocked {
                 match ax::replace_tail(old, text) {
                     Ok(()) => {
                         super::dlog("  -> AX ok");
-                        ax_ok.insert(bundle.to_string(), true);
+                        ax_failed.remove(bundle);
                         return true;
                     }
                     // Mismatch = văn bản trước caret chưa ổn định (ký tự
@@ -63,7 +69,7 @@ pub fn apply(
                     }
                     Err(ax::AxFail::Unsupported) => {
                         super::dlog("  -> AX unsupported, cache fail + inject");
-                        ax_ok.insert(bundle.to_string(), false);
+                        ax_failed.insert(bundle.to_string(), Instant::now());
                     }
                 }
             } else {

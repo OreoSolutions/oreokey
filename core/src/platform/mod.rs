@@ -27,8 +27,9 @@ pub struct Runtime {
     pub per_app_enabled: HashMap<String, bool>,
     pub current_bundle: String,
     pub profiles: profiles::Profiles,
-    /// Cache khả năng sửa chữ qua AX API theo bundle ID.
-    pub ax_ok: HashMap<String, bool>,
+    /// Bundle ID → lúc AX bị coi là không dùng được. Hết hạn sau
+    /// [`inject::AX_RETRY`] để một lỗi AX thoáng qua không tắt AX cả phiên.
+    pub ax_failed: HashMap<String, std::time::Instant>,
     pub status_cb: StatusCallback,
     /// Lọc phím bóng ma (bản sao keydown do WindowServer giao lại khi
     /// callback chậm vì Replace). Xem [`ghost`].
@@ -48,7 +49,7 @@ impl Runtime {
             per_app_enabled: HashMap::new(),
             current_bundle: String::new(),
             profiles: profiles::Profiles::load_default(),
-            ax_ok: HashMap::new(),
+            ax_failed: HashMap::new(),
             status_cb: None,
             ghost: ghost::GhostGuard::new(ghost::window_ticks()),
         };
@@ -142,8 +143,9 @@ pub fn debug_enabled() -> bool {
     *ENABLED.get_or_init(|| std::env::var("OREOKEY_DEBUG").is_ok())
 }
 
-/// Log chẩn đoán, bật bằng OREOKEY_DEBUG=1. Nội dung phím và văn bản người
-/// dùng không bao giờ được ghi vào log.
+/// Log chẩn đoán, bật bằng OREOKEY_DEBUG=1. Log ghi keycode, cờ autorepeat
+/// và timestamp của từng phím nhưng KHÔNG ghi ký tự/văn bản gõ; chỉ bật
+/// khi chẩn đoán và không bao giờ khi Secure Input đang bật.
 pub fn dlog(msg: &str) {
     use std::io::Write;
     use std::sync::{Mutex, OnceLock};
