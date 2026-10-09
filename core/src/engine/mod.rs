@@ -217,6 +217,11 @@ pub struct Engine {
     /// phần đuôi mới làm nó thành cụm bất khả. `raw` vẫn giữ phím thật để
     /// Backspace có thể quay lại engine bình thường ngay khi xóa hết đuôi.
     frozen_prefix: Option<FrozenPrefix>,
+    /// Sau Backspace, chữ trên màn hình (`last_render`) không dựng lại được
+    /// từ chuỗi phím nào ("toá" kiểu cũ đặt thanh là "tóa"); `raw` chỉ là
+    /// trạng thái gần nhất. Chữ gõ thêm đi qua nguyên văn, không gõ tắt /
+    /// che từ, tới khi xóa về chỗ khớp lại hoặc ngắt từ.
+    untracked: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -234,6 +239,7 @@ impl Engine {
             last_render: String::new(),
             raw_mode: false,
             frozen_prefix: None,
+            untracked: false,
         }
     }
 
@@ -256,11 +262,17 @@ impl Engine {
         self.last_render.clear();
         self.raw_mode = false;
         self.frozen_prefix = None;
+        self.untracked = false;
     }
 
-    /// Từ đang gõ như đang hiển thị (phục vụ test/debug).
+    /// Từ đang gõ như đang hiển thị (phục vụ test/debug); rỗng khi engine
+    /// đã mất dấu từ trên màn hình.
     pub fn current_word(&self) -> &str {
-        &self.last_render
+        if self.untracked {
+            ""
+        } else {
+            &self.last_render
+        }
     }
 
     pub fn on_key(&mut self, k: KeyInput) -> Action {
@@ -271,7 +283,7 @@ impl Engine {
                 let action = match ch {
                     // Chỉ biến đổi khi chốt từ bằng một ký tự thật (space,
                     // dấu câu, Enter) — không phải di chuyển con trỏ.
-                    Some(break_ch) if !self.last_render.is_empty() => {
+                    Some(break_ch) if !self.last_render.is_empty() && !self.untracked => {
                         // Gõ tắt trước, che từ tục sau.
                         let replacement = self
                             .cfg
@@ -304,6 +316,14 @@ impl Engine {
     }
 
     fn on_char(&mut self, c: char) -> Action {
+        if self.untracked && !self.raw_mode {
+            // Từ mất dấu: giữ nguyên chữ trên màn hình, phần gõ thêm literal.
+            self.raw_mode = true;
+            self.frozen_prefix = Some(FrozenPrefix {
+                render: self.last_render.clone(),
+                raw_len: self.raw.chars().count(),
+            });
+        }
         // Chặt giữ nguyên cơ chế cũ. Ở hai mức dưới, chỉ bảo toàn khi phần
         // trước đã là một âm tiết có biến đổi hợp lệ; nhờ vậy từ tiếng Anh
         // thuần không vô tình được "đóng băng".
@@ -413,13 +433,14 @@ impl Engine {
     }
 
     fn on_backspace(&mut self) -> Action {
-        if self.raw.is_empty() {
+        if self.last_render.is_empty() {
             return Action::PassThrough;
         }
         // App sẽ tự xóa 1 ký tự hiển thị; đồng bộ lại raw cho khớp.
         let mut target: Vec<char> = self.last_render.chars().collect();
         target.pop();
         let target: String = target.into_iter().collect();
+        let state = (!self.raw_mode).then(|| self.build_state(&self.raw));
         while !self.raw.is_empty() {
             self.raw.pop();
             let rendered = if self.raw_mode {
@@ -447,13 +468,70 @@ impl Engine {
                             self.raw_mode = false;
                         }
                     }
+                } else {
+                    self.untracked = false;
                 }
                 return Action::PassThrough;
             }
         }
-        // Không khớp được (không nên xảy ra) — bỏ theo dõi từ này.
+        // Không tiền tố phím nào khớp — thanh/dấu gõ sau chữ cuối ("vieetj"
+        // xóa t còn "việ"), hoặc "uơ" đã nâng thành ươ ("thuowc" xóa c còn
+        // "thươ"). Bỏ chữ cuối khỏi trạng thái rồi sinh lại chuỗi phím chuẩn;
+        // chữ bị xóa có thể mang thanh nên thử cả bỏ thanh. Chỉ nhận khi
+        // render khớp màn hình từng ký tự.
+        // ponytail: chuỗi chuẩn mất lịch sử phím đã hủy (`dead`), phím gõ sau
+        // có thể hành xử khác chuỗi gõ tay; màn hình vẫn đúng.
+        let mut seed = String::new();
+        if let Some(mut state) = state {
+            state.letters.pop();
+            seed = self.canonical_keys(&state);
+            state.tone = None;
+            for keys in [seed.clone(), self.canonical_keys(&state)] {
+                let (text, restored, _) = self.render_word(&keys);
+                if !restored && text == target {
+                    self.reset();
+                    self.raw = keys;
+                    self.last_render = target;
+                    return Action::PassThrough;
+                }
+            }
+        }
         self.reset();
+        if !target.is_empty() {
+            self.raw = seed;
+            self.last_render = target;
+            self.untracked = true;
+        }
         Action::PassThrough
+    }
+
+    /// Chuỗi phím chuẩn gõ ra `state`: mỗi chữ kèm phím dấu ngay sau nó,
+    /// thanh ở cuối. Không phải trạng thái nào cũng tái tạo được ("xoon" —
+    /// oo literal) nên caller phải kiểm lại bằng render.
+    fn canonical_keys(&self, state: &WordState) -> String {
+        let telex = self.cfg.method == TypingMethod::Telex;
+        let mut keys = String::new();
+        for l in &state.letters {
+            keys.push(if l.upper { l.base.to_ascii_uppercase() } else { l.base });
+            if l.stroke {
+                keys.push(if telex { 'd' } else { '9' });
+            }
+            if l.circ {
+                keys.push(if telex { l.base } else { '6' });
+            }
+            if l.horn {
+                keys.push(if telex { 'w' } else { '7' });
+            }
+            if l.breve {
+                keys.push(if telex { 'w' } else { '8' });
+            }
+        }
+        if let Some(tone) = state.tone {
+            // Thứ tự khai báo `Tone`: sắc huyền hỏi ngã nặng.
+            let i = tone as usize;
+            keys.push(if telex { b"sfrxj"[i] } else { b"12345"[i] } as char);
+        }
+        keys
     }
 
     /// Dựng lại `WordState` từ chuỗi phím gốc theo bộ gõ đang chọn.
@@ -642,6 +720,101 @@ mod tests {
         let screen = type_str(&mut e, "vieet\u{8}\u{8}");
         assert_eq!(screen, "vi");
         assert_eq!(e.current_word(), "vi");
+    }
+
+    fn engine_with(method: TypingMethod, mode: SpellMode, modern: bool) -> Engine {
+        Engine::new(EngineConfig {
+            method,
+            spell_mode: mode,
+            modern_tone: modern,
+            macros_enabled: false,
+            flexible_marks: true,
+            censor_enabled: false,
+        })
+    }
+
+    const MODES: [SpellMode; 3] = [SpellMode::Strict, SpellMode::Standard, SpellMode::Loose];
+
+    /// Gõ `keys` rồi kiểm cả màn hình lẫn từ engine đang theo dõi.
+    fn assert_tracked(method: TypingMethod, mode: SpellMode, modern: bool, keys: &str, want: &str) {
+        let mut e = engine_with(method, mode, modern);
+        let screen = type_str(&mut e, keys);
+        let shown = keys.replace('\u{8}', "<");
+        assert_eq!(screen, want, "{method:?} {mode:?} modern={modern} {shown}");
+        assert_eq!(e.current_word(), want, "engine mất dấu: {method:?} {mode:?} {shown}");
+    }
+
+    #[test]
+    fn backspace_after_late_mark_keeps_tracking_the_word() {
+        // Thanh/mũ gõ sau chữ cuối: không tiền tố phím nào ra "việ" nên engine
+        // từng bỏ từ — phím thanh sau đó thành chữ thường ("việs").
+        for mode in MODES {
+            assert_tracked(TypingMethod::Telex, mode, false, "vieetj\u{8}", "việ");
+            assert_tracked(TypingMethod::Telex, mode, false, "vieetj\u{8}s", "viế");
+            assert_tracked(TypingMethod::Telex, mode, false, "vieetj\u{8}t", "việt");
+            assert_tracked(TypingMethod::Vni, mode, false, "viet65\u{8}1", "viế");
+            assert_tracked(TypingMethod::Telex, mode, true, "toans\u{8}f", "toà");
+            assert_tracked(TypingMethod::Vni, mode, true, "toan1\u{8}2", "toà");
+            // Gạch muộn + thanh: xóa nguyên âm mang thanh thì bỏ cả thanh.
+            assert_tracked(TypingMethod::Telex, mode, false, "dasd\u{8}", "đ");
+        }
+    }
+
+    #[test]
+    fn backspace_undoes_open_uo_upgrade() {
+        // Hồi quy 9a5b8b1: "uơ" + chữ nâng thành ươ; xóa chữ đó không còn
+        // tiền tố phím nào ra "thươ", engine bỏ từ → "thươcs".
+        for mode in MODES {
+            assert_tracked(TypingMethod::Telex, mode, false, "thuowng\u{8}\u{8}cs", "thước");
+            assert_tracked(TypingMethod::Telex, mode, false, "thuowc\u{8}cs", "thước");
+            assert_tracked(TypingMethod::Vni, mode, false, "thuo7ng\u{8}\u{8}c1", "thước");
+            assert_tracked(TypingMethod::Telex, mode, false, "huowu\u{8}", "hươ");
+            assert_tracked(TypingMethod::Telex, mode, false, "huowu\u{8}u", "hươu");
+        }
+    }
+
+    #[test]
+    fn unrepresentable_partial_word_is_left_alone() {
+        // Kiểu cũ đặt thanh "toa" + sắc là "tóa" — "toá" (xóa n khỏi "toán")
+        // không dựng lại được. Engine không đoán: để nguyên từ, không gõ tắt
+        // / che từ trên nửa từ đó.
+        for mode in MODES {
+            for (method, keys) in [(TypingMethod::Telex, "toans\u{8}"), (TypingMethod::Vni, "toan1\u{8}")] {
+                let mut e = Engine::new(EngineConfig {
+                    method,
+                    spell_mode: mode,
+                    modern_tone: false,
+                    macros_enabled: true,
+                    flexible_marks: true,
+                    censor_enabled: true,
+                });
+                e.set_macros(macros::MacroTable::new([("vn".to_string(), "Việt Nam".to_string())]));
+                assert_eq!(type_str(&mut e, &format!("{keys}vn")), "toávn");
+                assert_eq!(e.on_key(KeyInput::WordBreak(Some(' '))), Action::PassThrough);
+                assert_eq!(type_str(&mut e, &format!("{keys}vcl")), "toávcl");
+                assert_eq!(e.on_key(KeyInput::WordBreak(Some(' '))), Action::PassThrough);
+                // Từ sau dấu cách được theo dõi lại bình thường.
+                assert_eq!(type_str(&mut e, "vn"), "vn");
+                assert_eq!(
+                    e.on_key(KeyInput::WordBreak(Some(' '))),
+                    Action::Replace { old: "vn".into(), text: "Việt Nam ".into() }
+                );
+            }
+            let mut e = engine_with(TypingMethod::Telex, mode, false);
+            assert_eq!(type_str(&mut e, "toans\u{8}f"), "toáf");
+        }
+    }
+
+    #[test]
+    fn untracked_word_recovers_when_deleted_further() {
+        // Không được tệ hơn reset() cũ: xóa hết rồi gõ lại, hoặc xóa tới phần
+        // dựng lại được, thì engine theo dõi lại từ.
+        for mode in MODES {
+            assert_tracked(TypingMethod::Telex, mode, false, "toans\u{8}\u{8}\u{8}\u{8}vieetj", "việt");
+            assert_tracked(TypingMethod::Telex, mode, false, "hoanf\u{8}\u{8}anf", "hoàn");
+            assert_tracked(TypingMethod::Telex, mode, false, "toans\u{8}n\u{8}\u{8}ans", "toán");
+            assert_tracked(TypingMethod::Vni, mode, false, "hoan2\u{8}\u{8}an2", "hoàn");
+        }
     }
 
     #[test]
