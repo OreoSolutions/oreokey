@@ -422,11 +422,10 @@ pub fn focused_info(deadline: Instant) -> FocusedInfo {
         let element = focused_guard.as_CFTypeRef() as AXUIElementRef;
 
         let mut pid: i32 = 0;
-        // Own window (Settings): AX calls back into this process from the
-        // tap thread; see the same guard in replace_tail.
-        if AXUIElementGetPid(element, &mut pid) == AX_SUCCESS && pid == libc::getpid() {
-            return info;
+        if AXUIElementGetPid(element, &mut pid) != AX_SUCCESS {
+            pid = 0;
         }
+        // libproc, not AX: safe for our own pid, so `proc:OreoKey` resolves.
         if pid > 0 {
             let mut buf = [0u8; 128];
             let n = proc_name(pid, buf.as_mut_ptr() as *mut c_void, buf.len() as u32);
@@ -436,8 +435,9 @@ pub fn focused_info(deadline: Instant) -> FocusedInfo {
                     .map(String::from);
             }
         }
-
-        if Instant::now() >= deadline {
+        // Own window (Settings): AX calls back into this process from the
+        // tap thread; see the same guard in replace_tail.
+        if pid == libc::getpid() || Instant::now() >= deadline {
             return info;
         }
         let mut range_value: CFTypeRef = std::ptr::null();

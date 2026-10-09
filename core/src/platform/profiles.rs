@@ -183,6 +183,9 @@ mod tests {
         let r = p.resolve("com.mitchellh.ghostty", &none, Some("Spotlight"));
         assert!(r.select_replace); // ghost text nuốt backspace → phải gõ đè
         assert_eq!(r.mode, FixMode::InjectFast);
+        // Own Settings window: AX would call back into this process.
+        let r = p.resolve("com.oreosolutions.oreokey", &none, Some("OreoKey"));
+        assert_eq!(r.mode, FixMode::InjectFast);
         // Process lạ → rơi về bundle như cũ.
         let r = p.resolve("com.mitchellh.ghostty", &none, Some("ghostty"));
         assert!(!r.browser_fix);
