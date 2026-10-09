@@ -315,23 +315,11 @@ impl Engine {
             self.raw.pop();
         }
         let raw_len_before = self.raw.chars().count();
-        let keep_completed_prefix = !self.raw_mode && self.cfg.spell_mode != SpellMode::Strict && {
-            let previous = previous.as_ref().expect("state exists outside raw mode");
-            // Phím a/e/o lặp lại vẫn phải được quyền hủy dấu mũ Telex, kể
-            // cả khi trạng thái trước đó tình cờ là một âm tiết hợp lệ.
-            // Ví dụ `data` đang render thành `dâta`; phím a tiếp theo phải
-            // hủy mũ thành `dataa`, không được biến thành đuôi literal của
-            // frozen-prefix. `yêu` + u không phải thao tác hủy nên vẫn giữ.
-            let cancels_circumflex = self.cfg.spell_mode == SpellMode::Standard
-                && self.cfg.method == TypingMethod::Telex
-                && matches!(c.to_ascii_lowercase(), 'a' | 'e' | 'o')
-                && previous.letters.iter().any(|letter| {
-                    letter.base == c.to_ascii_lowercase() && letter.circ
-                });
-            !cancels_circumflex
-                && spell::is_transformed(&previous)
-                && spell::is_acceptable(&previous, false)
-        };
+        let keep_completed_prefix = !self.raw_mode
+            && self.cfg.spell_mode != SpellMode::Strict
+            && previous.as_ref().is_some_and(|previous| {
+                spell::is_transformed(previous) && spell::is_acceptable(previous, false)
+            });
         self.raw.push(c);
         let new_render = if self.raw_mode {
             self.raw_mode_text()
@@ -351,6 +339,12 @@ impl Engine {
                 // không mọi từ "đ + thanh sớm + mũ muộn" đều kẹt (sweep
                 // 1.788 → 4.445 lỗi sau 451636a).
                 && !spell::is_live_prefix(&state)
+                // Phím vừa gõ HỦY một dấu (gõ lặp: á+1, â+6, đ+d, dât+a) là
+                // thao tác sửa chứ không phải đuôi literal — đi đường thường
+                // để ra đúng kết quả hủy như Chặt ("a1", không phải "á1").
+                && previous
+                    .as_ref()
+                    .is_some_and(|previous| state.dead.len() == previous.dead.len())
             {
                 // Ví dụ: "đô" + u → "đôu", "yêu" + u → "yêuu".
                 // Sau đó phần đuôi đi qua nguyên văn, nhưng vẫn giữ raw để
@@ -745,6 +739,30 @@ mod tests {
             censor_enabled: false,
         });
         assert_eq!(type_str(&mut e, "d9e2u6"), "đều");
+    }
+
+    #[test]
+    fn relaxed_modes_cancel_repeated_modifier_instead_of_freezing() {
+        // Gõ lặp phím dấu là HỦY (như Chặt), không phải đuôi literal sau
+        // một âm tiết hoàn chỉnh: trước đây "á" + 1 bị đóng băng thành "á1".
+        let vni = |mode| {
+            Engine::new(EngineConfig {
+                method: TypingMethod::Vni,
+                spell_mode: mode,
+                modern_tone: false,
+                macros_enabled: false,
+                flexible_marks: true,
+                censor_enabled: false,
+            })
+        };
+        for mode in [SpellMode::Standard, SpellMode::Loose] {
+            for (keys, want) in [("a11", "a1"), ("a66", "a6"), ("d99", "d9"), ("u77", "u7")] {
+                assert_eq!(type_str(&mut vni(mode), keys), want, "{mode:?} {keys}");
+            }
+            assert_eq!(type_str(&mut engine_mode(mode), "ddd"), "dd", "{mode:?}");
+            assert_eq!(type_str(&mut engine_mode(mode), "aaa"), "aa", "{mode:?}");
+            assert_eq!(type_str(&mut engine_mode(mode), "dataa"), "data", "{mode:?}");
+        }
     }
 
     #[test]
