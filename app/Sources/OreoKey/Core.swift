@@ -89,11 +89,17 @@ enum Core {
         return try? JSONDecoder().decode(CoreSettings.self, from: Data(json.utf8))
     }
 
+    /// Posted after every successful save, wherever it came from (menu bar
+    /// or Settings window), so open views can reload the fields they show.
+    static let settingsSaved = Notification.Name("OreoKeySettingsSaved")
+
     @discardableResult
     static func save(_ settings: CoreSettings) -> Bool {
         guard let data = try? JSONEncoder().encode(settings),
               let json = String(data: data, encoding: .utf8) else { return false }
-        return json.withCString { ok_settings_json_set($0) }
+        let ok = json.withCString { ok_settings_json_set($0) }
+        if ok { NotificationCenter.default.post(name: settingsSaved, object: nil) }
+        return ok
     }
 
     static func notifyFrontmostApp(_ bundleId: String) {

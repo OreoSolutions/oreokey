@@ -129,6 +129,13 @@ struct SettingsView: View {
             // Chỉ cửa sổ Cài đặt (alert/sheet khác không cần nạp lại).
             if ($0.object as? NSWindow)?.title == "Cài đặt OreoKey" { model.reload() }
         }
+        // The menu bar can change the method while this window stays key;
+        // without this the next edit here would write the stale one back.
+        // Deferred: our own save posts from inside `settings.didSet`.
+        .onReceive(
+            NotificationCenter.default.publisher(for: Core.settingsSaved)
+                .receive(on: DispatchQueue.main)
+        ) { _ in model.reload() }
         .alert("Không thể lưu cài đặt", isPresented: Binding(
             get: { model.saveError != nil },
             set: { if !$0 { model.saveError = nil } }
