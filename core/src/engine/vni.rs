@@ -41,10 +41,11 @@ pub fn apply_key(state: &mut WordState, c: char) {
             state.letters.push(Letter::plain(c));
         }
         '7' => {
-            // Cặp uo cuối → ươ.
+            // Cặp uo liền kề bất kỳ trong cụm → ươ. Quét cả cụm (như Telex)
+            // để ươi/ươu ("nguoi72", "ruou75") móc được cả cặp.
             let vidx = vowel_indices(&state.letters);
-            if vidx.len() >= 2 {
-                let (i, j) = (vidx[vidx.len() - 2], vidx[vidx.len() - 1]);
+            for w in vidx.windows(2) {
+                let (i, j) = (w[0], w[1]);
                 if j == i + 1
                     && state.letters[i].base == 'u'
                     && state.letters[j].base == 'o'
@@ -162,6 +163,32 @@ mod tests {
         assert_eq!(v("duong72"), "dường");
         assert_eq!(v("d9uo7ng2"), "đường");
         assert_eq!(v("nguye64n"), "nguyễn");
+    }
+
+    #[test]
+    fn uo_horn_with_final_vowel() {
+        // ươi/ươu: số 7 gõ sau nguyên âm cuối vẫn móc cả cặp uo, như Telex.
+        assert_eq!(v("tuoi7"), "tươi");
+        assert_eq!(v("nguoi72"), "người");
+        assert_eq!(v("ruou75"), "rượu");
+        assert_eq!(v("nguoi77"), "nguoi7"); // gõ lặp vẫn hủy cả cặp
+        assert_eq!(v("quo7"), "quơ"); // u sau q không thuộc cụm
+        let strict = |keys: &str| {
+            use crate::engine::testutil::type_str;
+            use crate::engine::{Engine, EngineConfig, SpellMode};
+            let mut e = Engine::new(EngineConfig {
+                method: TypingMethod::Vni,
+                spell_mode: SpellMode::Strict,
+                modern_tone: false,
+                macros_enabled: false,
+                flexible_marks: true,
+                censor_enabled: false,
+            });
+            type_str(&mut e, keys)
+        };
+        assert_eq!(strict("nguoi72"), "người");
+        assert_eq!(strict("cuoi72"), "cười");
+        assert_eq!(strict("ruou75"), "rượu");
     }
 
     #[test]
