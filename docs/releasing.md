@@ -38,13 +38,18 @@ thêm tính năng → tăng minor.
 ## 2. Phát hành
 
 ```bash
-CODESIGN_ID="Developer ID Application: Tên (TEAMID)" ./scripts/release.sh 0.7.5
+CODESIGN_ID="<SHA-1 của cert>" ./scripts/release.sh 0.7.5
 ```
+
+Nên đặt `CODESIGN_ID` bằng **mã băm SHA-1** của chứng chỉ (lấy bằng
+`security find-identity -v -p codesigning`) thay vì tên: khi keychain có hai
+cert cùng tên (vd cert cũ chưa hết hạn + cert mới), tên gây lỗi
+"ambiguous", còn mã băm luôn chọn đúng một cert.
 
 Script tự làm theo thứ tự, dừng ngay nếu lỗi:
 
-1. Kiểm tra tiền đề: nhánh `main`, cây sạch, tag chưa tồn tại, `gh` đã đăng
-   nhập, có `CODESIGN_ID`.
+1. Kiểm tra tiền đề: nhánh `main`, cây sạch, `HEAD == origin/main` (sau
+   `git fetch`), tag chưa tồn tại, `gh` đã đăng nhập, có `CODESIGN_ID`.
 2. Bump version: `CFBundleShortVersionString` + tăng `CFBundleVersion` trong
    `app/Info.plist`, `version` trong `core/Cargo.toml` (Cargo.lock theo).
 3. Cuốn changelog (`scripts/roll-changelog.py`) → release notes.
@@ -62,17 +67,30 @@ Script tự làm theo thứ tự, dừng ngay nếu lỗi:
     `OREOKEY_WEBSITE_DIR`) và push — Vercel tự deploy. Lỗi ở bước này chỉ
     cảnh báo, không hủy release.
 
-Nếu script chết giữa chừng sau bước 7 (đã tag): xóa tag local + remote
-(`git tag -d vX.Y.Z && git push origin :vX.Y.Z`), `git reset --hard
-origin/main`, sửa nguyên nhân rồi chạy lại. `roll-changelog.py` idempotent
-nên chạy lại không tạo mục changelog trùng.
+### Khôi phục khi script chết giữa chừng
+
+Script in sẵn gợi ý khôi phục khi lỗi. Hai trường hợp:
+
+- **Chết trước khi tag** (bước 1-6: cây không sạch, build/notarize/ký lỗi,
+  changelog trống...): chưa có gì lên remote, nhưng Info.plist, Cargo.toml,
+  CHANGELOG.md, appcast.xml có thể đã bị sửa dở. Hoàn tác bằng
+  `git checkout -- app/Info.plist core/Cargo.toml Cargo.lock CHANGELOG.md appcast.xml`
+  (cây không sạch thì script dừng ngay từ đầu, chưa sửa gì), sửa nguyên nhân
+  rồi chạy lại.
+- **Chết sau khi tag** (bước 7 trở đi): nếu GitHub Release đã tạo, xóa cả
+  release lẫn tag remote bằng `gh release delete vX.Y.Z --cleanup-tag --yes`;
+  nếu chưa có release thì `git push origin :refs/tags/vX.Y.Z`. Sau đó
+  `git tag -d vX.Y.Z && git reset --hard origin/main`, sửa nguyên nhân rồi
+  chạy lại. `roll-changelog.py` idempotent nên chạy lại không tạo mục
+  changelog trùng.
 
 ## 3. Sau khi phát hành
 
 - Mở `https://raw.githubusercontent.com/OreoSolutions/oreokey/main/appcast.xml`
   — item mới có `sparkle:shortVersionString` đúng, `enclosure url` trỏ tới
   release vừa tạo, `length` khớp kích cỡ DMG.
-- Trên một máy đang chạy bản cũ: menu **"Kiểm tra bản mới…"** phải thấy bản
+- Trên một máy đang chạy bản cũ: dòng phiên bản ở chân sidebar **Cài đặt**
+  (bấm để kiểm tra bản mới) phải thấy bản
   mới, changelog hiển thị đúng định dạng (đậm, mã), cài xong app khởi động
   lại được và **vẫn còn quyền Accessibility** (bản ký Developer ID giữ
   được quyền; bản ad-hoc thì không — xem README).

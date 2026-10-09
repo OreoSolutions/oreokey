@@ -48,7 +48,6 @@ Câu chuẩn: `Tôi yêu tiếng nước tôi từ khi mới ra đời` (Telex:
 - [ ] App trong danh sách loại trừ: tự về EN; hotkey vẫn bật lại tạm được
 - [ ] "Nhớ theo app": tắt VN trong Terminal, chuyển Chrome vẫn VN, quay lại Terminal vẫn EN
 - [ ] Đổi kiểu gõ Telex ↔ VNI từ menu có hiệu lực ngay
-- [ ] Chuyển mã (tab Công cụ): Unicode → VNI-Windows → Unicode giữ nguyên nội dung
 - [ ] Sleep/wake máy → gõ vẫn hoạt động (tap tự phục hồi)
 - [ ] Thu hồi quyền Accessibility khi đang chạy → onboarding hiện lại (cần chạy lại app)
 

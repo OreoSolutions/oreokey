@@ -1,3 +1,5 @@
+# KHÔNG được dùng hiện tại: make-dmg.sh đóng DMG bằng hdiutil (không có bố cục
+# cửa sổ/ảnh nền). Giữ lại để dành nếu chuyển lại sang dmgbuild.
 # Cấu hình dmgbuild cho cửa sổ cài đặt OreoKey.
 # dmgbuild chạy file này qua exec() nên KHÔNG có __file__; mọi đường dẫn
 # nhận qua cờ -D từ make-dmg.sh (app, background — đường dẫn tuyệt đối).

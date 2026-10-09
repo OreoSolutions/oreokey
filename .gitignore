@@ -3,9 +3,10 @@ target/
 
 # Swift / SwiftPM
 app/.build/
-# venv công cụ đóng DMG (make-dmg.sh tự dựng)
+# SwiftPM chạy từ thư mục gốc repo sinh .build ở gốc
 /.build/
 .swiftpm/
+__pycache__/
 *.xcuserstate
 
 # Build output

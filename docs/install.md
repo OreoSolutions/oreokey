@@ -31,7 +31,7 @@ chạy, OreoKey sẽ hiện màn hình hướng dẫn:
 
 - **Kiểu gõ**: mặc định Telex. Đổi sang VNI ngay trên menu bar
   (mục *Kiểu gõ*) hoặc trong **Cài đặt → Chung**.
-- **Phím tắt bật/tắt tiếng Việt**: mặc định `⌃Space` (Control+Space).
+- **Phím tắt bật/tắt tiếng Việt**: mặc định `⌃⇧Space` (Control+Shift+Space).
   Đổi trong **Cài đặt → Chung**.
 - **Khởi động cùng máy**: bật trong **Cài đặt → Chung → Hệ thống**.
 

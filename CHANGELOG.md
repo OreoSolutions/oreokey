@@ -6,6 +6,24 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Cài đặt không còn ghi đè trạng thái Việt/Anh**: mở cửa sổ Cài đặt rồi bật
+  tắt tiếng Việt bằng phím tắt hoặc menu bar, sau đó đổi một tùy chọn bất kỳ
+  trong Cài đặt từng đẩy lại trạng thái cũ. Cửa sổ nay nạp lại cài đặt mỗi
+  khi được mở, và lõi giữ nguyên trạng thái bật/tắt đang chạy.
+- **Ô ghi phím tắt từ chối tổ hợp trùng phím tắt của app**: chỉ `⌘` (⌘C, ⌘V,
+  ⌘Q…) hoặc không có phím bổ trợ sẽ không được nhận nữa; cần có `⌃` hoặc `⌥`
+  (có thể kèm `⇧`/`⌘`). Ô ghi hiện gợi ý ngắn khi từ chối.
+- **VNI**: sửa lỗi gõ cụm `ươ`.
+- **Chế độ chính tả Thường / Thoải mái**: các phím hủy từ (phím mũi tên,
+  Esc…) nay ngắt từ đang gõ đúng cách thay vì để lại bộ đệm cũ.
+- **Treo khi app đích không phản hồi**: các lời gọi Accessibility nay có thời
+  hạn chờ, nên một app bị treo không còn làm macOS tắt bộ gõ.
+- **Khởi động**: nếu đã có quyền Trợ năng mà bộ gõ vẫn không khởi động được,
+  OreoKey báo một lần rồi tự thử lại thay vì liên tục mở lại cửa sổ hướng
+  dẫn và giành focus. Chạy hai bản OreoKey cùng lúc không còn xảy ra, và
+  hệ thống chỉ dùng bàn phím Latin có sẵn khi ABC chưa được bật.
+
 ## [0.7.9] - 2026-10-09
 
 ### Đã đổi

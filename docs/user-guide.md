@@ -29,12 +29,15 @@ Telex/VNI, mở **Cài đặt…** (`⌘,`) và thoát app.
 
 Ba cách, tác dụng như nhau:
 
-- Phím tắt — mặc định `⌃Space` (Control+Space).
+- Phím tắt — mặc định `⌃⇧Space` (Control+Shift+Space).
 - Bấm mục **Tiếng Việt** trong menu bar.
 - Tự động theo app (xem [Cài đặt theo ứng dụng](#cài-đặt-theo-ứng-dụng)).
 
-Đổi phím tắt trong **Cài đặt → Chung**, các lựa chọn: `⌃⇧Space`,
-`⌃Space`, `⌘⇧Space`, `⌥Z`.
+Đổi phím tắt trong **Cài đặt → Chung**. Preset: `⌃⇧Space` (mặc định),
+`⌃Space`, `⌃⌥Space`, `⌘⇧Space`. Hoặc chọn **Ghi tổ hợp phím mới…** rồi nhấn
+tổ hợp mong muốn (`⎋` để hủy). Tổ hợp tự ghi phải có `⌃` hoặc `⌥` (có thể
+kèm `⇧`/`⌘`); chỉ `⌘` hay không có phím bổ trợ sẽ bị từ chối vì trùng
+phím tắt của app (`⌘C`, `⌘V`, `⌘Q`…).
 
 Khi bật tiếng Việt, OreoKey tự chuyển input source hệ thống về bàn phím
 Latin (ABC) để không xung đột với bộ gõ khác.
