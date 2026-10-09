@@ -18,10 +18,6 @@ impl MacroTable {
     pub fn expand(&self, word: &str) -> Option<&str> {
         self.map.get(word).map(String::as_str)
     }
-
-    pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
-    }
 }
 
 #[cfg(test)]

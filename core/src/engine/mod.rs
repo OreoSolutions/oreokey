@@ -25,16 +25,6 @@ pub enum Action {
     Replace { old: String, text: String },
 }
 
-impl Action {
-    /// Số ký tự cần xóa khi sửa bằng backspace.
-    pub fn backspaces(&self) -> usize {
-        match self {
-            Action::PassThrough => 0,
-            Action::Replace { old, .. } => old.chars().count(),
-        }
-    }
-}
-
 /// Phím đầu vào đã được tầng platform chuẩn hóa.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyInput {
