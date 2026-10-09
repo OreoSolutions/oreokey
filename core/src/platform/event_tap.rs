@@ -265,7 +265,7 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     finfo.proc_name.as_deref(),
                 );
                 let bundle = rt.current_bundle.clone();
-                let applied = inject::apply(
+                match inject::apply(
                     proxy,
                     &old,
                     &text,
@@ -273,13 +273,20 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     &bundle,
                     &mut rt.ax_failed,
                     finfo.selection_len,
-                );
-                if !applied {
-                    // The engine has already consumed this key, but no
-                    // replacement was delivered. Preserve the physical key
-                    // and reset our buffer so future edits stay in sync.
-                    rt.engine.reset();
-                    return CallbackKeep::Keep;
+                ) {
+                    inject::Outcome::Done => {}
+                    inject::Outcome::Failed => {
+                        // The engine has already consumed this key, but no
+                        // replacement was delivered. Preserve the physical
+                        // key and reset our buffer so future edits stay in
+                        // sync.
+                        rt.engine.reset();
+                        return CallbackKeep::Keep;
+                    }
+                    // An AX write may still land: the screen no longer
+                    // matches the buffer, and the physical key must not
+                    // reach the app either (it could overwrite a selection).
+                    inject::Outcome::Unknown => rt.engine.reset(),
                 }
                 // Phím này vừa gây Replace (callback chậm) → là ứng viên bị
                 // WindowServer giao lại. Ghi để nhận diện bản sao sắp tới.

@@ -25,6 +25,18 @@ const KEY_LEFT_ARROW: u16 = 123;
 /// nhận chuỗi quá dài trong một event.
 const CHUNK_UTF16: usize = 8;
 
+/// What became of a replacement.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Outcome {
+    /// Delivered (AX or injected keys).
+    Done,
+    /// Nothing reached the app: let the physical key through.
+    Failed,
+    /// An AX write may still land late, so nothing else may be sent for
+    /// this edit: the caller must drop the key and resync its buffer.
+    Unknown,
+}
+
 pub fn apply(
     proxy: CGEventTapProxy,
     old: &str,
@@ -33,7 +45,7 @@ pub fn apply(
     bundle: &str,
     ax_failed: &mut HashMap<String, Instant>,
     selection_len: Option<isize>,
-) -> bool {
+) -> Outcome {
     let backspaces = old.chars().count();
     // Chèn thuần (không xóa gì): bơm phím không thể nháy, và AX lúc này
     // dễ dính race với ký tự passthrough đang trên đường đến app → bơm.
@@ -59,7 +71,7 @@ pub fn apply(
                     Ok(()) => {
                         super::dlog("  -> AX ok");
                         ax_failed.remove(bundle);
-                        return true;
+                        return Outcome::Done;
                     }
                     // Mismatch = văn bản trước caret chưa ổn định (ký tự
                     // passthrough chưa vào app) — KHÔNG phải app không hỗ
@@ -71,13 +83,24 @@ pub fn apply(
                         super::dlog("  -> AX unsupported, cache fail + inject");
                         ax_failed.insert(bundle.to_string(), Instant::now());
                     }
+                    // Injecting backspaces now could race a late AX write
+                    // and delete real text.
+                    Err(ax::AxFail::Unknown) => {
+                        super::dlog("  -> AX outcome unknown, cache fail + drop");
+                        ax_failed.insert(bundle.to_string(), Instant::now());
+                        return Outcome::Unknown;
+                    }
                 }
             } else {
                 super::dlog("  -> inject (AX cached fail / insert-only)");
             }
             key_inject(proxy, backspaces, text, profile, selection_len)
         }
-        FixMode::AxOnly => ax::replace_tail(old, text).is_ok(),
+        FixMode::AxOnly => match ax::replace_tail(old, text) {
+            Ok(()) => Outcome::Done,
+            Err(ax::AxFail::Unknown) => Outcome::Unknown,
+            Err(_) => Outcome::Failed,
+        },
         FixMode::InjectFast | FixMode::InjectSlow => {
             key_inject(proxy, backspaces, text, profile, selection_len)
         }
@@ -90,9 +113,9 @@ fn key_inject(
     text: &str,
     profile: &ResolvedProfile,
     selection_len: Option<isize>,
-) -> bool {
+) -> Outcome {
     let Ok(source) = CGEventSource::new(CGEventSourceStateID::HIDSystemState) else {
-        return false;
+        return Outcome::Failed;
     };
     let delay = if profile.mode == FixMode::InjectSlow {
         Some(Duration::from_millis(profile.delay_ms.max(1)))
@@ -118,7 +141,7 @@ fn key_inject(
             );
         }
         post_text_chunks(&source, proxy, text, delay);
-        return true;
+        return Outcome::Done;
     }
 
     // Ô nhập có autocomplete (thanh địa chỉ trình duyệt, Spotlight...)
@@ -151,7 +174,7 @@ fn key_inject(
     }
 
     post_text_chunks(&source, proxy, text, delay);
-    true
+    Outcome::Done
 }
 
 /// Cách hủy phần gợi ý autocomplete đang bôi đen trước khi backspace.

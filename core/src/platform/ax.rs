@@ -1,7 +1,8 @@
 //! Sửa chữ trực tiếp qua Accessibility API: chọn N ký tự trước con trỏ
 //! và ghi đè bằng chuỗi mới trong MỘT thao tác — không backspace, không
 //! thể nháy hay dính chữ. Không phải app nào cũng hỗ trợ; mọi lỗi trả
-//! Err để caller rơi về key injection.
+//! Err để caller rơi về key injection — except [`AxFail::Unknown`], where a
+//! write may still land and injecting could delete real text.
 
 use std::ffi::c_void;
 
@@ -13,6 +14,9 @@ type AXError = i32;
 
 const K_AX_VALUE_TYPE_CFRANGE: u32 = 4;
 const AX_SUCCESS: AXError = 0;
+/// kAXErrorCannotComplete: the call timed out (app busy/hung). The message
+/// is still queued in the target app and may be applied later.
+const AX_ERROR_CANNOT_COMPLETE: AXError = -25204;
 
 extern "C" {
     fn AXUIElementCreateSystemWide() -> AXUIElementRef;
@@ -46,6 +50,16 @@ extern "C" {
 /// macOS to disable the tap. 0.3s is far above a healthy AX round-trip.
 const AX_TIMEOUT_SECS: f32 = 0.3;
 
+/// Timeout for the write calls, set on the element once it has answered
+/// the reads. A write that times out may still land later (outcome
+/// unknown), so waiting longer makes that rarer; healthy apps answer in ms.
+const AX_WRITE_TIMEOUT_SECS: f32 = 1.0;
+
+/// Timeout for the caret restore after a timed-out write: the restore is
+/// queued behind the late write and lands after it, so waiting for the
+/// reply would only stall the tap.
+const AX_CLEANUP_TIMEOUT_SECS: f32 = 0.05;
+
 /// Create the system-wide element with the messaging timeout applied (the
 /// system-wide timeout is the global default for all AX calls in the process).
 unsafe fn create_system_wide() -> AXUIElementRef {
@@ -68,6 +82,10 @@ pub enum AxFail {
     Mismatch,
     /// App không expose text field qua AX / lỗi API. Cache được.
     Unsupported,
+    /// A write was issued but did not finish cleanly (timed out, or the
+    /// caret could not be put back): the app may still apply it, so
+    /// injecting keys now could delete real text. Drop the edit instead.
+    Unknown,
 }
 
 /// Thay đoạn `old` ngay trước con trỏ bằng `text` — CHỈ khi xác minh
@@ -176,26 +194,35 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
             return Err(AxFail::Unsupported);
         }
         let target_guard = CFType::wrap_under_create_rule(target_value);
-        if AXUIElementSetAttributeValue(
+        // The element answered the reads: give the writes more time, since
+        // a write that times out may still be applied later.
+        AXUIElementSetMessagingTimeout(element, AX_WRITE_TIMEOUT_SECS);
+        match AXUIElementSetAttributeValue(
             element,
             attr("AXSelectedTextRange").as_concrete_TypeRef(),
             target_guard.as_CFTypeRef(),
-        ) != AX_SUCCESS
-        {
-            return Err(AxFail::Unsupported);
+        ) {
+            AX_SUCCESS => {}
+            AX_ERROR_CANNOT_COMPLETE => return Err(abandon(element, caret.location, true)),
+            // Rejected outright: nothing changed, injecting is safe.
+            _ => return Err(AxFail::Unsupported),
         }
 
         // Một số app (Chrome...) trả thành công nhưng lờ lệnh chọn vùng —
         // nếu ghi text lúc đó sẽ CHÈN thay vì THAY. Đọc lại để chắc chắn.
         let mut check: CFTypeRef = std::ptr::null();
-        if AXUIElementCopyAttributeValue(
+        let err = AXUIElementCopyAttributeValue(
             element,
             attr("AXSelectedTextRange").as_concrete_TypeRef(),
             &mut check,
-        ) != AX_SUCCESS
-            || check.is_null()
-        {
-            return Err(AxFail::Unsupported);
+        );
+        if err != AX_SUCCESS || check.is_null() {
+            // The selection may be up: a backspace would eat it.
+            return Err(abandon(
+                element,
+                caret.location,
+                err == AX_ERROR_CANNOT_COMPLETE,
+            ));
         }
         let check_guard = CFType::wrap_under_create_rule(check);
         let mut applied = CFRange {
@@ -216,21 +243,29 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
                     applied.location, applied.length, target.location, target.length
                 ));
             }
-            return Err(AxFail::Unsupported);
+            // The app may still apply the range later (Chromium forwards it
+            // to the renderer asynchronously): put the caret back first.
+            return Err(abandon(element, caret.location, false));
         }
 
         // ...và ghi đè bằng chuỗi mới trong một thao tác nguyên tử.
+        let new_len = text.encode_utf16().count() as isize;
         let replacement = CFString::new(text);
-        if AXUIElementSetAttributeValue(
+        let err = AXUIElementSetAttributeValue(
             element,
             attr("AXSelectedText").as_concrete_TypeRef(),
             replacement.as_CFTypeRef(),
-        ) != AX_SUCCESS
-        {
+        );
+        if err == AX_ERROR_CANNOT_COMPLETE {
+            // The text may still be replaced. Collapse the selection where
+            // the caret ends up if it is, so neither outcome leaves a
+            // selection for the next key to overwrite.
+            return Err(abandon(element, target.location + new_len, true));
+        }
+        if err != AX_SUCCESS {
             // App nhận range nhưng từ chối ghi text: khôi phục con trỏ
             // về vị trí cũ trước khi báo lỗi để fallback không phá vùng chọn.
-            restore_caret(element, caret.location);
-            return Err(AxFail::Unsupported);
+            return Err(abandon(element, caret.location, false));
         }
 
         // Một số app nhận range (vùng chọn HIỆN LÊN màn hình) nhưng lờ
@@ -239,7 +274,6 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
         // còn nguyên, người dùng không gõ tiếp được. Đọc lại để chắc text
         // đã thật sự thay; chưa thay → trả con trỏ về chỗ cũ (hủy vùng
         // chọn kẹt) rồi báo Unsupported để caller cache và bơm phím.
-        let new_len = text.encode_utf16().count() as isize;
         let written = CFRange {
             location: target.location,
             length: new_len,
@@ -250,8 +284,7 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
                 if super::debug_enabled() {
                     super::dlog("  ax write ignored");
                 }
-                restore_caret(element, caret.location);
-                return Err(AxFail::Unsupported);
+                return Err(abandon(element, caret.location, false));
             }
             // Khớp → ghi thành công thật. Không đọc lại được → không đủ
             // bằng chứng app nói dối, giữ nguyên hành vi cũ (tin success).
@@ -261,9 +294,23 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
     }
 }
 
+/// Clean up after a write went wrong by collapsing the selection at
+/// `location`. Key injection is safe only if no write timed out (a
+/// timed-out write may still land) and the app confirmed the restore.
+unsafe fn abandon(element: AXUIElementRef, location: isize, timed_out: bool) -> AxFail {
+    if timed_out {
+        AXUIElementSetMessagingTimeout(element, AX_CLEANUP_TIMEOUT_SECS);
+    }
+    if restore_caret(element, location) && !timed_out {
+        AxFail::Unsupported
+    } else {
+        AxFail::Unknown
+    }
+}
+
 /// Đưa con trỏ về `location` (hủy mọi vùng chọn) — dọn dẹp sau khi lệnh
 /// ghi AX thất bại giữa chừng, để fallback bơm phím xóa đúng chữ.
-unsafe fn restore_caret(element: AXUIElementRef, location: isize) {
+unsafe fn restore_caret(element: AXUIElementRef, location: isize) -> bool {
     let restore = CFRange {
         location,
         length: 0,
@@ -272,14 +319,15 @@ unsafe fn restore_caret(element: AXUIElementRef, location: isize) {
         K_AX_VALUE_TYPE_CFRANGE,
         &restore as *const CFRange as *const c_void,
     );
-    if !restore_value.is_null() {
-        let restore_guard = CFType::wrap_under_create_rule(restore_value);
-        AXUIElementSetAttributeValue(
-            element,
-            attr("AXSelectedTextRange").as_concrete_TypeRef(),
-            restore_guard.as_CFTypeRef(),
-        );
+    if restore_value.is_null() {
+        return false;
     }
+    let restore_guard = CFType::wrap_under_create_rule(restore_value);
+    AXUIElementSetAttributeValue(
+        element,
+        attr("AXSelectedTextRange").as_concrete_TypeRef(),
+        restore_guard.as_CFTypeRef(),
+    ) == AX_SUCCESS
 }
 
 /// Đọc chuỗi app đang hiển thị tại `range` (AXStringForRange).
