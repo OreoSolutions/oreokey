@@ -53,7 +53,13 @@ cp "$ROOT/app/Info.plist" "$APP/Contents/Info.plist"
 [[ -f "$ROOT/assets/AppIcon.icns" ]] && cp "$ROOT/assets/AppIcon.icns" "$APP/Contents/Resources/"
 
 # 3b. Nhúng Sparkle.framework vào bundle
-SPARKLE_FW="$(find "$ROOT/app/.build" -type d -name 'Sparkle.framework' -path '*macos*' | head -1 || true)"
+# Ưu tiên bản trong .build/apple/Products/Release (build universal liên kết bản này).
+SPARKLE_FW=""
+for d in "$ROOT/app/.build/apple/Products/Release/Sparkle.framework" \
+         "$ROOT/app/.build/release/Sparkle.framework"; do
+    [[ -d "$d" ]] && { SPARKLE_FW="$d"; break; }
+done
+[[ -n "$SPARKLE_FW" ]] || SPARKLE_FW="$(find "$ROOT/app/.build" -type d -name 'Sparkle.framework' -path '*macos*' | head -1 || true)"
 [[ -n "$SPARKLE_FW" ]] || { echo "❌ Không tìm thấy Sparkle.framework (chạy 'swift package resolve' trong app/?)"; exit 1; }
 mkdir -p "$APP/Contents/Frameworks"
 rm -rf "$APP/Contents/Frameworks/Sparkle.framework"

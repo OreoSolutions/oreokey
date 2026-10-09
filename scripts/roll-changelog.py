@@ -19,6 +19,9 @@ s = path.read_text(encoding="utf-8")
 if f"## [{a.version}]" not in s:
     if "## [Chưa phát hành]" not in s:
         sys.exit("Không thấy mục '## [Chưa phát hành]' trong CHANGELOG.md")
+    m0 = re.search(r"## \[Chưa phát hành\][ \t]*\n(.*?)(?=\n## \[|\Z)", s, re.S)
+    if not m0 or not m0.group(1).strip():
+        sys.exit("Mục '## [Chưa phát hành]' trống — viết changelog trước khi phát hành")
     s = s.replace("## [Chưa phát hành]",
                   f"## [Chưa phát hành]\n\n## [{a.version}] - {a.date}", 1)
     path.write_text(s, encoding="utf-8")

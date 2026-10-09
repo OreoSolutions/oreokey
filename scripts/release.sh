@@ -35,8 +35,32 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
     echo "❌ Tag v$VERSION đã tồn tại."; exit 1
 fi
+# HEAD phải đúng bằng origin/main: không phát hành commit chưa đẩy hay bản cũ.
+git fetch origin main --tags --quiet \
+    || { echo "❌ git fetch origin thất bại — kiểm tra mạng/quyền."; exit 1; }
+[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] \
+    || { echo "❌ HEAD khác origin/main — pull/push cho đồng bộ trước khi phát hành."; exit 1; }
 command -v gh >/dev/null || { echo "❌ Thiếu gh CLI."; exit 1; }
 gh auth status >/dev/null 2>&1 || { echo "❌ gh chưa đăng nhập (chạy: gh auth login)."; exit 1; }
+
+TAGGED=0
+NOTES=""
+on_exit() {
+    local rc=$?
+    [[ -n "$NOTES" ]] && rm -f "$NOTES"
+    [[ $rc -eq 0 ]] && return
+    echo "" >&2
+    if [[ $TAGGED -eq 1 ]]; then
+        echo "❌ Lỗi SAU khi tạo tag v$VERSION. Khôi phục:" >&2
+        echo "   gh release delete v$VERSION --cleanup-tag --yes   # nếu release đã tạo (xóa luôn tag remote)" >&2
+        echo "   git push origin :refs/tags/v$VERSION              # nếu tag đã đẩy mà chưa có release" >&2
+        echo "   git tag -d v$VERSION && git reset --hard origin/main   # bỏ commit release local" >&2
+    else
+        echo "❌ Lỗi TRƯỚC khi tạo tag — file đã bump nhưng chưa commit. Hoàn tác:" >&2
+        echo "   git checkout -- app/Info.plist core/Cargo.toml Cargo.lock CHANGELOG.md appcast.xml" >&2
+    fi
+}
+trap on_exit EXIT
 
 echo "▶ Phát hành OreoKey v$VERSION (build $(( $(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' app/Info.plist) + 1 )))"
 
@@ -48,7 +72,6 @@ sed -i '' -E "s/^version = \".*\"/version = \"$VERSION\"/" core/Cargo.toml
 
 # --- 2. Cuốn changelog → release notes ------------------------------------
 NOTES="$(mktemp)"
-trap 'rm -f "$NOTES"' EXIT
 python3 scripts/roll-changelog.py "$VERSION" > "$NOTES"
 
 # --- 3. Build + ký Developer ID + notarize --------------------------------
@@ -57,7 +80,10 @@ export CODESIGN_ID NOTARY_PROFILE
 ./scripts/make-dmg.sh
 
 # --- 4. Ký EdDSA cho Sparkle (khóa riêng lấy từ keychain) -----------------
-SIGN_UPDATE="$(find app/.build/artifacts -name sign_update | head -1 || true)"
+# Đường dẫn chính xác của Sparkle; find chỉ là dự phòng và loại old_dsa_scripts.
+SIGN_UPDATE="app/.build/artifacts/sparkle/Sparkle/bin/sign_update"
+[[ -x "$SIGN_UPDATE" ]] || SIGN_UPDATE="$(find app/.build/artifacts -type f -name sign_update \
+    -path '*/bin/*' -not -path '*old_dsa_scripts*' | head -1 || true)"
 [[ -n "$SIGN_UPDATE" ]] \
     || { echo "❌ Không tìm thấy sign_update (chạy 'cd app && swift package resolve')."; exit 1; }
 SIG_ATTRS="$("$SIGN_UPDATE" dist/OreoKey.dmg)"
@@ -70,6 +96,7 @@ python3 scripts/update-appcast.py "$VERSION" "$BUILD" "$DOWNLOAD_URL" "$SIG_ATTR
 git add app/Info.plist core/Cargo.toml Cargo.lock CHANGELOG.md appcast.xml
 git commit -m "release: $VERSION"
 git tag "v$VERSION"
+TAGGED=1
 git push origin "v$VERSION"
 
 # --- 7. Tạo GitHub Release (tải DMG lên TRƯỚC khi appcast lên main, tránh

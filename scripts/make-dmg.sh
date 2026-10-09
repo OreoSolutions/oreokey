@@ -9,9 +9,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/dist/OreoKey.app"
 DMG="$ROOT/dist/OreoKey.dmg"
-VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
 
 [[ -d "$APP" ]] || { echo "Chưa có $APP — chạy ./scripts/build.sh --universal trước"; exit 1; }
+VERSION="$(defaults read "$APP/Contents/Info" CFBundleShortVersionString)"
 
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
@@ -26,6 +26,8 @@ if [[ -n "${CODESIGN_ID:-}" ]]; then
     if [[ -n "${NOTARY_PROFILE:-}" ]]; then
         xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
         xcrun stapler staple "$DMG"
+    else
+        echo "⚠️  Có CODESIGN_ID nhưng thiếu NOTARY_PROFILE — DMG đã ký nhưng CHƯA notarize (Gatekeeper sẽ cảnh báo)"
     fi
 else
     echo "⚠️  DMG chưa ký/notarize (đặt CODESIGN_ID + NOTARY_PROFILE khi phát hành thật)"
