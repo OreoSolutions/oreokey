@@ -142,6 +142,16 @@ mod tests {
             "com.microsoft.edgemac",
             "com.brave.Browser",
             "company.thebrowser.Browser",
+            // Release channels and Chrome web apps (PWA).
+            "com.google.Chrome.beta",
+            "com.google.Chrome.dev",
+            "com.google.Chrome.canary",
+            "com.google.Chrome.app.kinpkbniadkppecjaginbegiljofpcfc",
+            "com.microsoft.edgemac.Beta",
+            "com.microsoft.edgemac.Dev",
+            "com.microsoft.edgemac.Canary",
+            "com.brave.Browser.beta",
+            "com.brave.Browser.nightly",
         ] {
             let r = p.resolve(bundle, &none, None);
             assert_eq!(r.mode, FixMode::InjectFast, "{bundle} phải bơm phím");
@@ -172,6 +182,17 @@ mod tests {
         assert_eq!(tg_native.mode, FixMode::InjectFast);
         let tg_desktop = p.resolve("com.tdesktop.Telegram", &none, None);
         assert_eq!(tg_desktop.mode, FixMode::InjectFast);
+
+        // Electron/Chromium chat and desktop apps: same flicker as Chrome.
+        for bundle in [
+            "com.vng.zalo",
+            "com.larksuite.larkApp",
+            "com.anthropic.claudefordesktop",
+            "com.1password.1password",
+        ] {
+            let r = p.resolve(bundle, &none, None);
+            assert_eq!(r.mode, FixMode::InjectFast, "{bundle} phải bơm phím");
+        }
     }
 
     #[test]

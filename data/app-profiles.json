@@ -4,6 +4,9 @@
     "com.google.Chrome": { "mode": "inject_fast", "browser_fix": true },
     "com.microsoft.edgemac": { "mode": "inject_fast", "browser_fix": true },
     "com.brave.Browser": { "mode": "inject_fast", "browser_fix": true },
+    "com.google.Chrome.*": { "mode": "inject_fast", "browser_fix": true },
+    "com.microsoft.edgemac.*": { "mode": "inject_fast", "browser_fix": true },
+    "com.brave.Browser.*": { "mode": "inject_fast", "browser_fix": true },
     "company.thebrowser.Browser": { "mode": "inject_fast", "browser_fix": true },
     "org.mozilla.firefox": { "mode": "inject_fast", "browser_fix": true },
     "app.zen-browser.zen": { "mode": "inject_fast", "browser_fix": true },
@@ -32,6 +35,10 @@
     "notion.id": { "mode": "inject_fast" },
     "com.tinyspeck.slackmacgap": { "mode": "inject_fast" },
     "ru.keepcoder.Telegram": { "mode": "inject_fast" },
-    "com.tdesktop.Telegram": { "mode": "inject_fast" }
+    "com.tdesktop.Telegram": { "mode": "inject_fast" },
+    "com.vng.zalo": { "mode": "inject_fast" },
+    "com.larksuite.larkApp": { "mode": "inject_fast" },
+    "com.anthropic.claudefordesktop": { "mode": "inject_fast" },
+    "com.1password.1password": { "mode": "inject_fast" }
   }
 }
