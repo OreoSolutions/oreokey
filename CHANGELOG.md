@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.8] - 2026-10-09
+
 ### Đã sửa
 - **Mất một chữ khi gõ dấu trong thanh địa chỉ Chrome/Safari có gợi ý**: gõ
   `thuowngr` khi thanh địa chỉ đang bôi đen phần gợi ý tự hoàn thành nay ra

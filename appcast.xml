@@ -403,6 +403,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="9iNqThvH8Hw2kAox9YWzkdWQaTCM0ZlI5O/VBvj9N8ht98JxanNPR+Hynsw2kEnlhEVb00f/F+jYW+sN8xdTBA==" length="5677303" />
     </item>
+    <item>
+      <title>0.7.8</title>
+      <pubDate>Fri, 09 Oct 2026 04:15:16 +0000</pubDate>
+      <sparkle:version>25</sparkle:version>
+      <sparkle:shortVersionString>0.7.8</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Mất một chữ khi gõ dấu trong thanh địa chỉ Chrome/Safari có gợi ý</strong>: gõ <code>thuowngr</code> khi thanh địa chỉ đang bôi đen phần gợi ý tự hoàn thành nay ra <code>thưởng</code> thay vì <code>thươởng</code>. Trước đây OreoKey gõ một dấu cách để ghi đè phần gợi ý rồi xóa lại, nhưng dấu cách là thao tác chèn nên trình duyệt gợi ý lại ngay và backspace kế tiếp xóa gợi ý mới thay vì dấu cách; kết quả thiếu một backspace thật. Khi đọc được vùng chọn, OreoKey giờ chỉ gửi một backspace (xóa đúng phần gợi ý, không kích gợi ý lại). Lỗi chỉ hiện khi &quot;từ đang gõ + dấu cách&quot; trùng một gợi ý lịch sử nên trước đây có vẻ ngẫu nhiên.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.7.8/OreoKey.dmg"
+                 sparkle:version="25"
+                 sparkle:shortVersionString="0.7.8"
+                 type="application/octet-stream"
+                 sparkle:edSignature="UmPX2Iix9uGl62Tg3C1wrThfCu9HubTEFsEgZCpq4noxjmQOZGZNzqydoEjqosxFf9JdCJcm56p2sA0tw7C5AA==" length="5677203" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
