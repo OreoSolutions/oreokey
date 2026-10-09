@@ -133,6 +133,9 @@ fn callback(proxy: CGEventTapProxy, etype: CGEventType, event: &CGEvent) -> Call
             if port != 0 {
                 unsafe { CGEventTapEnable(port as *mut c_void, true) };
             }
+            // Keys were lost while the tap was off; the buffer no longer
+            // matches what is on screen.
+            with_runtime(|rt| rt.engine.reset());
             CallbackKeep::Keep
         }
         CGEventType::LeftMouseDown | CGEventType::RightMouseDown | CGEventType::OtherMouseDown => {
@@ -188,7 +191,10 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
         }
         // Hotkey bật/tắt tiếng Việt.
         if matches_hotkey(&rt.settings.hotkey, keycode, flags) {
-            rt.toggle();
+            // Holding the hotkey must not toggle (and write to disk) per repeat.
+            if !autorepeat {
+                rt.toggle();
+            }
             return CallbackKeep::Drop;
         }
         if !rt.effective_enabled() {
@@ -212,6 +218,8 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
             }
             36 | 76 | 48 | 53 | 115 | 116 | 117 | 119 | 121 | 123 | 124 | 125 | 126 => {
                 // Enter, Tab, Esc, Home/End/PgUp/PgDn, Forward-Delete, mũi tên.
+                // Chỉ kết thúc từ (WordBreak(None) không mang ký tự phân
+                // cách) nên KHÔNG kích hoạt gõ tắt / bộ lọc từ.
                 KeyInput::WordBreak(None)
             }
             _ => {
@@ -221,8 +229,14 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     return CallbackKeep::Keep;
                 }
                 match event_char(event) {
-                    Some(c) if c.is_ascii_alphanumeric() => KeyInput::Char(c),
-                    Some(c) if !c.is_control() => KeyInput::WordBreak(Some(c)),
+                    EventText::One(c) if c.is_ascii_alphanumeric() => KeyInput::Char(c),
+                    EventText::One(c) if !c.is_control() => KeyInput::WordBreak(Some(c)),
+                    // Text expanders / IMEs deliver several characters in
+                    // one event; feeding just the first would desync.
+                    EventText::Many => {
+                        rt.engine.reset();
+                        return CallbackKeep::Keep;
+                    }
                     _ => KeyInput::WordBreak(None),
                 }
             }
@@ -267,8 +281,14 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
     })
 }
 
+enum EventText {
+    None,
+    One(char),
+    Many,
+}
+
 /// Ký tự unicode của event theo layout bàn phím hiện tại.
-fn event_char(event: &CGEvent) -> Option<char> {
+fn event_char(event: &CGEvent) -> EventText {
     use foreign_types::ForeignType;
     let mut buf = [0u16; 8];
     let mut len: libc::c_ulong = 0;
@@ -280,12 +300,15 @@ fn event_char(event: &CGEvent) -> Option<char> {
             buf.as_mut_ptr(),
         );
     }
-    if len == 0 {
-        return None;
+    // `len` is the full length even if it exceeds the buffer.
+    let n = (len as usize).min(buf.len());
+    let mut chars = char::decode_utf16(buf[..n].iter().copied());
+    match (chars.next(), chars.next()) {
+        (None, _) => EventText::None,
+        (Some(Ok(c)), None) if len as usize <= buf.len() => EventText::One(c),
+        (Some(_), None) => EventText::None, // lone surrogate
+        _ => EventText::Many,
     }
-    char::decode_utf16(buf[..len as usize].iter().copied())
-        .next()
-        .and_then(Result::ok)
 }
 
 fn matches_hotkey(hk: &Hotkey, keycode: u16, flags: CGEventFlags) -> bool {
