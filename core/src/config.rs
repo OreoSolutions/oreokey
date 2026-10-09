@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 /// All writes originate in this process (the event tap and the Swift FFI).
@@ -140,14 +140,37 @@ fn settings_path() -> PathBuf {
 /// hợp lệ, sao lưu bản gốc sang `settings.json.bad` (để lần save kế tiếp
 /// không xóa mất macro của người dùng) rồi dùng phần đọc được.
 pub fn load() -> Settings {
-    let Ok(text) = fs::read_to_string(settings_path()) else {
-        return Settings::default();
+    load_from(&settings_path())
+}
+
+fn load_from(path: &Path) -> Settings {
+    // Only a missing file means "first run". Anything else unreadable must
+    // be backed up first: the next save would replace it with defaults.
+    let bytes = match fs::read(path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Settings::default(),
+        Err(_) => {
+            back_up(path);
+            return Settings::default();
+        }
     };
-    let (settings, clean) = parse_lenient(&text);
-    if !clean {
-        let _ = fs::copy(settings_path(), config_dir().join("settings.json.bad"));
+    // Lossy keeps the valid fields of a file with a stray non-UTF-8 byte.
+    let text = String::from_utf8_lossy(&bytes);
+    let utf8 = matches!(text, std::borrow::Cow::Borrowed(_));
+    // Editors may prepend a BOM, which serde_json rejects.
+    let (settings, clean) = parse_lenient(text.strip_prefix('\u{FEFF}').unwrap_or(&text));
+    if !clean || !utf8 {
+        back_up(path);
     }
     settings
+}
+
+/// Keep the original as `settings.json.bad`; move it if it cannot be read.
+fn back_up(path: &Path) {
+    let bad = path.with_extension("json.bad");
+    if fs::copy(path, &bad).is_err() {
+        let _ = fs::rename(path, &bad);
+    }
 }
 
 /// Trả về (settings, nguyên vẹn?). Parse chặt trước; nếu hỏng thì thử từng
@@ -196,8 +219,7 @@ pub fn save(settings: &Settings) -> io::Result<()> {
     let dir = config_dir();
     fs::create_dir_all(&dir)?;
     let tmp = dir.join("settings.json.tmp");
-    let json = serde_json::to_string_pretty(settings)
-        .map_err(io::Error::other)?;
+    let json = serde_json::to_string_pretty(settings).map_err(io::Error::other)?;
     // fsync before rename so a crash cannot leave an empty settings.json.
     let mut f = fs::File::create(&tmp)?;
     io::Write::write_all(&mut f, json.as_bytes())?;
@@ -250,6 +272,67 @@ mod tests {
         assert!(s.per_app_mode.is_empty());
         assert!(parse_lenient(r#"{"method":"vni"}"#).1);
         assert!(!parse_lenient("not json").1);
+    }
+
+    #[test]
+    fn load_handles_bom_encoding_and_missing_file() {
+        // Never the real config dir: a scratch dir unique to this run.
+        let dir = std::env::temp_dir().join(format!("oreokey-cfg-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        let bad = dir.join("settings.json.bad");
+
+        // Missing → defaults, nothing backed up.
+        assert_eq!(load_from(&path), Settings::default());
+        assert!(!bad.exists());
+
+        // UTF-8 BOM is stripped; the file is otherwise clean.
+        fs::write(&path, "\u{FEFF}{\"method\":\"vni\"}").unwrap();
+        assert_eq!(load_from(&path).method, "vni");
+        assert!(!bad.exists());
+
+        // UTF-16 → defaults, original kept for the user.
+        let utf16: Vec<u8> = [0xFF, 0xFE]
+            .into_iter()
+            .chain(
+                "{\"method\":\"vni\"}"
+                    .encode_utf16()
+                    .flat_map(u16::to_le_bytes),
+            )
+            .collect();
+        fs::write(&path, &utf16).unwrap();
+        assert_eq!(load_from(&path), Settings::default());
+        assert_eq!(fs::read(&bad).unwrap(), utf16);
+
+        // Invalid byte inside a value: other fields survive, backed up.
+        let _ = fs::remove_file(&bad);
+        let mut stray = br#"{"method":"vni","macros":[{"from":"a","to":"x"#.to_vec();
+        stray.extend_from_slice(&[0xE1, b'"', b'}', b']', b'}']);
+        fs::write(&path, &stray).unwrap();
+        let s = load_from(&path);
+        assert_eq!(s.method, "vni");
+        assert_eq!(s.macros.len(), 1);
+        assert_eq!(fs::read(&bad).unwrap(), stray);
+
+        // Truncated mid-character → defaults, backed up.
+        let _ = fs::remove_file(&bad);
+        let mut cut = "{\"method\":\"vni\",\"macros\":[{\"from\":\"vn\",\"to\":\"Vi"
+            .as_bytes()
+            .to_vec();
+        cut.push(0xE1);
+        fs::write(&path, &cut).unwrap();
+        assert_eq!(load_from(&path), Settings::default());
+        assert_eq!(fs::read(&bad).unwrap(), cut);
+
+        // Unreadable (a directory) → defaults, moved aside.
+        let _ = fs::remove_file(&bad);
+        fs::remove_file(&path).unwrap();
+        fs::create_dir(&path).unwrap();
+        assert_eq!(load_from(&path), Settings::default());
+        assert!(bad.is_dir() && !path.exists());
+
+        let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]
