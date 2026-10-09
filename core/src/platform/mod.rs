@@ -90,11 +90,17 @@ impl Runtime {
 
     /// Người dùng chủ động bật/tắt (menu bar): đặt trạng thái toàn cục,
     /// xóa override của app hiện tại để không gây bất ngờ.
+    /// In an excluded app the global switch cannot change what the user
+    /// sees, so (like the hotkey) only this app is switched.
     pub fn set_enabled(&mut self, on: bool) {
-        self.enabled = on;
-        self.per_app_enabled.remove(&self.current_bundle);
+        if self.settings.excluded_apps.contains(&self.current_bundle) {
+            self.per_app_enabled.insert(self.current_bundle.clone(), on);
+        } else {
+            self.enabled = on;
+            self.per_app_enabled.remove(&self.current_bundle);
+            self.persist_enabled();
+        }
         self.engine.reset();
-        self.persist_enabled();
         self.notify_status();
     }
 
@@ -187,5 +193,42 @@ pub fn dlog(msg: &str) {
     };
     if let Ok(mut f) = file.lock() {
         let _ = writeln!(f, "{msg}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn menu_toggle_in_excluded_app_leaves_global_switch_alone() {
+        // A regression would persist settings: keep that away from the
+        // real config dir. No other test reads HOME.
+        std::env::set_var(
+            "HOME",
+            std::env::temp_dir().join(format!("oreokey-rt-{}", std::process::id())),
+        );
+        let settings = Settings {
+            enabled: false,
+            excluded_apps: vec!["excluded".into()],
+            ..Settings::default()
+        };
+        let mut rt = Runtime {
+            engine: Engine::new(settings.engine_config()),
+            enabled: false,
+            settings,
+            per_app_enabled: HashMap::new(),
+            current_bundle: "excluded".into(),
+            profiles: profiles::Profiles::default(),
+            ax_failed: HashMap::new(),
+            ax_hung: HashMap::new(),
+            status_cb: None,
+            ghost: ghost::GhostGuard::new(1),
+        };
+        rt.set_enabled(true);
+        assert!(rt.effective_enabled(), "on in this app");
+        assert!(!rt.enabled, "global switch untouched");
+        rt.app_changed("other".into());
+        assert!(!rt.effective_enabled(), "still off elsewhere");
     }
 }
