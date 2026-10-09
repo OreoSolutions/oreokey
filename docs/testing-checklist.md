@@ -26,7 +26,7 @@ Câu chuẩn: `Tôi yêu tiếng nước tôi từ khi mới ra đời` (Telex:
 | TextEdit / Notes | AX (không nháy) | ☐ |
 | Safari — trang web | AX | ☐ |
 | Safari — thanh địa chỉ (autocomplete!) | browser_fix | ☐ |
-| Chrome — trang web | AX/inject | ☐ |
+| Chrome — trang web | inject_fast (không nháy bôi đen) | ☐ |
 | Chrome — thanh địa chỉ (autocomplete!) | browser_fix | ☐ |
 | Excel | inject_slow | ☐ |
 | Word | inject_slow | ☐ |

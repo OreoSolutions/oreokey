@@ -6,6 +6,13 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã đổi
+- **Chrome, Edge, Brave, Arc chuyển sang bơm phím nhanh**: trước đây các
+  trình duyệt Chromium sửa chữ qua Accessibility nên mỗi phím dấu thấy vùng
+  chọn lóe lên một khung hình (Chromium áp lệnh chọn vùng và ghi đè bất đồng
+  bộ, khác app native). Nay dùng cùng cơ chế với VS Code, Slack, Discord:
+  không còn nháy bôi đen. Safari giữ nguyên vì WebKit áp lệnh đồng bộ.
+
 ## [0.7.8] - 2026-10-09
 
 ### Đã sửa

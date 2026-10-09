@@ -134,8 +134,21 @@ mod tests {
         let p = Profiles::load_default();
         let none = HashMap::new();
 
-        let chrome = p.resolve("com.google.Chrome", &none, None);
-        assert!(chrome.browser_fix);
+        // Chromium: hai lệnh AX (chọn vùng, ghi đè) là hai vòng IPC bất
+        // đồng bộ sang renderer — giữa chúng Chrome kịp vẽ một khung hình
+        // nên vùng chọn lóe lên mỗi phím dấu (thực địa). Bơm phím không nháy.
+        for bundle in [
+            "com.google.Chrome",
+            "com.microsoft.edgemac",
+            "com.brave.Browser",
+            "company.thebrowser.Browser",
+        ] {
+            let r = p.resolve(bundle, &none, None);
+            assert_eq!(r.mode, FixMode::InjectFast, "{bundle} phải bơm phím");
+            assert!(r.browser_fix, "{bundle} vẫn cần xử lý autocomplete");
+        }
+        // Safari (WebKit) áp lệnh AX đồng bộ → giữ AX, không nháy.
+        assert_eq!(p.resolve("com.apple.Safari", &none, None).mode, FixMode::Auto);
 
         let excel = p.resolve("com.microsoft.Excel", &none, None);
         assert_eq!(excel.mode, FixMode::InjectSlow);

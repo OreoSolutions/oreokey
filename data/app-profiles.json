@@ -1,10 +1,10 @@
 {
   "apps": {
     "com.apple.Safari": { "mode": "auto", "browser_fix": true },
-    "com.google.Chrome": { "mode": "auto", "browser_fix": true },
-    "com.microsoft.edgemac": { "mode": "auto", "browser_fix": true },
-    "com.brave.Browser": { "mode": "auto", "browser_fix": true },
-    "company.thebrowser.Browser": { "mode": "auto", "browser_fix": true },
+    "com.google.Chrome": { "mode": "inject_fast", "browser_fix": true },
+    "com.microsoft.edgemac": { "mode": "inject_fast", "browser_fix": true },
+    "com.brave.Browser": { "mode": "inject_fast", "browser_fix": true },
+    "company.thebrowser.Browser": { "mode": "inject_fast", "browser_fix": true },
     "org.mozilla.firefox": { "mode": "inject_fast", "browser_fix": true },
     "app.zen-browser.zen": { "mode": "inject_fast", "browser_fix": true },
     "com.apple.Spotlight": { "mode": "inject_fast", "browser_fix": true },
