@@ -90,7 +90,7 @@ pub unsafe extern "C" fn ok_settings_json_set(json: *const c_char) -> bool {
 #[no_mangle]
 pub extern "C" fn ok_set_status_callback(cb: StatusCallback) {
     with_runtime(|rt| {
-        rt.status_cb = Some(cb);
+        rt.status_cb = cb; // None (NULL from C) unregisters
         rt.notify_status();
     });
 }

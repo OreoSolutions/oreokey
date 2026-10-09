@@ -25,7 +25,10 @@ void ok_set_enabled(bool on);
 char *ok_settings_json_get(void);
 bool ok_settings_json_set(const char *json);
 
-// Callback khi trạng thái VN/EN đổi (hotkey, đổi app).
+// Callback khi trạng thái VN/EN đổi (hotkey, đổi app). NULL = hủy đăng ký.
+// Có thể được gọi khi core đang giữ khóa runtime (và từ thread event tap):
+// callback KHÔNG được gọi ngược vào OreoKey (ok_*) một cách đồng bộ —
+// hãy dispatch sang main queue.
 typedef void (*ok_status_cb)(bool vn_on);
 void ok_set_status_callback(ok_status_cb cb);
 

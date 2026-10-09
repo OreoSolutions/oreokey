@@ -15,7 +15,7 @@ use crate::engine::Engine;
 
 /// Callback Swift đăng ký để cập nhật icon menu bar khi trạng thái
 /// VN/EN đổi (do hotkey hoặc đổi app).
-pub type StatusCallback = extern "C" fn(bool);
+pub type StatusCallback = Option<extern "C" fn(bool)>;
 
 pub struct Runtime {
     pub settings: Settings,
@@ -29,7 +29,7 @@ pub struct Runtime {
     pub profiles: profiles::Profiles,
     /// Cache khả năng sửa chữ qua AX API theo bundle ID.
     pub ax_ok: HashMap<String, bool>,
-    pub status_cb: Option<StatusCallback>,
+    pub status_cb: StatusCallback,
     /// Lọc phím bóng ma (bản sao keydown do WindowServer giao lại khi
     /// callback chậm vì Replace). Xem [`ghost`].
     pub ghost: ghost::GhostGuard,
@@ -119,6 +119,8 @@ impl Runtime {
     }
 
     pub fn notify_status(&self) {
+        // Invoked with the runtime lock held: the callback must not call
+        // back into OreoKey synchronously.
         if let Some(cb) = self.status_cb {
             cb(self.effective_enabled());
         }
