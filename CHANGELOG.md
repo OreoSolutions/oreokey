@@ -6,6 +6,17 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Mất một chữ khi gõ dấu trong thanh địa chỉ Chrome/Safari có gợi ý**: gõ
+  `thuowngr` khi thanh địa chỉ đang bôi đen phần gợi ý tự hoàn thành nay ra
+  `thưởng` thay vì `thươởng`. Trước đây OreoKey gõ một dấu cách để ghi đè
+  phần gợi ý rồi xóa lại, nhưng dấu cách là thao tác chèn nên trình duyệt
+  gợi ý lại ngay và backspace kế tiếp xóa gợi ý mới thay vì dấu cách; kết
+  quả thiếu một backspace thật. Khi đọc được vùng chọn, OreoKey giờ chỉ gửi
+  một backspace (xóa đúng phần gợi ý, không kích gợi ý lại). Lỗi chỉ hiện
+  khi "từ đang gõ + dấu cách" trùng một gợi ý lịch sử nên trước đây có vẻ
+  ngẫu nhiên.
+
 ## [0.7.7] - 2026-10-06
 
 ### Đã sửa

@@ -124,21 +124,19 @@ fn key_inject(
     // Không đọc được selection (AX câm) → dựa vào cờ browser_fix của
     // profile: app được đánh dấu hay autocomplete thì thà gửi thừa.
     if backspaces > 0 {
-        // force_clear: app có ghost text mà AX báo selection = 0
-        // (Spotlight) — kiểm tra selection vô nghĩa, luôn phải hủy.
-        let clear_needed = profile.force_clear
-            || match selection_len {
-                Some(len) => len > 0,
-                None => profile.browser_fix,
-            };
+        let clear = clear_strategy(profile, selection_len);
         if super::debug_enabled() {
             super::dlog(&format!(
-                "  inject bs={backspaces} sel={selection_len:?} clear={clear_needed}"
+                "  inject bs={backspaces} sel={selection_len:?} clear={clear:?}"
             ));
         }
-        if clear_needed {
-            post_key(&source, proxy, KEY_SPACE, " ", delay);
-            post_key(&source, proxy, KEY_BACKSPACE, "", delay);
+        match clear {
+            Clear::None => {}
+            Clear::Backspace => post_key(&source, proxy, KEY_BACKSPACE, "", delay),
+            Clear::SpaceBackspace => {
+                post_key(&source, proxy, KEY_SPACE, " ", delay);
+                post_key(&source, proxy, KEY_BACKSPACE, "", delay);
+            }
         }
     }
 
@@ -148,6 +146,35 @@ fn key_inject(
 
     post_text_chunks(&source, proxy, text, delay);
     true
+}
+
+/// Cách hủy phần gợi ý autocomplete đang bôi đen trước khi backspace.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Clear {
+    None,
+    /// Vùng chọn chắc chắn có (AX đọc được): một backspace xóa đúng phần
+    /// gợi ý. Vì là thao tác XÓA, omnibox không gợi ý lại.
+    Backspace,
+    /// Không biết có vùng chọn không (AX câm / app nói dối): space ghi
+    /// đè nếu có gợi ý, backspace xóa lại space — trung hòa khi không có.
+    SpaceBackspace,
+}
+
+/// `force_clear`: app có ghost text mà AX báo selection = 0 (Spotlight) —
+/// kiểm tra selection vô nghĩa, luôn phải hủy.
+///
+/// Khi AX báo có vùng chọn thì KHÔNG dùng space+backspace: space là thao
+/// tác chèn nên Chrome/Safari gợi ý lại ngay, backspace kế tiếp xóa gợi ý
+/// mới thay vì xóa space → thiếu một backspace thật (bug thực địa: gõ
+/// `thuowngr` trong thanh địa chỉ Chrome ra `thươởng`).
+fn clear_strategy(profile: &ResolvedProfile, selection_len: Option<isize>) -> Clear {
+    match selection_len {
+        _ if profile.force_clear => Clear::SpaceBackspace,
+        Some(len) if len > 0 => Clear::Backspace,
+        Some(_) => Clear::None,
+        None if profile.browser_fix => Clear::SpaceBackspace,
+        None => Clear::None,
+    }
 }
 
 /// Chunk by UTF-16 code units, matching the contract of `CHUNK_UTF16` even
@@ -217,5 +244,52 @@ fn post_key_flags(
     }
     if let Some(d) = delay {
         std::thread::sleep(d);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn profile(browser_fix: bool, force_clear: bool) -> ResolvedProfile {
+        ResolvedProfile {
+            browser_fix,
+            force_clear,
+            ..ResolvedProfile::default()
+        }
+    }
+
+    #[test]
+    fn known_selection_uses_single_backspace() {
+        // Chrome omnibox: "thương" + 20 ký tự gợi ý bôi đen. Space sẽ làm
+        // omnibox gợi ý lại → phải dùng một backspace.
+        assert_eq!(
+            clear_strategy(&profile(true, false), Some(20)),
+            Clear::Backspace
+        );
+        // Không phải app trình duyệt nhưng có vùng chọn giữa từ → vẫn là
+        // autocomplete (click/mũi tên đều đã reset engine).
+        assert_eq!(
+            clear_strategy(&profile(false, false), Some(3)),
+            Clear::Backspace
+        );
+    }
+
+    #[test]
+    fn unknown_selection_keeps_space_backspace_only_for_browsers() {
+        assert_eq!(
+            clear_strategy(&profile(true, false), None),
+            Clear::SpaceBackspace
+        );
+        assert_eq!(clear_strategy(&profile(false, false), None), Clear::None);
+        assert_eq!(clear_strategy(&profile(true, false), Some(0)), Clear::None);
+    }
+
+    #[test]
+    fn force_clear_always_space_backspace() {
+        assert_eq!(
+            clear_strategy(&profile(false, true), Some(0)),
+            Clear::SpaceBackspace
+        );
     }
 }
