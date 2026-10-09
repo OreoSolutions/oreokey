@@ -145,6 +145,34 @@ impl WordState {
     pub fn has_vowel(&self) -> bool {
         self.letters.iter().any(|l| l.is_vowel())
     }
+
+    /// Cặp uo tại `u`, `u + 1` là vần "uơ" mở — chỉ móc o (thuở, huơ, khuơ)?
+    /// Chỉ khi uo đứng cuối từ sau th/h/kh: những phụ âm đầu duy nhất có vần
+    /// này, nên từ ươ thông dụng khác (được, người) không đổi. Như Unikey.
+    pub(crate) fn is_open_uo(&self, u: usize) -> bool {
+        u + 2 == self.letters.len()
+            && matches!(
+                self.letters[..u].iter().map(|l| l.base).collect::<String>().as_str(),
+                "th" | "h" | "kh"
+            )
+    }
+
+    /// Thêm chữ thường. "uơ" chỉ đứng cuối âm tiết: có chữ theo sau thì
+    /// thành ươ ("thuơ" + n → "thươn"), để gõ w sớm vẫn ra thương/hươu.
+    pub(crate) fn push_letter(&mut self, c: char) {
+        let n = self.letters.len();
+        if c.is_ascii_alphabetic()
+            && n >= 2
+            && self.letters[n - 1].base == 'o'
+            && self.letters[n - 1].horn
+            && self.letters[n - 2].base == 'u'
+            && !self.letters[n - 2].has_mark()
+            && (n == 2 || self.letters[n - 3].base != 'q')
+        {
+            self.letters[n - 2].horn = true;
+        }
+        self.letters.push(Letter::plain(c));
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

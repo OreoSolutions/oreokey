@@ -42,7 +42,8 @@ pub fn apply_key(state: &mut WordState, c: char) {
         }
         '7' => {
             // Cặp uo liền kề bất kỳ trong cụm → ươ. Quét cả cụm (như Telex)
-            // để ươi/ươu ("nguoi72", "ruou75") móc được cả cặp.
+            // để ươi/ươu ("nguoi72", "ruou75") móc được cả cặp. Riêng vần mở
+            // "uơ" (thuở, huơ) chỉ móc o.
             let vidx = vowel_indices(&state.letters);
             for w in vidx.windows(2) {
                 let (i, j) = (w[0], w[1]);
@@ -52,7 +53,7 @@ pub fn apply_key(state: &mut WordState, c: char) {
                     && !state.letters[i].has_mark()
                     && !state.letters[j].has_mark()
                 {
-                    state.letters[i].horn = true;
+                    state.letters[i].horn = !state.is_open_uo(i);
                     state.letters[j].horn = true;
                     return;
                 }
@@ -99,7 +100,7 @@ pub fn apply_key(state: &mut WordState, c: char) {
             }
             state.letters.push(Letter::plain(c));
         }
-        _ => state.letters.push(Letter::plain(c)),
+        _ => state.push_letter(c),
     }
 }
 
@@ -189,6 +190,17 @@ mod tests {
         assert_eq!(strict("nguoi72"), "người");
         assert_eq!(strict("cuoi72"), "cười");
         assert_eq!(strict("ruou75"), "rượu");
+    }
+
+    #[test]
+    fn open_uo_after_th_h_kh_hooks_only_o() {
+        assert_eq!(v("thuo73"), "thuở");
+        assert_eq!(v("thuo37"), "thuở");
+        assert_eq!(v("huo7"), "huơ");
+        assert_eq!(v("thuo7ng"), "thương");
+        assert_eq!(v("huo7u"), "hươu");
+        assert_eq!(v("d9uo7c5"), "được");
+        assert_eq!(v("thuong7"), "thương");
     }
 
     #[test]

@@ -114,6 +114,7 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
             // Áp dụng: cặp uo liền kề bất kỳ trong cụm nguyên âm → ươ. Quét
             // cả cụm (không chỉ hai nguyên âm cuối) để ươi/ươu — "người",
             // "cười", "rượu" — móc được cả cặp dù còn nguyên âm cuối theo sau.
+            // Riêng vần mở "uơ" (thuở, huơ) chỉ móc o.
             for k in 0..vidx.len().saturating_sub(1) {
                 let (i, j) = (vidx[k], vidx[k + 1]);
                 if j == i + 1
@@ -122,7 +123,7 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
                     && !state.letters[i].has_mark()
                     && !state.letters[j].has_mark()
                 {
-                    state.letters[i].horn = true;
+                    state.letters[i].horn = !state.is_open_uo(i);
                     state.letters[j].horn = true;
                     return;
                 }
@@ -214,7 +215,7 @@ pub fn apply_key(state: &mut WordState, c: char, flexible_marks: bool) {
             }
             state.letters.push(Letter::plain(c));
         }
-        _ => state.letters.push(Letter::plain(c)),
+        _ => state.push_letter(c),
     }
 }
 
@@ -334,6 +335,29 @@ mod tests {
         // Bất biến: u sau q không thuộc cụm; uô (đã mang mũ) không phải cặp uo.
         assert_eq!(t("quow"), "quơ");
         assert_eq!(t("buonw"), "bươn");
+    }
+
+    #[test]
+    fn open_uo_after_th_h_kh_hooks_only_o() {
+        // Vần "uơ" chỉ đứng cuối âm tiết (thuở, huơ, khuơ): w trên cặp uo
+        // cuối từ sau th/h/kh chỉ móc o, như Unikey.
+        assert_eq!(t("thuowr"), "thuở");
+        assert_eq!(t("thuorw"), "thuở");
+        assert_eq!(t("huow"), "huơ");
+        assert_eq!(t("khuow"), "khuơ");
+        // Chữ theo sau "uơ" nâng lên ươ — gõ w sớm vẫn ra đúng.
+        assert_eq!(t("thuowng"), "thương");
+        assert_eq!(t("thuowrng"), "thưởng");
+        assert_eq!(t("huowu"), "hươu");
+        assert_eq!(t("thuowcs"), "thước");
+        // Phụ âm đầu khác / w sau cụm: cặp ươ như cũ.
+        assert_eq!(t("dduowcj"), "được");
+        assert_eq!(t("thuongw"), "thương");
+        assert_eq!(t("huouw"), "hươu");
+        assert_eq!(t("quow"), "quơ");
+        assert_eq!(t("thuoww"), "thuow"); // gõ lặp vẫn hủy
+        assert_eq!(t_spell("thuowr"), "thuở");
+        assert_eq!(t_spell("thuowngf"), "thường");
     }
 
     #[test]
