@@ -136,13 +136,41 @@ fn settings_path() -> PathBuf {
     config_dir().join("settings.json")
 }
 
-/// Đọc settings; file hỏng hoặc chưa có → mặc định (không phá app vì
-/// một file lỗi).
+/// Đọc settings. File chưa có → mặc định. File lỗi → giữ các field còn
+/// hợp lệ, sao lưu bản gốc sang `settings.json.bad` (để lần save kế tiếp
+/// không xóa mất macro của người dùng) rồi dùng phần đọc được.
 pub fn load() -> Settings {
-    match fs::read_to_string(settings_path()) {
-        Ok(text) => serde_json::from_str(&migrate_json(&text)).unwrap_or_default(),
-        Err(_) => Settings::default(),
+    let Ok(text) = fs::read_to_string(settings_path()) else {
+        return Settings::default();
+    };
+    let (settings, clean) = parse_lenient(&text);
+    if !clean {
+        let _ = fs::copy(settings_path(), config_dir().join("settings.json.bad"));
     }
+    settings
+}
+
+/// Trả về (settings, nguyên vẹn?). Parse chặt trước; nếu hỏng thì thử từng
+/// field riêng lẻ để một field sai (vd. FixMode lạ) không làm mất cả file.
+fn parse_lenient(text: &str) -> (Settings, bool) {
+    let migrated = migrate_json(text);
+    if let Ok(s) = serde_json::from_str(&migrated) {
+        return (s, true);
+    }
+    let Ok(serde_json::Value::Object(obj)) = serde_json::from_str(&migrated) else {
+        return (Settings::default(), false);
+    };
+    let good: serde_json::Map<_, _> = obj
+        .into_iter()
+        .filter(|(k, v)| {
+            let one = serde_json::Map::from_iter([(k.clone(), v.clone())]);
+            serde_json::from_value::<Settings>(one.into()).is_ok()
+        })
+        .collect();
+    (
+        serde_json::from_value(good.into()).unwrap_or_default(),
+        false,
+    )
 }
 
 /// Di trú file cũ: `spell_check: bool` (đã bỏ) → `spell_mode`. Trả nguyên
@@ -170,7 +198,11 @@ pub fn save(settings: &Settings) -> io::Result<()> {
     let tmp = dir.join("settings.json.tmp");
     let json = serde_json::to_string_pretty(settings)
         .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-    fs::write(&tmp, json)?;
+    // fsync before rename so a crash cannot leave an empty settings.json.
+    let mut f = fs::File::create(&tmp)?;
+    io::Write::write_all(&mut f, json.as_bytes())?;
+    f.sync_all()?;
+    drop(f);
     fs::rename(&tmp, settings_path())?;
     Ok(())
 }
@@ -205,6 +237,19 @@ mod tests {
     fn corrupt_file_falls_back_to_default() {
         let s: Settings = serde_json::from_str("not json").unwrap_or_default();
         assert_eq!(s, Settings::default());
+    }
+
+    #[test]
+    fn one_bad_field_keeps_the_rest() {
+        let (s, clean) = parse_lenient(
+            r#"{"method":"vni","macros":[{"from":"a","to":"b"}],"per_app_mode":{"x":"bogus"}}"#,
+        );
+        assert!(!clean);
+        assert_eq!(s.method, "vni");
+        assert_eq!(s.macros.len(), 1);
+        assert!(s.per_app_mode.is_empty());
+        assert!(parse_lenient(r#"{"method":"vni"}"#).1);
+        assert!(!parse_lenient("not json").1);
     }
 
     #[test]

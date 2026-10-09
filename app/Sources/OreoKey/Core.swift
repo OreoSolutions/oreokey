@@ -10,6 +10,17 @@ struct CoreHotkey: Codable, Equatable {
     var alt: Bool
     var cmd: Bool
     var keycode: UInt16?
+
+    // Mặc định Swift bỏ qua key khi nil → Rust (#[serde(default)]) tự điền
+    // Space(49). Mã hóa null tường minh để "chỉ modifier" được giữ nguyên.
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(ctrl, forKey: .ctrl)
+        try c.encode(shift, forKey: .shift)
+        try c.encode(alt, forKey: .alt)
+        try c.encode(cmd, forKey: .cmd)
+        try c.encode(keycode, forKey: .keycode)
+    }
 }
 
 extension CoreHotkey {

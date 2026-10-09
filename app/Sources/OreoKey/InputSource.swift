@@ -18,9 +18,13 @@ enum InputSource {
             [kTISPropertyInputSourceID as String: "com.apple.keylayout.ABC"] as CFDictionary
         guard
             let list = TISCreateInputSourceList(filter, false)?.takeRetainedValue()
-                as? [TISInputSource],
-            let abc = list.first
+                as? [TISInputSource]
         else { return }
-        TISSelectInputSource(abc)
+        // ABC có thể chưa bật (người dùng chỉ có U.S., Colemak…): dùng bàn
+        // phím ASCII-capable hiện có thay vì để IME chạy chồng.
+        guard let target = list.first
+            ?? TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue()
+        else { return }
+        TISSelectInputSource(target)
     }
 }

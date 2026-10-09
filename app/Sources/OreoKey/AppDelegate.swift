@@ -24,6 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.instance = self
+        // Một bản đang chạy là đủ: hai event tap sẽ xử lý chồng phím.
+        if let id = Bundle.main.bundleIdentifier,
+            NSRunningApplication.runningApplications(withBundleIdentifier: id)
+                .contains(where: { $0 != NSRunningApplication.current })
+        {
+            NSApp.terminate(nil)
+            return
+        }
         setupStatusItem()
         _ = Updater.shared  // bắt đầu kiểm tra cập nhật nền
         Core.setStatusCallback(statusChanged)
@@ -50,15 +58,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Khởi động tap / onboarding
 
+    private var startFailures = 0
+
     func startOrOnboard() {
-        if Core.axTrusted(), Core.start() {
+        guard Core.axTrusted() else {
+            showOnboarding()
+            return
+        }
+        if Core.start() {
+            startFailures = 0
             let vnOn = Core.vnEnabled()
             updateIcon(vnOn: vnOn)
             if vnOn {
                 InputSource.ensureLatin()
             }
-        } else {
-            showOnboarding()
+            return
+        }
+        // Quyền đã cấp nhưng tạo event tap thất bại: onboarding không giúp
+        // được gì (nó sẽ đóng/mở lại mỗi giây và giành focus). Báo một lần,
+        // rồi thử lại im lặng với backoff 2s, 4s… tối đa 60s.
+        startFailures += 1
+        if startFailures == 1 {
+            let alert = NSAlert()
+            alert.messageText = "Không thể khởi động bộ gõ"
+            alert.informativeText =
+                "OreoKey đã có quyền Trợ năng nhưng chưa tạo được bộ bắt phím. "
+                + "Ứng dụng sẽ tự thử lại; nếu vẫn lỗi, hãy tắt rồi bật lại quyền "
+                + "OreoKey trong System Settings → Accessibility, hoặc khởi động lại máy."
+            alert.alertStyle = .warning
+            alert.runModal()
+        }
+        let delay = min(60.0, pow(2.0, Double(min(startFailures, 6))))
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.startOrOnboard()
         }
     }
 

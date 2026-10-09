@@ -26,15 +26,25 @@ final class SettingsWindowController {
 // Nguồn sự thật là Rust: đọc khi mở, ghi ngay mỗi lần đổi.
 final class SettingsModel: ObservableObject {
     @Published var saveError: String?
+    private var reloading = false
     @Published var settings: CoreSettings? {
         didSet {
-            guard let s = settings, s != oldValue, oldValue != nil else { return }
+            guard !reloading, let s = settings, s != oldValue, oldValue != nil else { return }
             saveError = Core.save(s) ? nil : "Không thể lưu cài đặt. Hãy kiểm tra quyền ghi và thử lại."
         }
     }
 
     init() {
         settings = Core.loadSettings()
+    }
+
+    /// Đọc lại từ Rust (menu bar/hotkey có thể đã đổi enabled/method) —
+    /// không ghi ngược, để lần sửa kế tiếp không đẩy snapshot cũ về core.
+    func reload() {
+        guard let fresh = Core.loadSettings(), fresh != settings else { return }
+        reloading = true
+        settings = fresh
+        reloading = false
     }
 }
 
@@ -115,6 +125,10 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 760, minHeight: 500)
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) {
+            // Chỉ cửa sổ Cài đặt (alert/sheet khác không cần nạp lại).
+            if ($0.object as? NSWindow)?.title == "Cài đặt OreoKey" { model.reload() }
+        }
         .alert("Không thể lưu cài đặt", isPresented: Binding(
             get: { model.saveError != nil },
             set: { if !$0 { model.saveError = nil } }
@@ -329,13 +343,14 @@ private struct HotkeyControl: View {
 
     @State private var isRecording = false
     @State private var monitor: Any?
+    @State private var hint: String?
 
     var body: some View {
         Group {
             if isRecording {
                 HStack(spacing: 8) {
-                    Text("Nhấn tổ hợp phím… (⎋ để hủy)")
-                        .foregroundStyle(.secondary)
+                    Text(hint ?? "Nhấn tổ hợp phím… (⎋ để hủy)")
+                        .foregroundStyle(hint == nil ? Color.secondary : Color.orange)
                     Button("Hủy") { stopRecording() }
                 }
             } else {
@@ -362,6 +377,7 @@ private struct HotkeyControl: View {
 
     private func startRecording() {
         guard monitor == nil else { return }
+        hint = nil
         isRecording = true
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             record(event)
@@ -379,12 +395,15 @@ private struct HotkeyControl: View {
         let alt = flags.contains(.option)
         let cmd = flags.contains(.command)
         let shift = flags.contains(.shift)
-        // Bắt buộc có ⌃/⌥/⌘: phím trần hay ⇧+phím là gõ chữ thường,
+        // Bắt buộc có ⌃/⌥: phím trần hay ⇧+phím là gõ chữ thường,
         // dùng làm hotkey toàn cục sẽ nuốt mất phím khi gõ văn bản.
-        guard ctrl || alt || cmd else {
+        // ⌘ đứng một mình (⌘C, ⌘V, ⌘Q…) là phím tắt của app, không dùng được.
+        guard ctrl || alt else {
             NSSound.beep()
+            hint = "Cần có ⌃ hoặc ⌥ (không chỉ ⌘ hay ⇧)."
             return
         }
+        hint = nil
         hotkey = CoreHotkey(ctrl: ctrl, shift: shift, alt: alt, cmd: cmd, keycode: event.keyCode)
         stopRecording()
     }
