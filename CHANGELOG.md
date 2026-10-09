@@ -14,9 +14,14 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 - **Ô ghi phím tắt từ chối tổ hợp trùng phím tắt của app**: chỉ `⌘` (⌘C, ⌘V,
   ⌘Q…) hoặc không có phím bổ trợ sẽ không được nhận nữa; cần có `⌃` hoặc `⌥`
   (có thể kèm `⇧`/`⌘`). Ô ghi hiện gợi ý ngắn khi từ chối.
-- **VNI**: sửa lỗi gõ cụm `ươ`.
-- **Chế độ chính tả Thường / Thoải mái**: các phím hủy từ (phím mũi tên,
-  Esc…) nay ngắt từ đang gõ đúng cách thay vì để lại bộ đệm cũ.
+- **VNI**: `7` nay móc cả cụm `uo` khi gõ sau nguyên âm cuối (`nguoi72` →
+  người, `ruou75` → rượu, `tuoi7` → tươi).
+- **Chế độ chính tả Thường / Thoải mái**: gõ lặp phím dấu để hủy (`ddd`, `a11`,
+  `a66`, `d99`, `u77`…) nay hủy dấu đúng như chế độ Nghiêm ngặt thay vì giữ
+  nguyên dấu sai.
+- **Gõ được `thuở`, `huơ`, `khuơ`** (Telex và VNI).
+- **File cài đặt hỏng một trường** không còn làm mất toàn bộ cài đặt; các
+  trường còn hợp lệ được giữ, bản gốc lưu thành `settings.json.bad`.
 - **Treo khi app đích không phản hồi**: các lời gọi Accessibility nay có thời
   hạn chờ, nên một app bị treo không còn làm macOS tắt bộ gõ.
 - **Khởi động**: nếu đã có quyền Trợ năng mà bộ gõ vẫn không khởi động được,
