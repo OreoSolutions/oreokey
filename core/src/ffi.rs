@@ -74,6 +74,10 @@ pub unsafe extern "C" fn ok_settings_json_set(json: *const c_char) -> bool {
     // section. Otherwise a simultaneous hotkey toggle can be overwritten by
     // this stale settings snapshot after it has already been persisted.
     with_runtime(|rt| {
+        // `enabled` is owned by the runtime; keep the persisted copy in sync
+        // with the live value rather than the snapshot's.
+        let mut settings = settings;
+        settings.enabled = rt.enabled;
         if config::save(&settings).is_err() {
             return false;
         }

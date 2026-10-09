@@ -56,8 +56,13 @@ impl Runtime {
         rt
     }
 
-    pub fn apply_settings(&mut self, settings: Settings) {
-        self.enabled = settings.enabled;
+    /// Apply a settings snapshot from Swift. `enabled` is runtime-owned
+    /// (hotkey, menu and per-app toggles change it behind the snapshot's
+    /// back), so a possibly stale snapshot must not flip it: the live value
+    /// wins. `method` is applied as sent — the menu and the Settings picker
+    /// both change it only through this setter.
+    pub fn apply_settings(&mut self, mut settings: Settings) {
+        settings.enabled = self.enabled;
         self.engine.set_config(settings.engine_config());
         self.engine.set_macros(settings.macro_table());
         self.settings = settings;
