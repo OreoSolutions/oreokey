@@ -419,6 +419,22 @@
                  type="application/octet-stream"
                  sparkle:edSignature="UmPX2Iix9uGl62Tg3C1wrThfCu9HubTEFsEgZCpq4noxjmQOZGZNzqydoEjqosxFf9JdCJcm56p2sA0tw7C5AA==" length="5677203" />
     </item>
+    <item>
+      <title>0.7.9</title>
+      <pubDate>Fri, 09 Oct 2026 04:25:31 +0000</pubDate>
+      <sparkle:version>26</sparkle:version>
+      <sparkle:shortVersionString>0.7.9</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã đổi</h3>
+<ul>
+<li><strong>Chrome, Edge, Brave, Arc chuyển sang bơm phím nhanh</strong>: trước đây các trình duyệt Chromium sửa chữ qua Accessibility nên mỗi phím dấu thấy vùng chọn lóe lên một khung hình (Chromium áp lệnh chọn vùng và ghi đè bất đồng bộ, khác app native). Nay dùng cùng cơ chế với VS Code, Slack, Discord: không còn nháy bôi đen. Safari giữ nguyên vì WebKit áp lệnh đồng bộ.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.7.9/OreoKey.dmg"
+                 sparkle:version="26"
+                 sparkle:shortVersionString="0.7.9"
+                 type="application/octet-stream"
+                 sparkle:edSignature="nc95yBi0s1YN5SimloQ3VkKm0nwho78K6Ce7L0hzD4pVoHZVNRNEzqhZonpM/3QTdjK6Ak5EH1NFzh73HngwBg==" length="5677221" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>

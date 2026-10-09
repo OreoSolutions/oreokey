@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.7.9] - 2026-10-09
+
 ### Đã đổi
 - **Chrome, Edge, Brave, Arc chuyển sang bơm phím nhanh**: trước đây các
   trình duyệt Chromium sửa chữ qua Accessibility nên mỗi phím dấu thấy vùng
