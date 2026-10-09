@@ -22,6 +22,23 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 - **Gõ được `thuở`, `huơ`, `khuơ`** (Telex và VNI).
 - **File cài đặt hỏng một trường** không còn làm mất toàn bộ cài đặt; các
   trường còn hợp lệ được giữ, bản gốc lưu thành `settings.json.bad`.
+- **Xóa lùi không còn làm mất dấu từ đang gõ**: gõ dấu sau chữ cuối rồi
+  Backspace (`vieetj` ⌫) từng khiến phím sau thành chữ thường (`s` → "việs");
+  nay ra "viế". Nửa từ không dựng lại được (kiểu cũ "toá") được để nguyên,
+  gõ tắt và che từ không bung trên nửa từ đó.
+- **VNI**: gõ lặp `7` sau "uơ" nay hủy móc như Telex (`thuo77` → thuo7).
+- **Không còn mất chữ khi app phản hồi chậm**: nếu lệnh sửa chữ qua
+  Accessibility quá hạn chờ, OreoKey bỏ qua phím đó thay vì bơm phím xóa, tránh
+  xóa nhầm chữ thật khi app áp lệnh muộn. App bị treo không còn làm chậm từng
+  phím gõ.
+- **Thêm hồ sơ tương thích** cho Zalo, Lark, Claude, 1Password, web app của
+  Chrome và các kênh beta/dev/canary của Chrome, Edge, Brave (hết nháy vùng chọn).
+- **Bật tiếng Việt từ menu trong app bị loại trừ** nay chỉ bật cho app đó,
+  không còn âm thầm bật cho mọi app khác.
+- **Cửa sổ Cài đặt** không còn ghi đè kiểu gõ vừa đổi từ menu bar.
+- **Phím tắt bật/tắt** không còn đôi khi tự đảo lại ngay sau khi bấm.
+- **File cài đặt sai mã hóa (UTF-16, có BOM, ký tự hỏng)** không còn bị thay
+  bằng mặc định; phần đọc được được giữ, bản gốc lưu thành `settings.json.bad`.
 - **Treo khi app đích không phản hồi**: các lời gọi Accessibility nay có thời
   hạn chờ, nên một app bị treo không còn làm macOS tắt bộ gõ.
 - **Khởi động**: nếu đã có quyền Trợ năng mà bộ gõ vẫn không khởi động được,

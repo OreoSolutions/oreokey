@@ -15,7 +15,7 @@ cargo test -p oreokey-core --lib
 
 # Gate sweep toàn từ điển — bắt hồi quy engine mà unit test không phủ.
 # Từ điển: 8.581 âm tiết trích từ Viet74K (xem docs/dict-sweep-report.md).
-# Mốc chấp nhận: 1.662 lỗi (0.7.5) với từ điển 8.581 âm tiết; từ điển đầy đủ
+# Mốc chấp nhận: 1.659 lỗi (từ 0.7.9; 0.7.5 là 1.662) với từ điển 8.581 âm tiết; từ điển đầy đủ
 # (9.061 âm tiết, có chữ ư, đủ người/được/thương) là 1.800 lỗi. Phải trích
 # từ điển với bảng chữ cái gồm ư — bản cũ lọc mất ư nên không quét các từ đó.
 # Lệch lên = hồi quy, dừng lại.
