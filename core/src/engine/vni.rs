@@ -58,8 +58,15 @@ pub fn apply_key(state: &mut WordState, c: char) {
                     return;
                 }
             }
-            if let Some(i) = rpos(state, |l| {
-                matches!(l.base, 'u' | 'o') && !l.has_mark()
+            // u ngay trước ơ ("thuơ", "quơ") không nhận móc riêng: cặp ươ chỉ
+            // thành ở nhánh trên, nên 7 lặp ở đây là hủy như Telex "thuoww".
+            let before_horned_o = |i: usize| {
+                state.letters[i].base == 'u'
+                    && state.letters.get(i + 1).is_some_and(|n| n.base == 'o' && n.horn)
+            };
+            if let Some(i) = (0..state.letters.len()).rev().find(|&i| {
+                let l = &state.letters[i];
+                matches!(l.base, 'u' | 'o') && !l.has_mark() && !before_horned_o(i)
             }) {
                 state.letters[i].horn = true;
                 return;
@@ -201,6 +208,36 @@ mod tests {
         assert_eq!(v("huo7u"), "hươu");
         assert_eq!(v("d9uo7c5"), "được");
         assert_eq!(v("thuong7"), "thương");
+    }
+
+    #[test]
+    fn repeated_7_cancels_open_uo_like_telex() {
+        // "uơ" + 7 từng móc nốt chữ u ("thuo77" → "thươ") trong khi Telex
+        // "thuoww" hủy về "thuow". Gõ lặp 7 phải hủy như mọi phím dấu khác.
+        assert_eq!(v("thuo77"), "thuo7");
+        assert_eq!(v("huo77"), "huo7");
+        assert_eq!(v("khuo77"), "khuo7");
+        assert_eq!(v("quo77"), "quo7"); // như Telex "quoww" → "quow"
+        // Không hồi quy: móc tách, cặp ươ, nâng "uơ" khi có chữ theo sau.
+        assert_eq!(v("u7o7"), "ươ");
+        assert_eq!(v("thu7o7"), "thươ");
+        assert_eq!(v("thuo7"), "thuơ");
+        assert_eq!(v("thuo7ng"), "thương");
+        assert_eq!(v("huo7u"), "hươu");
+        assert_eq!(v("nguoi77"), "nguoi7");
+        use crate::engine::testutil::type_str;
+        use crate::engine::{Engine, EngineConfig, SpellMode};
+        for mode in [SpellMode::Strict, SpellMode::Standard, SpellMode::Loose] {
+            let mut e = Engine::new(EngineConfig {
+                method: TypingMethod::Vni,
+                spell_mode: mode,
+                modern_tone: false,
+                macros_enabled: false,
+                flexible_marks: true,
+                censor_enabled: false,
+            });
+            assert_eq!(type_str(&mut e, "thuo77"), "thuo7", "{mode:?}");
+        }
     }
 
     #[test]
