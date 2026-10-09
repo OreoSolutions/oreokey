@@ -37,6 +37,7 @@ pub enum Outcome {
     Unknown,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn apply(
     proxy: CGEventTapProxy,
     old: &str,
@@ -45,6 +46,7 @@ pub fn apply(
     bundle: &str,
     ax_failed: &mut HashMap<String, Instant>,
     selection_len: Option<isize>,
+    ax_deadline: Instant,
 ) -> Outcome {
     let backspaces = old.chars().count();
     // Chèn thuần (không xóa gì): bơm phím không thể nháy, và AX lúc này
@@ -67,7 +69,7 @@ pub fn apply(
                 .get(bundle)
                 .is_some_and(|t| t.elapsed() < AX_RETRY);
             if ax_worth_it && !ax_blocked {
-                match ax::replace_tail(old, text) {
+                match ax::replace_tail(old, text, ax_deadline) {
                     Ok(()) => {
                         super::dlog("  -> AX ok");
                         ax_failed.remove(bundle);
@@ -96,7 +98,7 @@ pub fn apply(
             }
             key_inject(proxy, backspaces, text, profile, selection_len)
         }
-        FixMode::AxOnly => match ax::replace_tail(old, text) {
+        FixMode::AxOnly => match ax::replace_tail(old, text, ax_deadline) {
             Ok(()) => Outcome::Done,
             Err(ax::AxFail::Unknown) => Outcome::Unknown,
             Err(_) => Outcome::Failed,

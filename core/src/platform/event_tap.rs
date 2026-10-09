@@ -5,6 +5,7 @@
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{mpsc, Mutex};
+use std::time::Instant;
 
 use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
 use core_graphics::event::{
@@ -254,20 +255,28 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                 // giao lại event, phím nhân đôi.
                 // Insert-only (old empty) never uses AX nor the selection:
                 // skip the round-trip and resolve the profile by bundle.
-                let finfo = if old.is_empty() {
-                    super::ax::FocusedInfo {
-                        proc_name: None,
-                        selection_len: None,
-                    }
+                // A hung app would only time out again: skip AX entirely.
+                let bundle = rt.current_bundle.clone();
+                let ax_deadline = Instant::now() + super::ax::AX_BUDGET;
+                let hung = rt
+                    .ax_hung
+                    .get(&bundle)
+                    .is_some_and(|t| t.elapsed() < inject::AX_RETRY);
+                let finfo = if old.is_empty() || hung {
+                    super::ax::FocusedInfo::default()
                 } else {
-                    super::ax::focused_info()
+                    super::ax::focused_info(ax_deadline)
                 };
+                if finfo.hung {
+                    super::dlog("  ax timed out, skipping AX for this app");
+                    rt.ax_hung.insert(bundle.clone(), Instant::now());
+                    rt.ax_failed.insert(bundle.clone(), Instant::now());
+                }
                 let profile = rt.profiles.resolve(
-                    &rt.current_bundle,
+                    &bundle,
                     &rt.settings.per_app_mode,
                     finfo.proc_name.as_deref(),
                 );
-                let bundle = rt.current_bundle.clone();
                 match inject::apply(
                     proxy,
                     &old,
@@ -276,6 +285,7 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                     &bundle,
                     &mut rt.ax_failed,
                     finfo.selection_len,
+                    ax_deadline,
                 ) {
                     inject::Outcome::Done => {}
                     inject::Outcome::Failed => {

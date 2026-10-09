@@ -30,6 +30,9 @@ pub struct Runtime {
     /// Bundle ID → lúc AX bị coi là không dùng được. Hết hạn sau
     /// [`inject::AX_RETRY`] để một lỗi AX thoáng qua không tắt AX cả phiên.
     pub ax_failed: HashMap<String, std::time::Instant>,
+    /// Bundle ID → when an AX read timed out (app busy or hung). While
+    /// fresh the tap makes no AX calls at all for it, not even reads.
+    pub ax_hung: HashMap<String, std::time::Instant>,
     pub status_cb: StatusCallback,
     /// Lọc phím bóng ma (bản sao keydown do WindowServer giao lại khi
     /// callback chậm vì Replace). Xem [`ghost`].
@@ -56,6 +59,7 @@ impl Runtime {
             current_bundle: String::new(),
             profiles: profiles::Profiles::load_default(),
             ax_failed: HashMap::new(),
+            ax_hung: HashMap::new(),
             status_cb: None,
             ghost: ghost::GhostGuard::new(ghost::window_ticks()),
         };

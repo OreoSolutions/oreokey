@@ -5,6 +5,7 @@
 //! write may still land and injecting could delete real text.
 
 use std::ffi::c_void;
+use std::time::{Duration, Instant};
 
 use core_foundation::base::{CFRange, CFType, CFTypeRef, TCFType};
 use core_foundation::string::{CFString, CFStringRef};
@@ -50,6 +51,10 @@ extern "C" {
 /// macOS to disable the tap. 0.3s is far above a healthy AX round-trip.
 const AX_TIMEOUT_SECS: f32 = 0.3;
 
+/// Total time one tap callback may spend on AX calls before the first write.
+/// Past it the remaining reads are skipped and the edit falls back to keys.
+pub const AX_BUDGET: Duration = Duration::from_millis(600);
+
 /// Timeout for the write calls, set on the element once it has answered
 /// the reads. A write that times out may still land later (outcome
 /// unknown), so waiting longer makes that rarer; healthy apps answer in ms.
@@ -92,11 +97,17 @@ pub enum AxFail {
 /// được app thực sự đang hiển thị `old` tại đó. Không xác minh mù:
 /// ký tự passthrough đến app bất đồng bộ, ghi đè mù sẽ nuốt nhầm chữ
 /// (bug thực địa: gõ nhanh "đó" thành "óo").
-pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
+/// Reads stop once `deadline` (see [`AX_BUDGET`]) has passed; nothing has
+/// been written then, so falling back to keys is safe.
+pub fn replace_tail(old: &str, text: &str, deadline: Instant) -> Result<(), AxFail> {
     // AX làm việc theo đơn vị UTF-16.
     let old_len = old.encode_utf16().count() as isize;
+    let out_of_time = || Instant::now() >= deadline;
 
     unsafe {
+        if out_of_time() {
+            return Err(AxFail::Unsupported);
+        }
         let system_wide = create_system_wide();
         if system_wide.is_null() {
             return Err(AxFail::Unsupported);
@@ -126,6 +137,9 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
             return Err(AxFail::Unsupported);
         }
 
+        if out_of_time() {
+            return Err(AxFail::Unsupported);
+        }
         // Vị trí con trỏ hiện tại; đòi hỏi không có vùng chọn (selection
         // nghĩa là trạng thái đã lệch so với buffer của engine).
         let mut range_value: CFTypeRef = std::ptr::null();
@@ -166,6 +180,9 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
             length: old_len,
         };
 
+        if out_of_time() {
+            return Err(AxFail::Unsupported);
+        }
         // XÁC MINH: app phải đang thực sự hiển thị `old` ngay trước caret.
         // Nếu ký tự passthrough trước đó chưa vào app (gõ nhanh), đoạn
         // này sẽ khác → fallback bơm phím (được xếp hàng đúng thứ tự).
@@ -184,6 +201,11 @@ pub fn replace_tail(old: &str, text: &str) -> Result<(), AxFail> {
                 super::dlog("  ax StringForRange unsupported");
                 return Err(AxFail::Unsupported);
             }
+        }
+        // Last exit before writing: once a write is issued the edit must run
+        // to the end, whatever the budget says.
+        if out_of_time() {
+            return Err(AxFail::Unsupported);
         }
         // Chọn đúng đoạn cần thay...
         let target_value = AXValueCreate(
@@ -364,6 +386,7 @@ pub fn is_trusted() -> bool {
 /// Thông tin ô focus, lấy trong MỘT lượt tra cứu AX — callback tap phải
 /// nhanh (WindowServer giao lại event nếu tap phản hồi chậm → phím bị
 /// nhân đôi, bug thực địa "master → masster").
+#[derive(Default)]
 pub struct FocusedInfo {
     /// Tên process sở hữu ô focus. Khác app frontmost: panel nổi như
     /// Spotlight nhận phím nhưng không phát sự kiện đổi app.
@@ -371,13 +394,14 @@ pub struct FocusedInfo {
     /// Độ dài vùng chọn (None = không đọc được) — quyết định có cần
     /// phím hủy gợi ý autocomplete không.
     pub selection_len: Option<isize>,
+    /// An AX call timed out: the app is busy or hung, and every further AX
+    /// call would cost another timeout.
+    pub hung: bool,
 }
 
-pub fn focused_info() -> FocusedInfo {
-    let mut info = FocusedInfo {
-        proc_name: None,
-        selection_len: None,
-    };
+/// Skips the remaining reads once `deadline` has passed.
+pub fn focused_info(deadline: Instant) -> FocusedInfo {
+    let mut info = FocusedInfo::default();
     unsafe {
         let system_wide = create_system_wide();
         if system_wide.is_null() {
@@ -385,13 +409,13 @@ pub fn focused_info() -> FocusedInfo {
         }
         let _guard = CFType::wrap_under_create_rule(system_wide as CFTypeRef);
         let mut focused: CFTypeRef = std::ptr::null();
-        if AXUIElementCopyAttributeValue(
+        let err = AXUIElementCopyAttributeValue(
             system_wide,
             attr("AXFocusedUIElement").as_concrete_TypeRef(),
             &mut focused,
-        ) != AX_SUCCESS
-            || focused.is_null()
-        {
+        );
+        if err != AX_SUCCESS || focused.is_null() {
+            info.hung = err == AX_ERROR_CANNOT_COMPLETE;
             return info;
         }
         let focused_guard = CFType::wrap_under_create_rule(focused);
@@ -413,14 +437,17 @@ pub fn focused_info() -> FocusedInfo {
             }
         }
 
+        if Instant::now() >= deadline {
+            return info;
+        }
         let mut range_value: CFTypeRef = std::ptr::null();
-        if AXUIElementCopyAttributeValue(
+        let err = AXUIElementCopyAttributeValue(
             element,
             attr("AXSelectedTextRange").as_concrete_TypeRef(),
             &mut range_value,
-        ) == AX_SUCCESS
-            && !range_value.is_null()
-        {
+        );
+        info.hung = err == AX_ERROR_CANNOT_COMPLETE;
+        if err == AX_SUCCESS && !range_value.is_null() {
             let range_guard = CFType::wrap_under_create_rule(range_value);
             let mut range = CFRange {
                 location: 0,
