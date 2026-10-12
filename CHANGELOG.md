@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.10.0] - 2026-10-12
+
 ### Đã thêm
 - **Gõ tắt theo kiểu viết hoa**: cụm tắt khớp không phân biệt hoa thường và
   trả kết quả theo cách gõ — với `ko → không`: `ko` ra *không*, `Ko` ra

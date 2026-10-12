@@ -485,6 +485,24 @@
                  type="application/octet-stream"
                  sparkle:edSignature="1ZkxIt2kg+7Lb9kkZUdMlNKwgHFrH+9fO5Gori4oM+KuroNB5lMILF6IqEFItXODQdpXfOIs3WvyBev9M0toAQ==" length="5774137" />
     </item>
+    <item>
+      <title>0.10.0</title>
+      <pubDate>Mon, 12 Oct 2026 03:02:11 +0000</pubDate>
+      <sparkle:version>29</sparkle:version>
+      <sparkle:shortVersionString>0.10.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã thêm</h3>
+<ul>
+<li><strong>Gõ tắt theo kiểu viết hoa</strong>: cụm tắt khớp không phân biệt hoa thường và trả kết quả theo cách gõ — với <code>ko → không</code>: <code>ko</code> ra *không*, <code>Ko</code> ra *Không*, <code>KO</code> ra *KHÔNG*. Trước đây <code>Ko</code>/<code>KO</code> không bung.</li>
+<li><strong>Backspace qua dấu cách nối lại từ trước</strong>: chốt từ rồi mới nhớ ra quên dấu, xóa lùi hết dấu cách (hoặc dấu câu) là gõ thanh tiếp được (<code>go go go</code> ⌫⌫⌫ <code>x</code> → *go gõ*), không phải xóa cả từ gõ lại.</li>
+<li><strong>Tự tạm tắt khi sang bàn phím Nhật/Hàn/Trung</strong>: chọn một input method khác trong menu bàn phím của macOS là OreoKey tạm tắt (không còn hai bộ gõ xử lý chồng), về ABC là trạng thái cũ hiện lại; trạng thái bật/tắt và bộ nhớ theo app của bạn không bị ghi đè.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.10.0/OreoKey.dmg"
+                 sparkle:version="29"
+                 sparkle:shortVersionString="0.10.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="jMy6S+uPonlg0cV6tek7kgygFZiBIL/lQLdOsAFRT1E9rzhXypI5sMw6kv2dlaOIoHnkfTxV8DTxZrfmwSzLDw==" length="5776780" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
