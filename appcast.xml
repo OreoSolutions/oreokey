@@ -435,6 +435,37 @@
                  type="application/octet-stream"
                  sparkle:edSignature="nc95yBi0s1YN5SimloQ3VkKm0nwho78K6Ce7L0hzD4pVoHZVNRNEzqhZonpM/3QTdjK6Ak5EH1NFzh73HngwBg==" length="5677221" />
     </item>
+    <item>
+      <title>0.8.0</title>
+      <pubDate>Mon, 12 Oct 2026 01:24:55 +0000</pubDate>
+      <sparkle:version>27</sparkle:version>
+      <sparkle:shortVersionString>0.8.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Cài đặt không còn ghi đè trạng thái Việt/Anh</strong>: mở cửa sổ Cài đặt rồi bật tắt tiếng Việt bằng phím tắt hoặc menu bar, sau đó đổi một tùy chọn bất kỳ trong Cài đặt từng đẩy lại trạng thái cũ. Cửa sổ nay nạp lại cài đặt mỗi khi được mở, và lõi giữ nguyên trạng thái bật/tắt đang chạy.</li>
+<li><strong>Ô ghi phím tắt từ chối tổ hợp trùng phím tắt của app</strong>: chỉ <code>⌘</code> (⌘C, ⌘V, ⌘Q…) hoặc không có phím bổ trợ sẽ không được nhận nữa; cần có <code>⌃</code> hoặc <code>⌥</code> (có thể kèm <code>⇧</code>/<code>⌘</code>). Ô ghi hiện gợi ý ngắn khi từ chối.</li>
+<li><strong>VNI</strong>: <code>7</code> nay móc cả cụm <code>uo</code> khi gõ sau nguyên âm cuối (<code>nguoi72</code> → người, <code>ruou75</code> → rượu, <code>tuoi7</code> → tươi).</li>
+<li><strong>Chế độ chính tả Thường / Thoải mái</strong>: gõ lặp phím dấu để hủy (<code>ddd</code>, <code>a11</code>, <code>a66</code>, <code>d99</code>, <code>u77</code>…) nay hủy dấu đúng như chế độ Nghiêm ngặt thay vì giữ nguyên dấu sai.</li>
+<li><strong>Gõ được <code>thuở</code>, <code>huơ</code>, <code>khuơ</code></strong> (Telex và VNI).</li>
+<li><strong>File cài đặt hỏng một trường</strong> không còn làm mất toàn bộ cài đặt; các trường còn hợp lệ được giữ, bản gốc lưu thành <code>settings.json.bad</code>.</li>
+<li><strong>Xóa lùi không còn làm mất dấu từ đang gõ</strong>: gõ dấu sau chữ cuối rồi Backspace (<code>vieetj</code> ⌫) từng khiến phím sau thành chữ thường (<code>s</code> → &quot;việs&quot;); nay ra &quot;viế&quot;. Nửa từ không dựng lại được (kiểu cũ &quot;toá&quot;) được để nguyên, gõ tắt và che từ không bung trên nửa từ đó.</li>
+<li><strong>VNI</strong>: gõ lặp <code>7</code> sau &quot;uơ&quot; nay hủy móc như Telex (<code>thuo77</code> → thuo7).</li>
+<li><strong>Không còn mất chữ khi app phản hồi chậm</strong>: nếu lệnh sửa chữ qua Accessibility quá hạn chờ, OreoKey bỏ qua phím đó thay vì bơm phím xóa, tránh xóa nhầm chữ thật khi app áp lệnh muộn. App bị treo không còn làm chậm từng phím gõ.</li>
+<li><strong>Thêm hồ sơ tương thích</strong> cho Zalo, Lark, Claude, 1Password, web app của Chrome và các kênh beta/dev/canary của Chrome, Edge, Brave (hết nháy vùng chọn).</li>
+<li><strong>Bật tiếng Việt từ menu trong app bị loại trừ</strong> nay chỉ bật cho app đó, không còn âm thầm bật cho mọi app khác.</li>
+<li><strong>Cửa sổ Cài đặt</strong> không còn ghi đè kiểu gõ vừa đổi từ menu bar.</li>
+<li><strong>Phím tắt bật/tắt</strong> không còn đôi khi tự đảo lại ngay sau khi bấm.</li>
+<li><strong>File cài đặt sai mã hóa (UTF-16, có BOM, ký tự hỏng)</strong> không còn bị thay bằng mặc định; phần đọc được được giữ, bản gốc lưu thành <code>settings.json.bad</code>.</li>
+<li><strong>Treo khi app đích không phản hồi</strong>: các lời gọi Accessibility nay có thời hạn chờ, nên một app bị treo không còn làm macOS tắt bộ gõ.</li>
+<li><strong>Khởi động</strong>: nếu đã có quyền Trợ năng mà bộ gõ vẫn không khởi động được, OreoKey báo một lần rồi tự thử lại thay vì liên tục mở lại cửa sổ hướng dẫn và giành focus. Chạy hai bản OreoKey cùng lúc không còn xảy ra, và hệ thống chỉ dùng bàn phím Latin có sẵn khi ABC chưa được bật.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.8.0/OreoKey.dmg"
+                 sparkle:version="27"
+                 sparkle:shortVersionString="0.8.0"
+                 type="application/octet-stream"
+                 sparkle:edSignature="k4i/xBAVri7Pbh3RmemLRQgOuXC1WRuyFZBs1wyZNMbyWZdiIsRYjquXXM83hqOiQJz5JKgOl56BHrswiIByAQ==" length="5729515" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>

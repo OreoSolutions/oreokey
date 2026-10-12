@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.8.0] - 2026-10-12
+
 ### Đã sửa
 - **Cài đặt không còn ghi đè trạng thái Việt/Anh**: mở cửa sổ Cài đặt rồi bật
   tắt tiếng Việt bằng phím tắt hoặc menu bar, sau đó đổi một tùy chọn bất kỳ
