@@ -203,6 +203,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         type_str(&mut e, keys)
     }
@@ -312,6 +314,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         type_str(&mut e, keys)
     }
@@ -356,6 +360,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         type_str(&mut e, keys)
     }

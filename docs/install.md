@@ -5,10 +5,20 @@ và Intel (universal binary).
 
 ## 1. Tải và cài
 
+**Cách 1 — DMG:**
+
 1. Tải file `.dmg` mới nhất tại trang
    [Releases](https://github.com/OreoSolutions/oreokey/releases).
 2. Mở file DMG, kéo **OreoKey** vào thư mục **Applications**.
 3. Mở OreoKey từ Applications (hoặc Spotlight).
+
+**Cách 2 — Homebrew:**
+
+```bash
+brew install --cask oreosolutions/tap/oreokey
+```
+
+Gỡ bằng `brew uninstall --cask oreokey` (thêm `--zap` để xóa luôn cài đặt).
 
 Bản phát hành đã được ký Developer ID và notarize với Apple nên mở
 bình thường, không bị Gatekeeper chặn.

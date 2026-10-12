@@ -134,4 +134,22 @@ sync_website_changelog() {
 }
 sync_website_changelog
 
+# --- 10. Cập nhật cask Homebrew (tap OreoSolutions/homebrew-tap). Lỗi ở bước
+#         này cũng không hủy release — chỉ cảnh báo để sửa tay.
+update_homebrew_cask() {
+    local tap_dir sha
+    tap_dir="$(mktemp -d)"
+    sha="$(shasum -a 256 dist/OreoKey.dmg | cut -d' ' -f1)"
+    git clone -q --depth 1 "https://github.com/OreoSolutions/homebrew-tap.git" "$tap_dir" \
+        || { echo "  ⚠ Không clone được homebrew-tap — cập nhật cask thủ công (version $VERSION, sha256 $sha)."; return; }
+    sed -i '' -e "s/^  version \".*\"/  version \"$VERSION\"/" \
+              -e "s/^  sha256 \".*\"/  sha256 \"$sha\"/" "$tap_dir/Casks/oreokey.rb"
+    git -C "$tap_dir" commit -qam "oreokey $VERSION" \
+        && git -C "$tap_dir" push -q origin HEAD:main \
+        && echo "  Homebrew: cask oreokey → $VERSION." \
+        || echo "  ⚠ Đẩy cask lên homebrew-tap thất bại — cập nhật thủ công (sha256 $sha)."
+    rm -rf "$tap_dir"
+}
+update_homebrew_cask
+
 echo "✅ Đã phát hành OreoKey v$VERSION — DMG đã ký + notarize, appcast đã cập nhật."

@@ -6,6 +6,14 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã thêm
+- **Chuyển mã** Unicode ↔ VNI-Windows ↔ TCVN3 trong Cài đặt (tab mới).
+- **Viết hoa đầu câu** (Cài đặt → Chung, mặc định tắt): chữ đầu sau `.` `!`
+  `?` + khoảng trắng hoặc sau Enter tự viết hoa.
+- **Esc hoàn về phím gốc** (Cài đặt → Chung, mặc định tắt): nhấn Esc khi
+  đang gõ dở để trả từ về đúng các phím đã bấm.
+- **Cài qua Homebrew**: `brew install --cask oreosolutions/tap/oreokey`.
+
 ## [0.8.0] - 2026-10-12
 
 ### Đã sửa

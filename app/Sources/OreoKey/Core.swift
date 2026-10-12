@@ -68,6 +68,8 @@ struct CoreSettings: Codable, Equatable {
     var macros_enabled: Bool
     var flexible_marks: Bool
     var censor_enabled: Bool
+    var auto_capitalize: Bool
+    var esc_revert: Bool
     var hotkey: CoreHotkey
     var macros: [CoreMacro]
     var excluded_apps: [String]
@@ -100,6 +102,27 @@ enum Core {
         let ok = json.withCString { ok_settings_json_set($0) }
         if ok { NotificationCenter.default.post(name: settingsSaved, object: nil) }
         return ok
+    }
+
+    enum Encoding: Int32, CaseIterable, Identifiable {
+        case unicode = 0, vniWindows = 1, tcvn3 = 2
+        var id: Int32 { rawValue }
+        var title: String {
+            switch self {
+            case .unicode: return "Unicode"
+            case .vniWindows: return "VNI-Windows"
+            case .tcvn3: return "TCVN3 (ABC)"
+            }
+        }
+    }
+
+    /// Chuyển mã văn bản giữa các bảng mã tiếng Việt (thuần, không đụng engine gõ).
+    static func convert(_ text: String, from: Encoding, to: Encoding) -> String {
+        guard let raw = text.withCString({ ok_convert($0, from.rawValue, to.rawValue) }) else {
+            return text
+        }
+        defer { ok_str_free(raw) }
+        return String(cString: raw)
     }
 
     static func notifyFrontmostApp(_ bundleId: String) {

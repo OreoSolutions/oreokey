@@ -220,8 +220,12 @@ fn handle_key(proxy: CGEventTapProxy, event: &CGEvent) -> CallbackKeep {
                 // Backspace: autorepeat vẫn phải đồng bộ buffer từng lần.
                 KeyInput::Backspace
             }
-            36 | 76 | 48 | 53 | 115 | 116 | 117 | 119 | 121 | 123 | 124 | 125 | 126 => {
-                // Enter, Tab, Esc, Home/End/PgUp/PgDn, Forward-Delete, mũi tên.
+            // Enter: ngắt từ không bung gõ tắt, nhưng đánh dấu đầu câu.
+            36 | 76 => KeyInput::Newline,
+            // Esc: có thể hoàn từ về phím gốc (tùy chọn).
+            53 => KeyInput::Escape,
+            48 | 115 | 116 | 117 | 119 | 121 | 123 | 124 | 125 | 126 => {
+                // Tab, Home/End/PgUp/PgDn, Forward-Delete, mũi tên.
                 // Chỉ kết thúc từ (WordBreak(None) không mang ký tự phân
                 // cách) nên KHÔNG kích hoạt gõ tắt / bộ lọc từ.
                 KeyInput::WordBreak(None)

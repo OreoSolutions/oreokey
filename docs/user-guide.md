@@ -10,6 +10,7 @@ Hướng dẫn đầy đủ mọi tính năng. Chưa cài? Xem [Hướng dẫn c
 - [Kiểm tra chính tả](#kiểm-tra-chính-tả)
 - [Các tuỳ chọn hành vi gõ](#các-tuỳ-chọn-hành-vi-gõ)
 - [Gõ tắt (macro)](#gõ-tắt-macro)
+- [Chuyển mã](#chuyển-mã)
 - [Cài đặt theo ứng dụng](#cài-đặt-theo-ứng-dụng)
 - [Xử lý app bị nháy / dính chữ](#xử-lý-app-bị-nháy--dính-chữ)
 - [Cập nhật](#cập-nhật)
@@ -97,6 +98,13 @@ Trong **Cài đặt → Chung → Hành vi gõ**:
 - **Đặt dấu kiểu mới** — *hoà, thuý* thay vì *hòa, thúy*.
 - **Gõ tắt** — bật/tắt toàn bộ macro định nghĩa trong mục Gõ tắt.
 - **Che từ tục tĩu** — từ nhạy cảm tự thay bằng dấu `*` khi chốt từ.
+- **Viết hoa đầu câu** — chữ đầu tiên sau `.` `!` `?` + khoảng trắng, hoặc
+  sau Enter, tự viết hoa (`xong. vieejt` → *xong. Việt*). Gõ liền không
+  có khoảng trắng (`google.com`) thì không viết hoa. Mặc định tắt.
+- **Esc hoàn về phím gốc** — đang gõ dở một từ, nhấn `Esc` để trả từ về
+  đúng các phím đã bấm (*việt* → `vieejt`); phím Esc đó không được gửi
+  tới app. Không có gì để hoàn thì Esc đi qua bình thường. Mặc định tắt
+  vì xung đột với vim (Esc thoát insert mode).
 
 ## Gõ tắt (macro)
 
@@ -108,6 +116,18 @@ Trong **Cài đặt → Chung → Hành vi gõ**:
 - Cụm trùng tên sẽ ghi đè cụm cũ.
 
 Nhớ bật công tắc **Gõ tắt** trong tab Chung thì macro mới chạy.
+
+## Chuyển mã
+
+**Cài đặt → Chuyển mã** — đổi văn bản giữa **Unicode**, **VNI-Windows** và
+**TCVN3 (ABC)** (văn bản cũ gõ bằng font VNI-Times, .VnTime…):
+
+1. Chọn bảng mã *Từ* và *Sang* (nút mũi tên để đảo chiều).
+2. Dán văn bản vào ô trên, bấm **Chuyển**.
+3. Bấm **Chép kết quả** rồi dán vào app đích.
+
+Kết quả VNI-Windows / TCVN3 chỉ hiển thị đúng trong app đang dùng font
+tương ứng; khi chuyển *sang Unicode* thì dán đâu cũng đọc được.
 
 ## Cài đặt theo ứng dụng
 

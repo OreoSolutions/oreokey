@@ -31,9 +31,25 @@ pub enum KeyInput {
     /// Ký tự in được (a-z, A-Z, 0-9...).
     Char(char),
     Backspace,
-    /// Ký tự ngắt từ (space, dấu câu, Enter) hoặc None nếu là di chuyển
+    /// Ký tự ngắt từ (space, dấu câu) hoặc None nếu là di chuyển
     /// con trỏ / click chuột (chỉ reset, không có ký tự đi kèm).
     WordBreak(Option<char>),
+    /// Enter: ngắt từ không mang ký tự (không bung gõ tắt), nhưng đánh dấu
+    /// đầu câu cho tính năng viết hoa.
+    Newline,
+    /// Esc: hoàn từ đang gõ về phím gốc nếu bật `esc_revert`, không thì
+    /// chỉ ngắt từ.
+    Escape,
+}
+
+/// Theo dõi ranh giới câu cho viết hoa tự động.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CapState {
+    None,
+    /// Vừa chốt từ bằng `.` `!` `?` — còn chờ khoảng trắng.
+    AfterPunct,
+    /// Chữ cái kế tiếp là đầu câu.
+    Ready,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -187,6 +203,10 @@ pub struct EngineConfig {
     pub flexible_marks: bool,
     /// Che từ tục tĩu bằng dấu * khi chốt từ.
     pub censor_enabled: bool,
+    /// Viết hoa chữ đầu câu: sau `.` `!` `?` + khoảng trắng, hoặc sau Enter.
+    pub auto_capitalize: bool,
+    /// Esc hoàn từ đang gõ về đúng chuỗi phím gốc.
+    pub esc_revert: bool,
 }
 
 impl Default for EngineConfig {
@@ -198,6 +218,8 @@ impl Default for EngineConfig {
             macros_enabled: true,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         }
     }
 }
@@ -222,6 +244,7 @@ pub struct Engine {
     /// trạng thái gần nhất. Chữ gõ thêm đi qua nguyên văn, không gõ tắt /
     /// che từ, tới khi xóa về chỗ khớp lại hoặc ngắt từ.
     untracked: bool,
+    cap_state: CapState,
 }
 
 #[derive(Debug, Clone)]
@@ -240,6 +263,7 @@ impl Engine {
             raw_mode: false,
             frozen_prefix: None,
             untracked: false,
+            cap_state: CapState::None,
         }
     }
 
@@ -263,6 +287,7 @@ impl Engine {
         self.raw_mode = false;
         self.frozen_prefix = None;
         self.untracked = false;
+        self.cap_state = CapState::None;
     }
 
     /// Từ đang gõ như đang hiển thị (phục vụ test/debug); rỗng khi engine
@@ -277,9 +302,54 @@ impl Engine {
 
     pub fn on_key(&mut self, k: KeyInput) -> Action {
         match k {
-            KeyInput::Char(c) => self.on_char(c),
+            KeyInput::Char(c) => {
+                let capitalize = self.cfg.auto_capitalize
+                    && self.cap_state == CapState::Ready
+                    && self.raw.is_empty()
+                    && c.is_ascii_lowercase();
+                self.cap_state = CapState::None;
+                if !capitalize {
+                    return self.on_char(c);
+                }
+                let upper = c.to_ascii_uppercase();
+                match self.on_char(upper) {
+                    // Phím thật là chữ thường nên không thể cho đi qua.
+                    Action::PassThrough => Action::Replace {
+                        old: String::new(),
+                        text: upper.to_string(),
+                    },
+                    other => other,
+                }
+            }
             KeyInput::Backspace => self.on_backspace(),
+            KeyInput::Newline => {
+                self.reset();
+                self.cap_state = CapState::Ready;
+                Action::PassThrough
+            }
+            KeyInput::Escape => {
+                let action = if self.cfg.esc_revert
+                    && !self.untracked
+                    && !self.last_render.is_empty()
+                    && self.last_render != self.raw
+                {
+                    Action::Replace {
+                        old: self.last_render.clone(),
+                        text: self.raw.clone(),
+                    }
+                } else {
+                    Action::PassThrough
+                };
+                self.reset();
+                action
+            }
             KeyInput::WordBreak(ch) => {
+                let next_cap = match (ch, self.cap_state) {
+                    (Some('.' | '!' | '?'), _) => CapState::AfterPunct,
+                    (Some(c), CapState::AfterPunct) if c.is_whitespace() => CapState::Ready,
+                    (Some(c), CapState::Ready) if c.is_whitespace() => CapState::Ready,
+                    _ => CapState::None,
+                };
                 let action = match ch {
                     // Chỉ biến đổi khi chốt từ bằng một ký tự thật (space,
                     // dấu câu, Enter) — không phải di chuyển con trỏ.
@@ -310,6 +380,7 @@ impl Engine {
                     _ => Action::PassThrough,
                 };
                 self.reset();
+                self.cap_state = next_cap;
                 action
             }
         }
@@ -694,6 +765,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         })
     }
 
@@ -704,6 +777,105 @@ mod tests {
             assert_eq!(e.on_key(KeyInput::Char(c)), Action::PassThrough);
         }
         assert_eq!(e.current_word(), "hn");
+    }
+
+    /// Như `type_str` nhưng space/dấu câu là WordBreak, `\n` là Enter,
+    /// `\u{1b}` là Esc — mô phỏng đúng tầng event tap.
+    fn type_text(engine: &mut Engine, keys: &str) -> String {
+        let mut screen = String::new();
+        for c in keys.chars() {
+            let key = match c {
+                '\u{8}' => KeyInput::Backspace,
+                '\n' => KeyInput::Newline,
+                '\u{1b}' => KeyInput::Escape,
+                c if c.is_ascii_alphanumeric() => KeyInput::Char(c),
+                c => KeyInput::WordBreak(Some(c)),
+            };
+            match engine.on_key(key) {
+                Action::PassThrough => match c {
+                    '\u{8}' => {
+                        screen.pop();
+                    }
+                    '\u{1b}' => {}
+                    c => screen.push(c),
+                },
+                Action::Replace { old, text } => {
+                    assert!(screen.ends_with(&old), "old={old:?} screen={screen:?}");
+                    for _ in 0..old.chars().count() {
+                        screen.pop();
+                    }
+                    screen.push_str(&text);
+                }
+            }
+        }
+        screen
+    }
+
+    fn with_caps(auto_capitalize: bool, esc_revert: bool) -> Engine {
+        let mut e = telex_no_spell();
+        let mut cfg = e.config().clone();
+        cfg.auto_capitalize = auto_capitalize;
+        cfg.esc_revert = esc_revert;
+        e.set_config(cfg);
+        e
+    }
+
+    #[test]
+    fn capitalizes_after_sentence_end_and_space() {
+        let mut e = with_caps(true, false);
+        assert_eq!(type_text(&mut e, "xong. vieejt"), "xong. Việt");
+        assert_eq!(type_text(&mut e, "a! b? c"), "a! B? C");
+        assert_eq!(type_text(&mut e, "a.  b"), "a.  B");
+    }
+
+    #[test]
+    fn capitalizes_after_newline() {
+        let mut e = with_caps(true, false);
+        assert_eq!(type_text(&mut e, "a\nb"), "a\nB");
+    }
+
+    #[test]
+    fn no_capital_without_space_or_at_start() {
+        let mut e = with_caps(true, false);
+        assert_eq!(type_text(&mut e, "google.com"), "google.com");
+        assert_eq!(type_text(&mut e, "abc"), "abc");
+        assert_eq!(type_text(&mut e, "a, b"), "a, b");
+    }
+
+    #[test]
+    fn cursor_move_cancels_capital() {
+        let mut e = with_caps(true, false);
+        type_text(&mut e, "a. ");
+        e.on_key(KeyInput::WordBreak(None));
+        assert_eq!(type_text(&mut e, "b"), "b");
+    }
+
+    #[test]
+    fn capital_off_by_default() {
+        let mut e = with_caps(false, false);
+        assert_eq!(type_text(&mut e, "a. b"), "a. b");
+    }
+
+    #[test]
+    fn esc_reverts_to_raw_keys() {
+        let mut e = with_caps(false, true);
+        assert_eq!(type_text(&mut e, "vieejt\u{1b}"), "vieejt");
+        // Từ đã hoàn, Esc lần nữa không làm gì và gõ tiếp là từ mới.
+        assert_eq!(type_text(&mut e, "\u{1b} dduwowngf"), " đường");
+    }
+
+    #[test]
+    fn esc_passes_through_when_nothing_to_revert() {
+        let mut e = with_caps(false, true);
+        assert_eq!(e.on_key(KeyInput::Escape), Action::PassThrough);
+        type_text(&mut e, "abc");
+        assert_eq!(e.on_key(KeyInput::Escape), Action::PassThrough);
+    }
+
+    #[test]
+    fn esc_revert_off_by_default() {
+        let mut e = with_caps(false, false);
+        assert_eq!(type_text(&mut e, "vieejt\u{1b}"), "việt");
     }
 
     #[test]
@@ -730,6 +902,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         })
     }
 
@@ -787,6 +961,8 @@ mod tests {
                     macros_enabled: true,
                     flexible_marks: true,
                     censor_enabled: true,
+                    auto_capitalize: false,
+                    esc_revert: false,
                 });
                 e.set_macros(macros::MacroTable::new([("vn".to_string(), "Việt Nam".to_string())]));
                 assert_eq!(type_str(&mut e, &format!("{keys}vn")), "toávn");
@@ -831,6 +1007,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         })
     }
 
@@ -928,6 +1106,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         assert_eq!(type_str(&mut e, "d9e2u6"), "đều");
     }
@@ -944,6 +1124,8 @@ mod tests {
                 macros_enabled: false,
                 flexible_marks: true,
                 censor_enabled: false,
+                auto_capitalize: false,
+                esc_revert: false,
             })
         };
         for mode in [SpellMode::Standard, SpellMode::Loose] {
@@ -971,6 +1153,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         assert_eq!(type_str(&mut e, "d9o6uuuu"), "đôuuuu");
     }
@@ -985,6 +1169,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         assert_eq!(type_str(&mut e, "thie16u"), "thiếu");
         let mut e2 = Engine::new(EngineConfig {
@@ -994,6 +1180,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         assert_eq!(type_str(&mut e2, "tie61t"), "tiết");
     }
@@ -1023,6 +1211,8 @@ mod tests {
                 macros_enabled: false,
                 flexible_marks: true,
                 censor_enabled: false,
+                auto_capitalize: false,
+                esc_revert: false,
             })
         };
 

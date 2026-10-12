@@ -232,6 +232,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         })
     }
 
@@ -435,6 +437,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: false,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         // Tắt "dấu linh hoạt" → gạch muộn không áp; dd liền kề vẫn được.
         assert_eq!(type_str(&mut e, "did"), "did");
@@ -481,6 +485,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         // bân + n không hợp lệ → về raw mode → chữ tiếng Anh nguyên vẹn.
         assert_eq!(type_str(&mut e, "banana"), "banana");
@@ -495,6 +501,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: false,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         assert_eq!(type_str(&mut e, "nanag"), "nanag");
         e.reset(); // hai từ riêng biệt — ngắt từ (như gõ dấu cách thật).
@@ -512,6 +520,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         type_str(&mut e, keys)
     }

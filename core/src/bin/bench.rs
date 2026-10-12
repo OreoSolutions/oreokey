@@ -12,6 +12,8 @@ fn engine(method: TypingMethod, mode: SpellMode) -> Engine {
         macros_enabled: false,
         flexible_marks: true,
         censor_enabled: false,
+        auto_capitalize: false,
+        esc_revert: false,
     })
 }
 

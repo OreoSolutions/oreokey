@@ -8,10 +8,14 @@ hai lỗi kinh điển của các bộ gõ event-tap: **dính chữ** và **nhá
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/A3S8230CZF)
 
 - Telex + VNI, kiểm tra chính tả 3 mức (Chặt / Thường / Thoải mái — tự khôi
-  phục từ tiếng Anh)gõ tắt, loại trừ app / nhớ trạng thái theo app / thêm app
-  bằng bundle ID
+  phục từ tiếng Anh), gõ tắt, viết hoa đầu câu, Esc hoàn về phím gốc,
+  chuyển mã Unicode / VNI-Windows / TCVN3, loại trừ app / nhớ trạng thái
+  theo app / thêm app bằng bundle ID
 - Engine viết bằng Rust (thư viện tĩnh ~1MB), UI Swift/AppKit + SwiftUI
 - macOS 13+, chạy nền dạng menu bar, RAM ~20MB
+
+Cài nhanh: `brew install --cask oreosolutions/tap/oreokey` hoặc tải DMG ở
+[Releases](https://github.com/OreoSolutions/oreokey/releases).
 
 ## Tài liệu
 

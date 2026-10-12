@@ -49,13 +49,14 @@ final class SettingsModel: ObservableObject {
 }
 
 private enum Pane: String, CaseIterable, Identifiable {
-    case general, macros, apps, about
+    case general, macros, convert, apps, about
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .general: return "Chung"
         case .macros: return "Gõ tắt"
+        case .convert: return "Chuyển mã"
         case .apps: return "Ứng dụng"
         case .about: return "Giới thiệu"
         }
@@ -65,6 +66,7 @@ private enum Pane: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "keyboard.fill"
         case .macros: return "bolt.fill"
+        case .convert: return "arrow.left.arrow.right"
         case .apps: return "square.grid.2x2.fill"
         case .about: return "info"
         }
@@ -74,6 +76,7 @@ private enum Pane: String, CaseIterable, Identifiable {
         switch self {
         case .general: return .blue
         case .macros: return .orange
+        case .convert: return .teal
         case .apps: return .purple
         case .about: return .gray
         }
@@ -115,6 +118,7 @@ struct SettingsView: View {
                     switch pane {
                     case .general: GeneralPane(model: model)
                     case .macros: MacrosPane(model: model)
+                    case .convert: ConvertPane()
                     case .apps: AppsPane(model: model)
                     case .about: AboutPane()
                     }
@@ -280,6 +284,14 @@ private struct GeneralPane: View {
                         title: "Che từ tục tĩu",
                         detail: "Từ nhạy cảm tự thay bằng dấu * khi chốt từ",
                         isOn: binding.censor_enabled)
+                    ToggleRow(
+                        title: "Viết hoa đầu câu",
+                        detail: "Tự viết hoa chữ đầu sau dấu chấm, chấm hỏi, chấm than hoặc Enter",
+                        isOn: binding.auto_capitalize)
+                    ToggleRow(
+                        title: "Esc hoàn về phím gốc",
+                        detail: "Nhấn Esc khi đang gõ dở để trả từ về đúng các phím đã bấm (việt → vieejt). Không hợp với vim.",
+                        isOn: binding.esc_revert)
                 }
 
                 Section("Hệ thống") {
@@ -707,6 +719,72 @@ private struct RunningAppPicker: View {
 }
 
 // MARK: - Chuyển mã
+
+private struct ConvertPane: View {
+    @State private var from: Core.Encoding = .vniWindows
+    @State private var to: Core.Encoding = .unicode
+    @State private var input = ""
+    @State private var output = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Picker("Từ", selection: $from) {
+                    ForEach(Core.Encoding.allCases) { Text($0.title).tag($0) }
+                }
+                Button {
+                    swap(&from, &to)
+                } label: {
+                    Image(systemName: "arrow.left.arrow.right")
+                }
+                .help("Đảo chiều")
+                Picker("Sang", selection: $to) {
+                    ForEach(Core.Encoding.allCases) { Text($0.title).tag($0) }
+                }
+            }
+            .pickerStyle(.menu)
+
+            TextEditor(text: $input)
+                .font(.body.monospaced())
+                .frame(minHeight: 120)
+                .overlay(alignment: .topLeading) {
+                    if input.isEmpty {
+                        Text("Dán văn bản cần chuyển vào đây…")
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 8)
+                            .padding(.leading, 5)
+                            .allowsHitTesting(false)
+                    }
+                }
+
+            HStack {
+                Button("Chuyển") {
+                    output = Core.convert(input, from: from, to: to)
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(input.isEmpty || from == to)
+                Spacer()
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(output, forType: .string)
+                } label: {
+                    Label("Chép kết quả", systemImage: "doc.on.doc")
+                }
+                .disabled(output.isEmpty)
+            }
+
+            TextEditor(text: .constant(output))
+                .font(.body.monospaced())
+                .frame(minHeight: 120)
+
+            Text("Kết quả VNI-Windows / TCVN3 chỉ hiển thị đúng trong app dùng font tương ứng (VNI-Times, .VnTime…).")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .navigationTitle("Chuyển mã")
+    }
+}
 
 // MARK: - Giới thiệu
 

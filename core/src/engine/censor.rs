@@ -34,6 +34,8 @@ mod tests {
             macros_enabled: false,
             flexible_marks: true,
             censor_enabled: true,
+            auto_capitalize: false,
+            esc_revert: false,
         })
     }
 

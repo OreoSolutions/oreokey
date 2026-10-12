@@ -48,6 +48,9 @@ Câu chuẩn: `Tôi yêu tiếng nước tôi từ khi mới ra đời` (Telex:
 - [ ] App trong danh sách loại trừ: tự về EN; hotkey vẫn bật lại tạm được
 - [ ] "Nhớ theo app": tắt VN trong Terminal, chuyển Chrome vẫn VN, quay lại Terminal vẫn EN
 - [ ] Đổi kiểu gõ Telex ↔ VNI từ menu có hiệu lực ngay
+- [ ] Viết hoa đầu câu (bật trong Chung): `xong. vieejt` → `xong. Việt`; `google.com` không viết hoa; Enter rồi gõ → viết hoa
+- [ ] Esc hoàn về phím gốc (bật trong Chung): `vieejt` + Esc → `vieejt`, app không nhận Esc; Esc khi không gõ dở → app nhận Esc bình thường
+- [ ] Tab Chuyển mã: dán `Vieät Nam` (VNI-Windows) → Unicode ra `Việt Nam`; nút Chép kết quả đưa vào clipboard
 - [ ] Sleep/wake máy → gõ vẫn hoạt động (tap tự phục hồi)
 - [ ] Thu hồi quyền Accessibility khi đang chạy → onboarding hiện lại (cần chạy lại app)
 

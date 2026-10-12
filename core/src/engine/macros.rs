@@ -33,6 +33,8 @@ mod tests {
             macros_enabled: true,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
         });
         e.set_macros(super::MacroTable::new([
             ("vn".to_string(), "Việt Nam".to_string()),

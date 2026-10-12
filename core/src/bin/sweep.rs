@@ -718,6 +718,8 @@ fn run() -> Result<(), String> {
                     macros_enabled: false,
                     flexible_marks: true,
                     censor_enabled: false,
+                    auto_capitalize: false,
+                    esc_revert: false,
                 }),
             )
         })

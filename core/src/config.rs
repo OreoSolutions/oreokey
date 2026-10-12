@@ -71,6 +71,10 @@ pub struct Settings {
     pub flexible_marks: bool,
     /// Che từ tục tĩu bằng dấu *.
     pub censor_enabled: bool,
+    /// Viết hoa chữ đầu câu.
+    pub auto_capitalize: bool,
+    /// Esc hoàn từ đang gõ về phím gốc.
+    pub esc_revert: bool,
     pub hotkey: Hotkey,
     pub macros: Vec<MacroEntry>,
     /// Bundle ID các app tự tắt tiếng Việt.
@@ -91,6 +95,8 @@ impl Default for Settings {
             macros_enabled: true,
             flexible_marks: true,
             censor_enabled: false,
+            auto_capitalize: false,
+            esc_revert: false,
             hotkey: Hotkey::default(),
             macros: Vec::new(),
             excluded_apps: Vec::new(),
@@ -117,6 +123,8 @@ impl Settings {
             macros_enabled: self.macros_enabled,
             flexible_marks: self.flexible_marks,
             censor_enabled: self.censor_enabled,
+            auto_capitalize: self.auto_capitalize,
+            esc_revert: self.esc_revert,
         }
     }
 
