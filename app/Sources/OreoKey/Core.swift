@@ -83,6 +83,7 @@ enum Core {
     static func axTrusted() -> Bool { ok_ax_trusted() }
     static func vnEnabled() -> Bool { ok_get_enabled() }
     static func setVnEnabled(_ on: Bool) { ok_set_enabled(on) }
+    static func setSuspended(_ on: Bool) { ok_set_suspended(on) }
 
     static func loadSettings() -> CoreSettings? {
         guard let raw = ok_settings_json_get() else { return nil }

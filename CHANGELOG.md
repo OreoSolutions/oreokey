@@ -13,6 +13,10 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 - **Backspace qua dấu cách nối lại từ trước**: chốt từ rồi mới nhớ ra quên
   dấu, xóa lùi hết dấu cách (hoặc dấu câu) là gõ thanh tiếp được
   (`go go go` ⌫⌫⌫ `x` → *go gõ*), không phải xóa cả từ gõ lại.
+- **Tự tạm tắt khi sang bàn phím Nhật/Hàn/Trung**: chọn một input method
+  khác trong menu bàn phím của macOS là OreoKey tạm tắt (không còn hai bộ
+  gõ xử lý chồng), về ABC là trạng thái cũ hiện lại; trạng thái bật/tắt
+  và bộ nhớ theo app của bạn không bị ghi đè.
 
 ## [0.9.0] - 2026-10-12
 

@@ -25,6 +25,9 @@ pub struct Runtime {
     /// Override trạng thái theo bundle ID (hotkey bấm trong app cụ thể
     /// khi bật "nhớ theo app", hoặc bật tạm trong app bị loại trừ).
     pub per_app_enabled: HashMap<String, bool>,
+    /// Treo tạm vì hệ thống đang ở input method khác (Nhật/Hàn/Trung…):
+    /// tiếng Việt coi như tắt nhưng trạng thái người dùng không đổi.
+    pub suspended: bool,
     pub current_bundle: String,
     pub profiles: profiles::Profiles,
     /// Bundle ID → lúc AX bị coi là không dùng được. Hết hạn sau
@@ -56,6 +59,7 @@ impl Runtime {
             engine,
             settings,
             per_app_enabled: HashMap::new(),
+            suspended: false,
             current_bundle: String::new(),
             profiles: profiles::Profiles::load_default(),
             ax_failed: HashMap::new(),
@@ -82,6 +86,9 @@ impl Runtime {
 
     /// Trạng thái tiếng Việt thực tế cho app đang focus.
     pub fn effective_enabled(&self) -> bool {
+        if self.suspended {
+            return false;
+        }
         if let Some(&on) = self.per_app_enabled.get(&self.current_bundle) {
             return on;
         }
@@ -93,6 +100,7 @@ impl Runtime {
     /// In an excluded app the global switch cannot change what the user
     /// sees, so (like the hotkey) only this app is switched.
     pub fn set_enabled(&mut self, on: bool) {
+        self.suspended = false;
         if self.settings.excluded_apps.contains(&self.current_bundle) {
             self.per_app_enabled.insert(self.current_bundle.clone(), on);
         } else {
@@ -107,6 +115,7 @@ impl Runtime {
     /// Hotkey: đảo trạng thái của ngữ cảnh hiện tại.
     pub fn toggle(&mut self) {
         let now = !self.effective_enabled();
+        self.suspended = false;
         if self.settings.remember_per_app
             || self.settings.excluded_apps.contains(&self.current_bundle)
         {
@@ -133,6 +142,17 @@ impl Runtime {
         if config::save(&self.settings).is_err() {
             dlog("settings persistence failed");
         }
+    }
+
+    /// Input source hệ thống đổi sang/khỏi input method khác. Không ghi
+    /// settings, không đụng bộ nhớ theo app: về ABC là trạng thái cũ hiện lại.
+    pub fn set_suspended(&mut self, on: bool) {
+        if self.suspended == on {
+            return;
+        }
+        self.suspended = on;
+        self.engine.reset();
+        self.notify_status();
     }
 
     pub fn notify_status(&self) {
@@ -218,6 +238,7 @@ mod tests {
             enabled: false,
             settings,
             per_app_enabled: HashMap::new(),
+            suspended: false,
             current_bundle: "excluded".into(),
             profiles: profiles::Profiles::default(),
             ax_failed: HashMap::new(),
@@ -231,4 +252,38 @@ mod tests {
         rt.app_changed("other".into());
         assert!(!rt.effective_enabled(), "still off elsewhere");
     }
+
+    #[test]
+    fn suspension_hides_vietnamese_without_touching_user_state() {
+        std::env::set_var(
+            "HOME",
+            std::env::temp_dir().join(format!("oreokey-rt-susp-{}", std::process::id())),
+        );
+        let settings = Settings::default();
+        let mut rt = Runtime {
+            engine: Engine::new(settings.engine_config()),
+            enabled: true,
+            settings,
+            per_app_enabled: HashMap::new(),
+            suspended: false,
+            current_bundle: "app".into(),
+            profiles: profiles::Profiles::default(),
+            ax_failed: HashMap::new(),
+            ax_hung: HashMap::new(),
+            status_cb: None,
+            ghost: ghost::GhostGuard::new(1),
+        };
+        rt.set_suspended(true);
+        assert!(!rt.effective_enabled(), "off while another IME is selected");
+        assert!(rt.enabled, "user's switch untouched");
+        rt.set_suspended(false);
+        assert!(rt.effective_enabled(), "back on when returning to a Latin layout");
+        // Hotkey lúc đang treo = "tôi muốn gõ tiếng Việt": gỡ treo và bật
+        // (Swift sẽ ép input source về ABC như mọi lần bật).
+        rt.set_suspended(true);
+        rt.toggle();
+        assert!(!rt.suspended);
+        assert!(rt.effective_enabled());
+    }
+
 }

@@ -20,6 +20,7 @@ bool ok_ax_trusted(void);
 // Bật/tắt tiếng Việt (trạng thái thực tế của app đang focus).
 bool ok_get_enabled(void);
 void ok_set_enabled(bool on);
+void ok_set_suspended(bool on);
 
 // Settings dạng JSON (schema: xem core/src/config.rs).
 char *ok_settings_json_get(void);

@@ -43,6 +43,11 @@ phím tắt của app (`⌘C`, `⌘V`, `⌘Q`…).
 Khi bật tiếng Việt, OreoKey tự chuyển input source hệ thống về bàn phím
 Latin (ABC) để không xung đột với bộ gõ khác.
 
+Chiều ngược lại cũng tự động: chuyển input source sang bàn phím Nhật, Hàn,
+Trung (hay Tiếng Việt có sẵn của macOS) thì OreoKey tạm tắt, biểu tượng
+hiện **EN**; quay về ABC là trạng thái cũ hiện lại. Bấm phím tắt lúc đang
+tạm tắt sẽ bật tiếng Việt và ép input source về ABC như bình thường.
+
 ## Kiểu gõ Telex và VNI
 
 Chọn trong menu bar (mục *Kiểu gõ*) hoặc **Cài đặt → Chung**.

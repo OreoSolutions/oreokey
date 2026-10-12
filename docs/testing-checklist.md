@@ -50,6 +50,9 @@ Câu chuẩn: `Tôi yêu tiếng nước tôi từ khi mới ra đời` (Telex:
 - [ ] Đổi kiểu gõ Telex ↔ VNI từ menu có hiệu lực ngay
 - [ ] Viết hoa đầu câu (bật trong Chung): `xong. vieejt` → `xong. Việt`; `google.com` không viết hoa; Enter rồi gõ → viết hoa
 - [ ] Esc hoàn về phím gốc (bật trong Chung): `vieejt` + Esc → `vieejt`, app không nhận Esc; Esc khi không gõ dở → app nhận Esc bình thường
+- [ ] Gõ tắt `ko → không`: gõ `Ko␣` ra `Không `, `KO␣` ra `KHÔNG `
+- [ ] Gõ `go go go` rồi ⌫⌫⌫ rồi `x` → `go gõ`; click chuột rồi ⌫ thì không nối lại
+- [ ] Thêm bàn phím Japanese (Romaji) trong System Settings; chuyển sang nó → icon EN, gõ ra tiếng Nhật; về ABC → icon VN lại; bấm hotkey khi đang ở Japanese → về ABC và VN bật
 - [ ] Tab Chuyển mã: dán `Vieät Nam` (VNI-Windows) → Unicode ra `Việt Nam`; nút Chép kết quả đưa vào clipboard
 - [ ] Sleep/wake máy → gõ vẫn hoạt động (tap tự phục hồi)
 - [ ] Thu hồi quyền Accessibility khi đang chạy → onboarding hiện lại (cần chạy lại app)

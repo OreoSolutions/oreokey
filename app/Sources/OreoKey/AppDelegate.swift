@@ -48,6 +48,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier {
             Core.notifyFrontmostApp(front)
         }
+        // Sang bàn phím Nhật/Hàn/Trung → tự treo tiếng Việt; về ABC → gỡ.
+        InputSource.watchForOtherInputMethods()
 
         startOrOnboard()
     }

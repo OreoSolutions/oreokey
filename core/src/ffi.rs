@@ -54,6 +54,13 @@ pub extern "C" fn ok_set_enabled(on: bool) {
     with_runtime(|rt| rt.set_enabled(on));
 }
 
+/// Treo/gỡ treo tiếng Việt khi input source hệ thống đổi sang/khỏi một
+/// input method khác (Nhật/Hàn/Trung…).
+#[no_mangle]
+pub extern "C" fn ok_set_suspended(on: bool) {
+    with_runtime(|rt| rt.set_suspended(on));
+}
+
 /// JSON toàn bộ settings (Swift render UI từ đây).
 #[no_mangle]
 pub extern "C" fn ok_settings_json_get() -> *mut c_char {
