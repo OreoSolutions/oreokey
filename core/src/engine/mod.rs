@@ -360,7 +360,6 @@ impl Engine {
                             .macros_enabled
                             .then(|| self.macros.expand(&self.last_render))
                             .flatten()
-                            .map(str::to_string)
                             .or_else(|| {
                                 (self.cfg.censor_enabled
                                     && censor::is_profane(&self.last_render))

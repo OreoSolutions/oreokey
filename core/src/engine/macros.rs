@@ -1,5 +1,6 @@
-//! Gõ tắt: bảng cụm tắt do người dùng định nghĩa, khớp chính xác
-//! (phân biệt hoa thường) với từ vừa hiển thị khi chốt từ.
+//! Gõ tắt: bảng cụm tắt do người dùng định nghĩa, khớp không phân biệt
+//! hoa thường với từ vừa hiển thị khi chốt từ; kết quả theo cách gõ:
+//! `ko` → không, `Ko` → Không, `KO` → KHÔNG.
 
 use std::collections::HashMap;
 
@@ -11,12 +12,31 @@ pub struct MacroTable {
 impl MacroTable {
     pub fn new(entries: impl IntoIterator<Item = (String, String)>) -> MacroTable {
         MacroTable {
-            map: entries.into_iter().collect(),
+            map: entries
+                .into_iter()
+                .map(|(from, to)| (from.to_lowercase(), to))
+                .collect(),
         }
     }
 
-    pub fn expand(&self, word: &str) -> Option<&str> {
-        self.map.get(word).map(String::as_str)
+    pub fn expand(&self, word: &str) -> Option<String> {
+        let to = self.map.get(&word.to_lowercase())?;
+        let mut chars = word.chars();
+        let first_upper = chars.next().is_some_and(char::is_uppercase);
+        let rest_upper = chars.clone().any(char::is_uppercase);
+        Some(if first_upper && rest_upper {
+            to.to_uppercase()
+        } else if first_upper {
+            let mut out = String::with_capacity(to.len());
+            let mut it = to.chars();
+            if let Some(c) = it.next() {
+                out.extend(c.to_uppercase());
+            }
+            out.extend(it);
+            out
+        } else {
+            to.clone()
+        })
     }
 }
 
@@ -66,10 +86,27 @@ mod tests {
     }
 
     #[test]
-    fn case_sensitive() {
-        let mut e = engine_with_macros();
-        type_str(&mut e, "VN");
-        assert_eq!(e.on_key(KeyInput::WordBreak(Some(' '))), Action::PassThrough);
+    fn case_follows_how_the_trigger_was_typed() {
+        let table = super::MacroTable::new([("ko".to_string(), "không".to_string())]);
+        assert_eq!(table.expand("ko").as_deref(), Some("không"));
+        assert_eq!(table.expand("Ko").as_deref(), Some("Không"));
+        assert_eq!(table.expand("KO").as_deref(), Some("KHÔNG"));
+        // Trộn hoa thường không theo mẫu nào: trả nguyên.
+        assert_eq!(table.expand("kO").as_deref(), Some("không"));
+        assert_eq!(table.expand("xo"), None);
+    }
+
+    #[test]
+    fn uppercase_key_in_table_still_matches() {
+        let table = super::MacroTable::new([("VN".to_string(), "Việt Nam".to_string())]);
+        assert_eq!(table.expand("vn").as_deref(), Some("Việt Nam"));
+        assert_eq!(table.expand("VN").as_deref(), Some("VIỆT NAM"));
+    }
+
+    #[test]
+    fn single_letter_capital_is_title_case() {
+        let table = super::MacroTable::new([("k".to_string(), "không".to_string())]);
+        assert_eq!(table.expand("K").as_deref(), Some("Không"));
     }
 
     #[test]

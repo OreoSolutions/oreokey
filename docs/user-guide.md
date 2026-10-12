@@ -113,7 +113,9 @@ Trong **Cài đặt → Chung → Hành vi gõ**:
 
 - Thêm: điền ô *Gõ tắt* (vd `vn`) và *Thay bằng* (vd `Việt Nam`), bấm **+**.
 - Xóa: chọn dòng trong bảng, bấm **−**.
-- Cụm trùng tên sẽ ghi đè cụm cũ.
+- Cụm trùng tên (không phân biệt hoa thường) sẽ ghi đè cụm cũ.
+- Kết quả theo cách gõ: với `ko → không`, gõ `ko` ra *không*, `Ko` ra
+  *Không*, `KO` ra *KHÔNG*.
 
 Nhớ bật công tắc **Gõ tắt** trong tab Chung thì macro mới chạy.
 

@@ -529,7 +529,7 @@ private struct MacrosPane: View {
                     Button {
                         let from = newFrom.trimmingCharacters(in: .whitespaces)
                         guard !from.isEmpty, !newTo.isEmpty else { return }
-                        binding.wrappedValue.macros.removeAll { $0.from == from }
+                        binding.wrappedValue.macros.removeAll { $0.from.lowercased() == from.lowercased() }
                         binding.wrappedValue.macros.append(CoreMacro(from: from, to: newTo))
                         newFrom = ""
                         newTo = ""
