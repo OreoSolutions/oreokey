@@ -101,6 +101,10 @@ Trong **Cài đặt → Chung → Hành vi gõ**:
 - **Viết hoa đầu câu** — chữ đầu tiên sau `.` `!` `?` + khoảng trắng, hoặc
   sau Enter, tự viết hoa (`xong. vieejt` → *xong. Việt*). Gõ liền không
   có khoảng trắng (`google.com`) thì không viết hoa. Mặc định tắt.
+- **Quên dấu, xóa lùi là gõ tiếp được** (luôn bật): vừa chốt một từ bằng
+  dấu cách hay dấu câu mà quên thanh, nhấn Backspace xóa tới hết dấu cách
+  là OreoKey nối lại từ đó, gõ phím dấu tiếp như thường (`go go go` ⌫⌫⌫ `x`
+  → *go gõ*). Click chuột, mũi tên hay Enter thì không nối lại.
 - **Esc hoàn về phím gốc** — đang gõ dở một từ, nhấn `Esc` để trả từ về
   đúng các phím đã bấm (*việt* → `vieejt`); phím Esc đó không được gửi
   tới app. Không có gì để hoàn thì Esc đi qua bình thường. Mặc định tắt

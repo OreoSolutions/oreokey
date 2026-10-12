@@ -10,6 +10,9 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 - **Gõ tắt theo kiểu viết hoa**: cụm tắt khớp không phân biệt hoa thường và
   trả kết quả theo cách gõ — với `ko → không`: `ko` ra *không*, `Ko` ra
   *Không*, `KO` ra *KHÔNG*. Trước đây `Ko`/`KO` không bung.
+- **Backspace qua dấu cách nối lại từ trước**: chốt từ rồi mới nhớ ra quên
+  dấu, xóa lùi hết dấu cách (hoặc dấu câu) là gõ thanh tiếp được
+  (`go go go` ⌫⌫⌫ `x` → *go gõ*), không phải xóa cả từ gõ lại.
 
 ## [0.9.0] - 2026-10-12
 

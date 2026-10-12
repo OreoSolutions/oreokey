@@ -245,6 +245,19 @@ pub struct Engine {
     /// che từ, tới khi xóa về chỗ khớp lại hoặc ngắt từ.
     untracked: bool,
     cap_state: CapState,
+    /// Từ vừa chốt bằng ký tự thật, còn nối lại được: Backspace xóa hết
+    /// ký tự ngắt sau nó thì engine tiếp tục từ đó (`go go⌫⌫⌫x` → `go gõ`).
+    prev: Option<PrevWord>,
+}
+
+#[derive(Debug, Clone)]
+struct PrevWord {
+    raw: String,
+    last_render: String,
+    raw_mode: bool,
+    frozen_prefix: Option<FrozenPrefix>,
+    /// Số ký tự ngắt đã gõ sau từ (space, dấu câu…) — mỗi Backspace trừ 1.
+    gap: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -264,6 +277,7 @@ impl Engine {
             frozen_prefix: None,
             untracked: false,
             cap_state: CapState::None,
+            prev: None,
         }
     }
 
@@ -288,6 +302,7 @@ impl Engine {
         self.frozen_prefix = None;
         self.untracked = false;
         self.cap_state = CapState::None;
+        self.prev = None;
     }
 
     /// Từ đang gõ như đang hiển thị (phục vụ test/debug); rỗng khi engine
@@ -344,6 +359,20 @@ impl Engine {
                 action
             }
             KeyInput::WordBreak(ch) => {
+                let next_prev = match ch {
+                    Some(_) if self.untracked => None,
+                    // Từ đang gõ chốt lại: nhớ để Backspace nối lại được.
+                    Some(_) if !self.last_render.is_empty() => Some(PrevWord {
+                        raw: self.raw.clone(),
+                        last_render: self.last_render.clone(),
+                        raw_mode: self.raw_mode,
+                        frozen_prefix: self.frozen_prefix.clone(),
+                        gap: 1,
+                    }),
+                    // Thêm một ký tự ngắt nữa sau từ đã nhớ.
+                    Some(_) => self.prev.take().map(|p| PrevWord { gap: p.gap + 1, ..p }),
+                    None => None,
+                };
                 let next_cap = match (ch, self.cap_state) {
                     (Some('.' | '!' | '?'), _) => CapState::AfterPunct,
                     (Some(c), CapState::AfterPunct) if c.is_whitespace() => CapState::Ready,
@@ -380,6 +409,11 @@ impl Engine {
                 };
                 self.reset();
                 self.cap_state = next_cap;
+                // Màn hình đã đổi (gõ tắt / che từ) thì phím gốc không còn
+                // khớp — không nối lại.
+                if action == Action::PassThrough {
+                    self.prev = next_prev;
+                }
                 action
             }
         }
@@ -504,6 +538,17 @@ impl Engine {
 
     fn on_backspace(&mut self) -> Action {
         if self.last_render.is_empty() {
+            // Xóa dần ký tự ngắt; hết thì nối lại từ trước.
+            if let Some(p) = self.prev.as_mut() {
+                if p.gap > 1 {
+                    p.gap -= 1;
+                } else if let Some(p) = self.prev.take() {
+                    self.raw = p.raw;
+                    self.last_render = p.last_render;
+                    self.raw_mode = p.raw_mode;
+                    self.frozen_prefix = p.frozen_prefix;
+                }
+            }
             return Action::PassThrough;
         }
         // App sẽ tự xóa 1 ký tự hiển thị; đồng bộ lại raw cho khớp.
@@ -875,6 +920,41 @@ mod tests {
     fn esc_revert_off_by_default() {
         let mut e = with_caps(false, false);
         assert_eq!(type_text(&mut e, "vieejt\u{1b}"), "việt");
+    }
+
+    #[test]
+    fn backspace_over_space_resumes_previous_word() {
+        let mut e = telex_no_spell();
+        assert_eq!(type_text(&mut e, "go go go\u{8}\u{8}\u{8}x"), "go gõ");
+        let mut e = telex_no_spell();
+        assert_eq!(type_text(&mut e, "vieet, \u{8}\u{8}j"), "việt");
+    }
+
+    #[test]
+    fn resumed_word_keeps_telex_history() {
+        // Đã hủy mũ bằng aa + a: nối lại rồi gõ tiếp vẫn đúng lịch sử phím.
+        let mut e = telex_no_spell();
+        assert_eq!(type_text(&mut e, "ddaaf \u{8}s"), "đấ");
+    }
+
+    #[test]
+    fn cursor_move_or_newline_forgets_previous_word() {
+        let mut e = telex_no_spell();
+        type_text(&mut e, "go ");
+        e.on_key(KeyInput::WordBreak(None));
+        assert_eq!(type_text(&mut e, "\u{8}x"), "x");
+        let mut e = telex_no_spell();
+        assert_eq!(type_text(&mut e, "go\n\u{8}x"), "gox");
+    }
+
+    #[test]
+    fn expanded_macro_is_not_resumed() {
+        let mut e = telex_no_spell();
+        let mut cfg = e.config().clone();
+        cfg.macros_enabled = true;
+        e.set_config(cfg);
+        e.set_macros(macros::MacroTable::new([("vn".to_string(), "Việt Nam".to_string())]));
+        assert_eq!(type_text(&mut e, "vn \u{8}s"), "Việt Nams");
     }
 
     #[test]
