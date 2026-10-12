@@ -6,6 +6,8 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+## [0.9.0] - 2026-10-12
+
 ### Đã thêm
 - **Chuyển mã** Unicode ↔ VNI-Windows ↔ TCVN3 trong Cài đặt (tab mới).
 - **Viết hoa đầu câu** (Cài đặt → Chung, mặc định tắt): chữ đầu sau `.` `!`
