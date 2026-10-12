@@ -6,6 +6,10 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 
 ## [Chưa phát hành]
 
+### Đã sửa
+- **Thêm hồ sơ tương thích cho System Settings** (bơm phím chậm): ô tìm
+  kiếm và các ô nhập trong System Settings không còn dính/nháy chữ.
+
 ## [0.10.0] - 2026-10-12
 
 ### Đã thêm
