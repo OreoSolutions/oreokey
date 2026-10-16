@@ -503,6 +503,23 @@
                  type="application/octet-stream"
                  sparkle:edSignature="jMy6S+uPonlg0cV6tek7kgygFZiBIL/lQLdOsAFRT1E9rzhXypI5sMw6kv2dlaOIoHnkfTxV8DTxZrfmwSzLDw==" length="5776780" />
     </item>
+    <item>
+      <title>0.10.1</title>
+      <pubDate>Fri, 16 Oct 2026 02:22:56 +0000</pubDate>
+      <sparkle:version>30</sparkle:version>
+      <sparkle:shortVersionString>0.10.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<h3>Đã sửa</h3>
+<ul>
+<li><strong>Spotlight trên macOS 27 (Siri AI) không còn nhảy chữ</strong>: ô tìm kiếm giờ thuộc process &quot;Siri AI&quot; nên hồ sơ Spotlight cũ không khớp, backspace bị ghost text nuốt. Thêm hồ sơ <code>proc:Siri AI</code> / <code>com.apple.campo</code> dùng chiến thuật chọn ngược + gõ đè như Spotlight.</li>
+<li><strong>Thêm hồ sơ tương thích cho System Settings</strong> (bơm phím chậm): ô tìm kiếm và các ô nhập trong System Settings không còn dính/nháy chữ.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/OreoSolutions/oreokey/releases/download/v0.10.1/OreoKey.dmg"
+                 sparkle:version="30"
+                 sparkle:shortVersionString="0.10.1"
+                 type="application/octet-stream"
+                 sparkle:edSignature="M2+zc4PA4NWYF4V9F8HJN8/vM1CY4sNPnU1RB3+Wqu++sDkgUH7c3EY2EA6COrNCAL8qzPCXGY2oc9SWD1xuBQ==" length="4949871" />
+    </item>
     <!-- RELEASE_ITEMS -->
   </channel>
 </rss>
