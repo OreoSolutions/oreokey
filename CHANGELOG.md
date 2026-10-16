@@ -7,6 +7,10 @@ Mọi thay đổi đáng chú ý của OreoKey ghi ở đây. Theo định dạn
 ## [Chưa phát hành]
 
 ### Đã sửa
+- **Spotlight trên macOS 27 (Siri AI) không còn nhảy chữ**: ô tìm kiếm
+  giờ thuộc process "Siri AI" nên hồ sơ Spotlight cũ không khớp, backspace
+  bị ghost text nuốt. Thêm hồ sơ `proc:Siri AI` / `com.apple.campo` dùng
+  chiến thuật chọn ngược + gõ đè như Spotlight.
 - **Thêm hồ sơ tương thích cho System Settings** (bơm phím chậm): ô tìm
   kiếm và các ô nhập trong System Settings không còn dính/nháy chữ.
 

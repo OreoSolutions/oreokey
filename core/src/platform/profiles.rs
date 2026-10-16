@@ -204,6 +204,11 @@ mod tests {
         let r = p.resolve("com.mitchellh.ghostty", &none, Some("Spotlight"));
         assert!(r.select_replace); // ghost text nuốt backspace → phải gõ đè
         assert_eq!(r.mode, FixMode::InjectFast);
+        // macOS 27: ô Spotlight thuộc app "Siri AI" (com.apple.campo),
+        // cùng ghost text nuốt backspace — thiếu key này là nhảy chữ.
+        let r = p.resolve("com.apple.finder", &none, Some("Siri AI"));
+        assert!(r.select_replace);
+        assert_eq!(r.mode, FixMode::InjectFast);
         // Own Settings window: AX would call back into this process.
         let r = p.resolve("com.oreosolutions.oreokey", &none, Some("OreoKey"));
         assert_eq!(r.mode, FixMode::InjectFast);
